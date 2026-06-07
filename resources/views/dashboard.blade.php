@@ -92,7 +92,7 @@
 <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
 
     {{-- Próximos agendamentos --}}
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden">
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <div style="padding:16px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
             <h2 style="font-size:14px;font-weight:700;color:var(--sa-text1);margin:0">Próximos Agendamentos</h2>
             <a href="{{ route('agendamentos.index') }}" style="font-size:12px;color:var(--sa-secondary);text-decoration:none;font-weight:600">Ver todos</a>
@@ -174,8 +174,8 @@
 
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--sa-border)">
             <a href="{{ route('agendamentos.create') }}"
-               style="display:block;text-align:center;padding:10px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:13px;font-weight:600;transition:background 180ms"
-               onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+               style="display:block;text-align:center;padding:10px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:13px;font-weight:600;transition:filter 200ms"
+               onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
                 + Novo Agendamento
             </a>
         </div>

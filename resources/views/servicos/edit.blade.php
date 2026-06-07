@@ -26,7 +26,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Nome do serviço <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="text" name="nome" value="{{ old('nome', $servico->nome) }}" required placeholder="Ex: Corte de cabelo"
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('nome') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('nome')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -34,7 +34,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Duração (minutos) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="duracao_minutos" value="{{ old('duracao_minutos', $servico->duracao_minutos) }}" min="5" max="480" step="5" required
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('duracao_minutos') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('duracao_minutos')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -42,7 +42,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Preço (R$) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="preco" value="{{ old('preco', $servico->preco) }}" min="0" step="0.01" required
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('preco') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('preco')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -50,7 +50,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Categoria</label>
                     <input type="text" name="categoria" value="{{ old('categoria', $servico->categoria) }}" placeholder="Ex: Cabelo, Barba, Tratamento"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 </div>
 
                 <div>
@@ -66,7 +66,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Descrição</label>
                     <textarea name="descricao" rows="2" placeholder="Descrição opcional do serviço"
                               style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms;font-family:'Inter',sans-serif"
-                              onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">{{ old('descricao', $servico->descricao) }}</textarea>
+                              onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">{{ old('descricao', $servico->descricao) }}</textarea>
                 </div>
             </div>
 
@@ -103,8 +103,8 @@
 
             <div style="display:flex;gap:10px;padding-top:4px">
                 <button type="submit"
-                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:background 180ms"
-                        onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
                     Salvar Alterações
                 </button>
                 <a href="{{ route('servicos.index') }}"

@@ -116,7 +116,7 @@
         </div>
 
         {{-- Agendamentos recentes --}}
-        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden">
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
             <div style="padding:16px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
                 <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Histórico de Agendamentos</h2>
                 <span style="font-size:12px;color:var(--sa-text3)">Últimos {{ $cliente->agendamentos->count() }}</span>

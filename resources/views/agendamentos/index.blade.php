@@ -12,8 +12,8 @@
         </div>
         @can('create', \App\Models\Agendamento::class)
         <a href="{{ route('agendamentos.create') }}"
-           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:background 180ms"
-           onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Agendamento
         </a>
@@ -26,13 +26,13 @@
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Data</label>
             <input type="date" name="data" value="{{ request('data') }}"
                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
         </div>
         <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Status</label>
             <select name="status"
                     style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
-                    onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                    onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 <option value="">Todos (exceto cancelados)</option>
                 @foreach(['pendente','confirmado','finalizado','cancelado'] as $s)
                 <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
@@ -43,7 +43,7 @@
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Profissional</label>
             <select name="profissional_id"
                     style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
-                    onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                    onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 <option value="">Todos</option>
                 @foreach($profissionais as $prof)
                 <option value="{{ $prof->id }}" {{ request('profissional_id') === $prof->id ? 'selected' : '' }}>{{ $prof->name }}</option>
@@ -52,8 +52,8 @@
         </div>
         <div style="display:flex;gap:8px">
             <button type="submit"
-                    style="padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--sa-primary);color:#fff;transition:background 180ms"
-                    onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+                    style="padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                    onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
                 Filtrar
             </button>
             @if(request()->hasAny(['data','status','profissional_id']))
@@ -66,16 +66,16 @@
         </div>
     </form>
 
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden">
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <table style="width:100%;border-collapse:collapse">
             <thead>
                 <tr style="background:var(--sa-surface2);border-bottom:1px solid var(--sa-border)">
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Cliente</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Data / Hora</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Profissional</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Serviço</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Status</th>
-                    <th style="padding:11px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Ações</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Cliente</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Data / Hora</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Profissional</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Serviço</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Status</th>
+                    <th style="padding:11px 16px;text-align:right;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -89,7 +89,7 @@
                         default      => 'background:rgba(245,158,11,.1);color:#92400e',
                     };
                 @endphp
-                <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='rgba(0,0,0,.02)'" onmouseout="this.style.background='transparent'">
+                <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
                     <td style="padding:14px 16px">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:32px;height:32px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ $ini }}</div>

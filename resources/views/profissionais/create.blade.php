@@ -23,7 +23,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Nome completo <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" required placeholder="Nome do profissional"
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('name') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('name')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -31,7 +31,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Especialidade</label>
                     <input type="text" name="especialidade" value="{{ old('especialidade') }}" placeholder="Ex: Barbeiro, Cabeleireiro, Manicure"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 </div>
             </div>
 
@@ -68,8 +68,8 @@
 
             <div style="display:flex;gap:10px;padding-top:4px">
                 <button type="submit"
-                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:background 180ms"
-                        onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
                     Salvar Profissional
                 </button>
                 <a href="{{ route('profissionais.index') }}"
