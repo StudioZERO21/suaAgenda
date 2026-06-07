@@ -1,21 +1,423 @@
-# Regras Arquiteturais -- suaAgenda
-# Versao: v1.1.0 | Clip de Papel v3.3
-## STACK
-- Laravel 13 + PHP 8.4 + MySQL (suaAgenda)
-- Frontend: Blade + Alpine.js 3 + Tailwind CSS 4
-- ACL: spatie/laravel-permission 7.x
-- PWA: ladumor/laravel-pwa
-- Alertas: SweetAlert2 11.x
-- Testes: Pest PHP | Arquitetura: Multi-Empresa
-## REGRAS ABSOLUTAS
-1. SOFT DELETE em todo Model
-2. SWEETALERT2: unico sistema de alertas
-3. GATE::BEFORE: super_admin tem acesso irrestrito
-4. POLICIES em toda action de Controller
-5. FORM REQUESTS em todo store() e update()
-6. N+1 PROIBIDO: sempre with() em listagens
-7. updateQuietly() para campos de auditoria
-## USUARIOS FIXOS
-- adrianoelite@msn.com -- super_admin
-- adrianoelite1980@gmail.com -- admin_empresa
-- ALTERAR SENHA ANTES DE PRODUCAO
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║                  .CURSORRULES - SUAAGENDA.PRO v2.0                          ║
+# ║              Regras para Cursor IDE & Claude Code (Automático)              ║
+# ║                       Gerado: 2026 | Atualizado: 2026                       ║
+# ║                                                                             ║
+# ║  ⚡ IMPORTANTE: Este arquivo é lido AUTOMATICAMENTE por:                   ║
+# ║    - Cursor IDE (abre .cursorrules automaticamente)                         ║
+# ║    - Claude Code (dentro do Cursor - lê via @rules)                        ║
+# ║    - IA assistentes (consulte para cada task)                              ║
+# ║                                                                             ║
+# ║  🔧 USAR ASSIM:                                                             ║
+# ║    1. Abra Cursor IDE                                                      ║
+# ║    2. Use Claude Code (@rules para referência)                             ║
+# ║    3. Cursor carrega .cursorrules automaticamente                           ║
+# ║    4. Siga as regras rigorosamente                                         ║
+# ║    5. Commit após cada etapa                                               ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# ==============================================================================
+# 📋 INFORMAÇÕES CRÍTICAS DO PROJETO
+# ==============================================================================
+
+PROJECT: suaAgenda.pro
+VERSION: 2.0 (MVP)
+TYPE: SaaS Multi-Empresa de Agendamento
+MARKET: Brasil
+STACK: Laravel 13 + PHP 8.4 + MySQL 8.0 + Blade + Alpine.js + Tailwind CSS 4
+
+# ==============================================================================
+# 🏗️ ARQUITETURA OBRIGATÓRIA
+# ==============================================================================
+
+BACKEND:
+  - Framework: Laravel 13 (routes/api.php para API REST)
+  - PHP: versão 8.4+ obrigatório (strict_types=1 em todo arquivo)
+  - Banco: MySQL 8.0 (charset: utf8mb4, collation: utf8mb4_unicode_ci)
+  - Cache: Redis (sessions, cache, queue, locks)
+  - Autenticação: Sanctum (tokens JWT expiração 24h)
+  - Autorização: spatie/laravel-permission 7.x + Policies + Gates
+
+FRONTEND:
+  - Templates: Blade + Alpine.js 3 (CDN)
+  - Estilos: Tailwind CSS 4 (JIT mode)
+  - Ícones: Lucide Icons (CDN) - NUNCA Font Awesome
+  - Alertas: SweetAlert2 11.x (ÚNICO sistema de alertas)
+  - Form Validation: Alpine.js nativo + Laravel Form Requests
+  - PWA: ladumor/laravel-pwa (manifest, service worker)
+
+MOBILE:
+  - Framework: React Native (Expo)
+  - UI: React Native Paper ou expo-ui
+  - State: Redux / Context API
+  - HTTP: Axios com interceptadores
+
+TESTES:
+  - Framework: Pest PHP (Feature + Unit)
+  - Mínimo: 80% cobertura em Models, Controllers, Policies
+  - CI: GitHub Actions (lint + tests + build)
+
+# ==============================================================================
+# 🚫 REGRAS ABSOLUTAS - NÃO NEGOCIÁVEL
+# ==============================================================================
+
+REGRA 1: SOFT DELETE OBRIGATÓRIO
+  └─ Todo Model que armazena dados de usuário DEVE ter SoftDeletes
+  └─ Migrations: adotar $table->softDeletes() automaticamente
+  └─ Exemplo: users, agendamentos, clientes, profissionais
+
+REGRA 2: SWEETALERT2 ÚNICO
+  └─ PROIBIDO: alert(), confirm(), native dialogs
+  └─ PROIBIDO: @error blade directives para mensagens
+  └─ OBRIGATÓRIO: SweetAlert2 para feedback ao usuário
+  └─ Padrão: Swal.fire({ title, icon, text, confirmButtonText })
+
+REGRA 3: GATE::BEFORE SUPER_ADMIN
+  └─ super_admin ignora TODAS policies automaticamente
+  └─ Código: Gate::before(fn($user, $ability) => $user->isSuperAdmin())
+  └─ Verificação: if (Gate::allows($ability)) { ... }
+
+REGRA 4: POLICIES EM TODA ACTION
+  └─ create(), store(), edit(), update(), destroy(), show()
+  └─ Padrão: class AgendamentoPolicy extends Policy
+  └─ Autorização no Controller: $this->authorize('update', $agendamento)
+  └─ PROIBIDO: lógica de autorização inline em Controllers
+
+REGRA 5: FORM REQUESTS OBRIGATÓRIO
+  └─ Todo store() e update() DEVE usar Form Request
+  └─ Padrão: StoreAgendamentoRequest, UpdateAgendamentoRequest
+  └─ Validações: NO FORM REQUEST, nunca no Controller
+  └─ Exemplo: public function rules() { return ['field' => 'required|email']; }
+
+REGRA 6: N+1 PROIBIDO
+  └─ SEMPRE usar with() em listagens e relacionamentos
+  └─ Padrão: User::with('agendamentos', 'profissionais')->get()
+  └─ Verificação: php artisan tinker > User::with('agendamentos')->first()
+  └─ NUNCA: User::get() seguido de $user->agendamentos
+
+REGRA 7: AUDITORIA COM updateQuietly()
+  └─ Campos como updated_by, edited_at DEVE usar updateQuietly()
+  └─ Motivo: Evitar trigger de updated_at e eventos
+  └─ Padrão: $model->updateQuietly(['updated_by' => auth()->id()])
+
+REGRA 8: ESTRUTURA DE PASTAS RIGOROSA
+  └─ app/Http/Controllers/Auth/ — Controllers de autenticação
+  └─ app/Http/Controllers/{Recurso}Controller.php — CRUD por recurso
+  └─ app/Http/Requests/ — Form Requests (StoreXxxRequest, UpdateXxxRequest)
+  └─ app/Policies/ — Policies de autorização
+  └─ app/Traits/ — Comportamentos reutilizáveis (HasCompany, IsAuditable)
+  └─ app/Scopes/ — Global Scopes (CompanyScope para multi-tenancy)
+  └─ app/Domain/ — Lógica de negócio complexa
+  └─ resources/views/components/ — Componentes Blade reutilizáveis
+  └─ tests/Feature/ — Testes de Feature (Controllers, APIs)
+  └─ tests/Unit/ — Testes de Unit (Models, Services, Traits)
+
+REGRA 9: MULTI-TENANCY RIGOROSA
+  └─ TODO query DEVE estar no escopo de company_id
+  └─ Global Scope: CompanyScope aplicado em TODOS Models
+  └─ Middleware: SetTenantMiddleware em routes/api.php
+  └─ Chave: request()->header('X-Company-Id') ou Auth::user()->company_id
+  └─ PROIBIDO: Queries sem isolamento de tenant
+
+REGRA 10: VERSIONAMENTO DE API
+  └─ Rotas: routes/api.php com prefixo 'api/v1'
+  └─ Controllers: app/Http/Controllers/Api/V1/
+  └─ Resposta: { data: {...}, status: 200, message: "sucesso" }
+  └─ Erros: { error: "...", status: 400, details: {...} }
+
+REGRA 11: TRANSAÇÕES EM OPERAÇÕES CRÍTICAS
+  └─ Agendamentos, pagamentos, comissões: DB::transaction()
+  └─ Padrão: DB::transaction(fn() => { ... })
+  └─ NUNCA: Operações financeiras fora de transação
+
+REGRA 12: QUEUES PARA OPERAÇÕES PESADAS
+  └─ Email, WhatsApp, relatórios: use Jobs + Queue
+  └─ Padrão: dispatch(new SendWhatsAppJob($company, $phone, $message))
+  └─ Timeout: definir em cada Job
+  └─ NUNCA: Chamadas síncronas para APIs externas em Controller
+
+REGRA 13: LOGGING EM OPERAÇÕES SENSÍVEIS
+  └─ Autenticação, autorização, pagamentos, WhatsApp
+  └─ Canal: config/logging.php canal 'security'
+  └─ Padrão: Log::channel('security')->info('Ação', ['user_id', 'action'])
+
+REGRA 14: VARIÁVEIS DE AMBIENTE
+  └─ NUNCA hardcodear valores sensíveis (chaves, senhas, tokens)
+  └─ Padrão: config/app.php, config/database.php, etc
+  └─ Acesso: config('app.key'), env('TWILIO_KEY')
+
+# ==============================================================================
+# 👥 USUÁRIOS PADRÃO - ALTERAR ANTES DE PRODUÇÃO
+# ==============================================================================
+
+SUPER ADMIN:
+  Email: adrianoelite@msn.com
+  Senha: StudioZERO21! (ALTERAR IMEDIATAMENTE)
+  Acesso: Irrestrito a tudo
+
+ADMIN EMPRESA:
+  Email: adrianoelite1980@gmail.com
+  Senha: StudioZERO21! (ALTERAR IMEDIATAMENTE)
+  Acesso: Gestão de empresa, relatórios, integrações
+
+ROLES PADRÃO:
+  - super_admin (irrestrito)
+  - admin_empresa (gerencia empresa, clientes, profissionais)
+  - gestor (relatórios, comissões)
+  - analista (visualizar dados, não edita)
+
+# ==============================================================================
+# 📊 PADRÕES DE RESPOSTA API
+# ==============================================================================
+
+SUCCESS (200, 201):
+  {
+    "success": true,
+    "status": 200,
+    "message": "Operação realizada com sucesso",
+    "data": { ... }
+  }
+
+VALIDATION ERROR (422):
+  {
+    "success": false,
+    "status": 422,
+    "message": "Erro de validação",
+    "errors": {
+      "email": ["O email já está registrado"],
+      "phone": ["Telefone inválido"]
+    }
+  }
+
+NOT FOUND (404):
+  {
+    "success": false,
+    "status": 404,
+    "message": "Recurso não encontrado",
+    "error": "agendamento_nao_encontrado"
+  }
+
+UNAUTHORIZED (401, 403):
+  {
+    "success": false,
+    "status": 403,
+    "message": "Você não tem permissão para acessar isto",
+    "error": "unauthorized"
+  }
+
+# ==============================================================================
+# 🔐 SEGURANÇA OBRIGATÓRIA
+# ==============================================================================
+
+AUTENTICAÇÃO:
+  - Sempre HTTPS em produção
+  - Tokens JWT com expiração 24h
+  - Refresh tokens com expiração 7 dias
+  - Rate limiting: 60 requisições/minuto por IP
+
+AUTORIZAÇÃO:
+  - Gate::before para super_admin
+  - Policies em TODAS ações sensíveis
+  - Validação de company_id em TODAS queries
+
+DADOS:
+  - Criptografia: campos sensíveis (CPF, CNPJ, dados bancários)
+  - Hash: passwords com bcrypt (Laravel faz automaticamente)
+  - LGPD: consentimento explícito, direito ao esquecimento
+  - Backup: 2x ao dia, replicação ativa
+
+VALIDAÇÃO:
+  - Input validation em Form Requests
+  - Sanitização em todas entradas
+  - CSRF tokens em forms (Blade automático)
+
+# ==============================================================================
+# 🎨 PADRÕES DE FRONTEND
+# ==============================================================================
+
+COMPONENTES BLADE:
+  - Localização: resources/views/components/
+  - Nomeação: Kebab-case (button-primary.blade.php)
+  - Uso: <x-button-primary label="Salvar" />
+  - Props: @props(['label', 'disabled' => false, 'loading' => false])
+
+SCRIPTS ALPINE:
+  - CDN sempre (não importar localmente)
+  - x-data para estado local
+  - @click para eventos
+  - :class para classes dinâmicas
+  - NUNCA jQuery
+
+TAILWIND:
+  - Utility-first obrigatoriamente
+  - Classes customizadas em app.css (mínimo)
+  - Modo escuro: dark: prefix automático
+  - Responsivo: sm:, md:, lg:, xl:, 2xl:
+
+FORMS:
+  - Validação: Alpine.js nativo
+  - Mensagens: SweetAlert2
+  - Campos: componentes Blade reutilizáveis
+  - Exemplo: <x-form-input name="email" label="Email" type="email" required />
+
+# ==============================================================================
+# 🧪 TESTES OBRIGATÓRIO
+# ==============================================================================
+
+COBERTURA: Mínimo 80% em:
+  - Models (validações, escopos, relacionamentos)
+  - Controllers (CRUD, autorização)
+  - Policies (lógica de acesso)
+  - Services (lógica de negócio)
+
+PADRÃO PEST:
+  test('descrição do teste', function () {
+    $user = User::factory()->create();
+    $response = $this->actingAs($user)->get('/api/agendamentos');
+    expect($response->status())->toBe(200);
+  });
+
+MOCKS:
+  - Twilio: Mock em testes
+  - Google Calendar: Mock em testes
+  - Pagamento: Mock/Sandbox em testes
+
+# ==============================================================================
+# 📝 CONVENÇÕES DE CÓDIGO
+# ==============================================================================
+
+PHP:
+  - strict_types=1 obrigatório em todo arquivo
+  - PSR-12 (formatação com ./vendor/bin/pint)
+  - Variáveis: camelCase
+  - Constantes: UPPER_SNAKE_CASE
+  - Métodos privados: prefix _ (não "_" prefixo)
+
+BLADE:
+  - Indentação: 4 espaços
+  - Variáveis: {{ $variable }}
+  - Interpolação: {{ $text . ' world' }}
+  - Loops: @forelse, @endforelse (nunca foreach puro)
+  - Condições: @if, @elseif, @endif
+
+BANCO:
+  - Tabelas: plural, snake_case (agendamentos, profissionais)
+  - Colunas: snake_case (created_at, updated_at, deleted_at)
+  - Foreign keys: {tabela_singular}_id (profissional_id, empresa_id)
+  - Índices: automaticamente em chaves estrangeiras
+
+GIT:
+  - Commits: feat(), fix(), chore(), docs(), test()
+  - Branches: feature/xxx, bugfix/xxx, hotfix/xxx, etapa-N.N
+  - Messages: Português, imperativo, descritivo
+  - Exemplo: "feat(agendamento): adicionar confirmação via WhatsApp"
+
+# ==============================================================================
+# 🚀 WORKFLOW DESENVOLVIMENTO
+# ==============================================================================
+
+PADRÃO ETAPAS:
+  1. Criar branch: git checkout -b etapa-X.X
+  2. Implementar feature
+  3. Testes: ./vendor/bin/pint (formato)
+  4. Testes: ./vendor/bin/pest (cobertura)
+  5. Commit: git commit -m "feat(etapa-X.X): descrição"
+  6. Push: git push origin etapa-X.X
+  7. Backup: Banco de dados + arquivos
+  8. Merge (manual após revisão)
+
+SERVIDOR DESENVOLVIMENTO:
+  Comando: composer dev
+  Abre: Servidor + Queue + Pail + Vite em paralelo
+  URL: http://127.0.0.1:8000
+
+COMPILAÇÃO:
+  CSS/JS: npm run build (antes de deploy)
+  Assets: Versioning automático
+  PWA: npm run build + artisan
+
+# ==============================================================================
+# 💾 BACKUP E VERSIONAMENTO
+# ==============================================================================
+
+BACKUP APÓS CADA ETAPA:
+  1. Banco: mysqldump suaAgenda > backup-etapa-N.sql
+  2. Arquivos: zip -r backup-etapa-N.zip . --exclude=.env
+  3. Git: git push origin etapa-N.N (backup remoto)
+
+VERSIONAMENTO:
+  - Semântico: MAJOR.MINOR.PATCH (2.0.0)
+  - Tags: git tag -a v2.0.0-beta -m "Beta release"
+  - Releases: GitHub Releases com changelog
+
+# ==============================================================================
+# ⚠️ ANTI-PATTERNS - PROIBIDO ABSOLUTAMENTE
+# ==============================================================================
+
+❌ NUNCA:
+  - Queries sem with() relacionado
+  - Lógica de negócio em Controllers
+  - Dados hardcoded em arquivos
+  - Passwords/tokens em .env não encriptados
+  - Testes sem mocks/stubs
+  - Commits sem mensagens descritivas
+  - Alterações diretas no .env em produção
+  - Imports desnecessários ou não usados
+  - Funções com mais de 50 linhas
+  - Variáveis genéricas ($x, $a, $temp)
+  - Comentários óbvios (// incrementa i)
+  - Banco sem transações em operações críticas
+  - API sem paginação em listagens grandes
+  - Frontend sem loading states
+  - Deployment sem testes verdes
+
+# ==============================================================================
+# 📚 RECURSOS DE REFERÊNCIA
+# ==============================================================================
+
+DOCUMENTAÇÃO OFICIAL:
+  - Laravel: https://laravel.com/docs/13
+  - spatie/permission: https://spatie.be/docs/laravel-permission
+  - Tailwind: https://tailwindcss.com/docs
+  - Alpine.js: https://alpinejs.dev
+  - SweetAlert2: https://sweetalert2.github.io
+
+PADRÕES INTERNO:
+  - CLAUDE.md no root (instruções para IA)
+  - /DOCS/ROADMAP.md (planejamento 36 semanas)
+  - /DOCS/ARCHITECTURE.md (diagramas técnicos)
+  - /DOCS/CHECKLIST.md (verificação por etapa)
+
+# ==============================================================================
+# ✅ CHECKLIST PRÉ-COMMIT
+# ==============================================================================
+
+Antes de fazer git commit, verificar:
+
+  ☑️ Todos testes passando (./vendor/bin/pest)
+  ☑️ Formatação OK (./vendor/bin/pint)
+  ☑️ Sem console.log ou dd() no código
+  ☑️ Sem comentários de trabalho em progresso
+  ☑️ Mensagem de commit clara e descritiva
+  ☑️ Nenhuma variável sensível commitada
+  ☑️ Imports organizados e necessários
+  ☑️ Migrations criadas com nome claro
+  ☑️ Relacionamentos definidos corretamente
+  ☑️ Controllers com authorization check
+  ☑️ Policies implementadas quando necessário
+  ☑️ Validações em Form Requests
+  ☑️ N+1 verificado (with() aplicado)
+  ☑️ Soft deletes em modelos apropriados
+  ☑️ Logging de operações sensíveis
+
+# ==============================================================================
+# 🔄 ÚLTIMA ATUALIZAÇÃO
+# ==============================================================================
+
+Versão: 1.2.0
+Data: 2026
+Gerado por: Clip de Papel v3.3
+Próxima revisão: Após Phase 1 (Semana 12)
+
+---
+**Nota:** Este arquivo é LEI. Qualquer dúvida, consulte /DOCS/ARCHITECTURE.md
