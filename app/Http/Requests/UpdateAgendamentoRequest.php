@@ -18,8 +18,10 @@ class UpdateAgendamentoRequest extends FormRequest
         return [
             'profissional_id' => ['sometimes', 'uuid', 'exists:profissionais,id'],
             'cliente_id' => ['sometimes', 'uuid', 'exists:clientes,id'],
+            'servico_id' => ['nullable', 'uuid', 'exists:servicos,id'],
             'data_hora' => ['sometimes', 'date', 'after:now'],
             'duracao' => ['sometimes', 'integer', 'min:15', 'max:480'],
+            'valor' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', 'in:pendente,confirmado,finalizado,cancelado'],
             'observacao' => ['nullable', 'string', 'max:1000'],
         ];

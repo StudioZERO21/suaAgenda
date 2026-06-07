@@ -27,9 +27,10 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('agendamentos', AgendamentoController::class);
+    Route::patch('agendamentos/{agendamento}/status', [AgendamentoController::class, 'updateStatus'])->name('agendamentos.updateStatus');
     Route::resource('clientes', ClienteController::class);
     Route::resource('servicos', ServicoController::class)->except(['show']);
-    Route::resource('profissionais', ProfissionalController::class);
+    Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
 });
 
 if (app()->isLocal()) {
