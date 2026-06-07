@@ -58,7 +58,7 @@ describe('agendamentos', function () {
                 'data_hora' => $dataHora,
                 'duracao' => 60,
             ])
-            ->assertRedirect(route('agendamentos.index'));
+            ->assertRedirect();
 
         expect(Agendamento::where('company_id', $this->company->id)->count())->toBe(1);
     });

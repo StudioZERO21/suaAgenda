@@ -19,8 +19,10 @@ class StoreAgendamentoRequest extends FormRequest
         return [
             'profissional_id' => ['required', 'uuid', 'exists:profissionais,id'],
             'cliente_id' => ['required', 'uuid', 'exists:clientes,id'],
+            'servico_id' => ['nullable', 'uuid', 'exists:servicos,id'],
             'data_hora' => ['required', 'date', 'after:now'],
             'duracao' => ['required', 'integer', 'min:15', 'max:480'],
+            'valor' => ['nullable', 'numeric', 'min:0'],
             'observacao' => ['nullable', 'string', 'max:1000'],
         ];
     }

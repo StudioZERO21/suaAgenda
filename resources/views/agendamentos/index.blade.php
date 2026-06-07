@@ -1,56 +1,180 @@
 @extends('layouts.app')
-
 @section('title', 'Agendamentos')
+@section('page-title', 'Agendamentos')
 
 @section('content')
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-xl font-bold text-slate-800">Agendamentos</h1>
-    @can('create', App\Models\Agendamento::class)
-    <a href="{{ route('agendamentos.create') }}"
-       class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Novo Agendamento
-    </a>
-    @endcan
-</div>
+<div style="max-width:1100px">
 
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-    @forelse($agendamentos as $agendamento)
-    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-        <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-                {{ substr($agendamento->cliente->name ?? '?', 0, 2) }}
-            </div>
-            <div>
-                <p class="text-sm font-semibold text-slate-800">{{ $agendamento->cliente->name ?? '-' }}</p>
-                <p class="text-xs text-slate-500">{{ $agendamento->profissional->name ?? '-' }} • {{ $agendamento->data_hora->format('d/m/Y H:i') }} • {{ $agendamento->duracao }}min</p>
-            </div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+            <h1 style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">Agendamentos</h1>
+            <p style="font-size:14px;color:var(--sa-text3);margin:0">{{ $agendamentos->total() }} agendamento{{ $agendamentos->total() !== 1 ? 's' : '' }}</p>
         </div>
-        <div class="flex items-center gap-3">
-            <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                @if($agendamento->status === 'confirmado') bg-emerald-100 text-emerald-700
-                @elseif($agendamento->status === 'pendente') bg-amber-100 text-amber-700
-                @elseif($agendamento->status === 'finalizado') bg-slate-100 text-slate-600
-                @else bg-red-100 text-red-600 @endif">
-                {{ ucfirst($agendamento->status) }}
-            </span>
-            <a href="{{ route('agendamentos.show', $agendamento) }}" class="text-xs text-slate-400 hover:text-emerald-600 transition">Ver</a>
-            @can('update', $agendamento)
-            <a href="{{ route('agendamentos.edit', $agendamento) }}" class="text-xs text-slate-400 hover:text-emerald-600 transition">Editar</a>
-            @endcan
-        </div>
-    </div>
-    @empty
-    <div class="text-center py-16">
-        <p class="text-slate-400 text-sm">Nenhum agendamento encontrado.</p>
-        @can('create', App\Models\Agendamento::class)
-        <a href="{{ route('agendamentos.create') }}" class="mt-3 inline-block text-emerald-600 text-sm font-semibold hover:underline">Criar primeiro agendamento</a>
+        @can('create', \App\Models\Agendamento::class)
+        <a href="{{ route('agendamentos.create') }}"
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:background 180ms"
+           onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo Agendamento
+        </a>
         @endcan
     </div>
-    @endforelse
+
+    {{-- Filtros --}}
+    <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:flex-end">
+        <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Data</label>
+            <input type="date" name="data" value="{{ request('data') }}"
+                   style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
+                   onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Status</label>
+            <select name="status"
+                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
+                    onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                <option value="">Todos (exceto cancelados)</option>
+                @foreach(['pendente','confirmado','finalizado','cancelado'] as $s)
+                <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Profissional</label>
+            <select name="profissional_id"
+                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
+                    onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                <option value="">Todos</option>
+                @foreach($profissionais as $prof)
+                <option value="{{ $prof->id }}" {{ request('profissional_id') === $prof->id ? 'selected' : '' }}>{{ $prof->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="display:flex;gap:8px">
+            <button type="submit"
+                    style="padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--sa-primary);color:#fff;transition:background 180ms"
+                    onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+                Filtrar
+            </button>
+            @if(request()->hasAny(['data','status','profissional_id']))
+            <a href="{{ route('agendamentos.index') }}"
+               style="padding:9px 14px;border-radius:9px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:all 180ms"
+               onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
+                Limpar
+            </a>
+            @endif
+        </div>
+    </form>
+
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden">
+        <table style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr style="background:var(--sa-surface2);border-bottom:1px solid var(--sa-border)">
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Cliente</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Data / Hora</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Profissional</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Serviço</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Status</th>
+                    <th style="padding:11px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($agendamentos as $ag)
+                @php
+                    $ini = strtoupper(substr($ag->cliente->name ?? '?', 0, 1));
+                    $badgeStyle = match($ag->status) {
+                        'confirmado' => 'background:rgba(5,150,105,.1);color:#065f46',
+                        'finalizado' => 'background:rgba(107,114,128,.1);color:#374151',
+                        'cancelado'  => 'background:rgba(239,68,68,.1);color:#991b1b',
+                        default      => 'background:rgba(245,158,11,.1);color:#92400e',
+                    };
+                @endphp
+                <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='rgba(0,0,0,.02)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:14px 16px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="width:32px;height:32px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ $ini }}</div>
+                            <div>
+                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $ag->cliente->name ?? '—' }}</div>
+                                <div style="font-size:12px;color:var(--sa-text3)">{{ $ag->data_hora->format('d/m H:i') }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding:14px 16px" class="hide-mobile">
+                        <div style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $ag->data_hora->format('d/m/Y') }}</div>
+                        <div style="font-size:12px;color:var(--sa-text3)">{{ $ag->data_hora->format('H:i') }} • {{ $ag->duracao }}min</div>
+                    </td>
+                    <td style="padding:14px 16px;font-size:14px;color:var(--sa-text2)" class="hide-mobile">{{ $ag->profissional->name ?? '—' }}</td>
+                    <td style="padding:14px 16px" class="hide-mobile">
+                        @if($ag->servico)
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <div style="width:8px;height:8px;border-radius:50%;background:{{ $ag->servico->cor }};flex-shrink:0"></div>
+                            <span style="font-size:13px;color:var(--sa-text2)">{{ $ag->servico->nome }}</span>
+                        </div>
+                        @else
+                        <span style="font-size:14px;color:var(--sa-text3)">—</span>
+                        @endif
+                    </td>
+                    <td style="padding:14px 16px">
+                        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;{{ $badgeStyle }}">{{ ucfirst($ag->status) }}</span>
+                    </td>
+                    <td style="padding:14px 16px;text-align:right">
+                        <div style="display:inline-flex;gap:4px">
+                            <a href="{{ route('agendamentos.show', $ag) }}" title="Ver" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);text-decoration:none;transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </a>
+                            @can('update', $ag)
+                            <a href="{{ route('agendamentos.edit', $ag) }}" title="Editar" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);text-decoration:none;transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
+                            @endcan
+                            @can('delete', $ag)
+                            <form method="POST" action="{{ route('agendamentos.destroy', $ag) }}" onsubmit="return confirmDelete(event)">
+                                @csrf @method('DELETE')
+                                <button type="submit" title="Cancelar" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);transition:all 150ms" onmouseover="this.style.borderColor='#e53e3e';this.style.color='#e53e3e'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </form>
+                            @endcan
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" style="padding:48px 16px;text-align:center;color:var(--sa-text3);font-size:14px">
+                        Nenhum agendamento encontrado.
+                        @can('create', \App\Models\Agendamento::class)
+                        <a href="{{ route('agendamentos.create') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none"> Criar agendamento</a>
+                        @endcan
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        @if($agendamentos->hasPages())
+        <div style="padding:12px 16px;border-top:1px solid var(--sa-border);background:var(--sa-surface2)">
+            {{ $agendamentos->links() }}
+        </div>
+        @endif
+    </div>
 </div>
 
-@if($agendamentos->hasPages())
-<div class="mt-4">{{ $agendamentos->links() }}</div>
-@endif
+@push('scripts')
+<script>
+function confirmDelete(e) {
+    e.preventDefault();
+    const form = e.target;
+    Swal.fire({
+        title: 'Cancelar agendamento?',
+        text: 'O agendamento será marcado como cancelado.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, cancelar',
+        cancelButtonText: 'Não',
+        confirmButtonColor: '#e53e3e',
+    }).then(r => { if (r.isConfirmed) form.submit(); });
+    return false;
+}
+</script>
+@endpush
 @endsection
