@@ -1,0 +1,21 @@
+# Regras Arquiteturais -- suaAgenda
+# Versao: v1.1.0 | Clip de Papel v3.3
+## STACK
+- Laravel 13 + PHP 8.4 + MySQL (suaAgenda)
+- Frontend: Blade + Alpine.js 3 + Tailwind CSS 4
+- ACL: spatie/laravel-permission 7.x
+- PWA: ladumor/laravel-pwa
+- Alertas: SweetAlert2 11.x
+- Testes: Pest PHP | Arquitetura: Multi-Empresa
+## REGRAS ABSOLUTAS
+1. SOFT DELETE em todo Model
+2. SWEETALERT2: unico sistema de alertas
+3. GATE::BEFORE: super_admin tem acesso irrestrito
+4. POLICIES em toda action de Controller
+5. FORM REQUESTS em todo store() e update()
+6. N+1 PROIBIDO: sempre with() em listagens
+7. updateQuietly() para campos de auditoria
+## USUARIOS FIXOS
+- adrianoelite@msn.com -- super_admin
+- adrianoelite1980@gmail.com -- admin_empresa
+- ALTERAR SENHA ANTES DE PRODUCAO
