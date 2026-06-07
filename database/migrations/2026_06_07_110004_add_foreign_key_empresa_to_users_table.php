@@ -11,17 +11,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->uuid('empresa_id')->nullable()->after('email');
-            $table->boolean('ativo')->default(true)->after('empresa_id');
-            $table->softDeletes();
+            $table->foreign('empresa_id')
+                ->references('id')
+                ->on('companies')
+                ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['empresa_id', 'ativo']);
-            $table->dropSoftDeletes();
+            $table->dropForeign(['empresa_id']);
         });
     }
 };
