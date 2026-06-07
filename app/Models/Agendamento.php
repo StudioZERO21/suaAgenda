@@ -27,8 +27,10 @@ class Agendamento extends Model
         'company_id',
         'profissional_id',
         'cliente_id',
+        'servico_id',
         'data_hora',
         'duracao',
+        'valor',
         'status',
         'observacao',
     ];
@@ -38,6 +40,7 @@ class Agendamento extends Model
         return [
             'data_hora' => 'datetime',
             'duracao' => 'integer',
+            'valor' => 'decimal:2',
         ];
     }
 
@@ -54,6 +57,11 @@ class Agendamento extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    public function servico(): BelongsTo
+    {
+        return $this->belongsTo(Servico::class);
     }
 
     public function scopeAtivo(Builder $query): Builder

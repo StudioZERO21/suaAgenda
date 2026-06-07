@@ -5,8 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dev\DevLoginController;
+use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\ServicoController;
 use App\Http\Middleware\SetTenantMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +27,9 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('agendamentos', AgendamentoController::class);
+    Route::resource('clientes', ClienteController::class);
+    Route::resource('servicos', ServicoController::class)->except(['show']);
+    Route::resource('profissionais', ProfissionalController::class);
 });
 
 if (app()->isLocal()) {

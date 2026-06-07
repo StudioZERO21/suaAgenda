@@ -19,7 +19,7 @@ class AgendamentoController extends Controller
     {
         $this->authorize('viewAny', Agendamento::class);
 
-        $agendamentos = Agendamento::with(['profissional', 'cliente'])
+        $agendamentos = Agendamento::with(['profissional', 'cliente', 'servico'])
             ->where('company_id', auth()->user()->empresa_id)
             ->ativo()
             ->orderBy('data_hora')

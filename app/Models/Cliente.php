@@ -22,6 +22,7 @@ class Cliente extends Model
         'email',
         'data_nasc',
         'lgpd_consent',
+        'observacao',
     ];
 
     protected function casts(): array
