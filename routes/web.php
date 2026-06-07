@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Middleware\SetTenantMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -24,3 +25,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::resource('agendamentos', AgendamentoController::class);
 });
+
+if (app()->isLocal()) {
+    Route::post('/dev/login', [DevLoginController::class, 'login'])->name('dev.login');
+}

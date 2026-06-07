@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,20 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return view('auth.login');
+        $devUsers = collect();
+        if (app()->isLocal()) {
+            $devUsers = User::with('roles')
+                ->whereIn('email', [
+                    'adrianoelite@msn.com',
+                    'adrianoelite1980@gmail.com',
+                    'carlos@barbearia.test',
+                    'joao@barbearia.test',
+                    'maria@cliente.test',
+                ])
+                ->get();
+        }
+
+        return view('auth.login', compact('devUsers'));
     }
 
     public function login(LoginRequest $request): RedirectResponse

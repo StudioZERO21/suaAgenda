@@ -3,39 +3,116 @@
 @section('title', 'Login')
 
 @section('content')
-<h2 class="text-3xl font-black tracking-tighter uppercase mb-2">Login</h2>
-<p class="text-slate-500 dark:text-slate-400 text-sm mb-10">Insira suas credenciais para acessar o painel de controle.</p>
 
-<form method="POST" action="{{ route('login') }}" class="space-y-8">
+{{-- Tabs --}}
+<div class="sa-tabs">
+    <a href="{{ route('login') }}" class="sa-tab active">Entrar</a>
+    <a href="{{ route('register') }}" class="sa-tab">Criar conta</a>
+</div>
+
+<h2 style="font-size:24px;font-weight:700;color:var(--sa-text1);margin:0 0 6px">Bem-vindo de volta</h2>
+<p style="font-size:14px;color:var(--sa-text3);margin:0 0 28px">Acesse sua conta para continuar</p>
+
+<form method="POST" action="{{ route('login') }}" style="display:flex;flex-direction:column;gap:16px">
     @csrf
 
-    <div class="group">
-        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-emerald-500 transition-colors">E-mail</label>
-        <input type="email" name="email" value="{{ old('email') }}" required autofocus
-               class="w-full mt-2 bg-transparent border-b-2 border-slate-200 dark:border-slate-800 py-3 font-mono text-lg outline-none focus:border-emerald-500 transition-all">
-        @error('email')<p class="text-red-500 text-xs mt-2 font-bold">{{ $message }}</p>@enderror
-    </div>
-
-    <div class="group">
-        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-emerald-500 transition-colors">Senha</label>
-        <input type="password" name="password" required
-               class="w-full mt-2 bg-transparent border-b-2 border-slate-200 dark:border-slate-800 py-3 font-mono text-lg outline-none focus:border-emerald-500 transition-all">
-        @error('password')<p class="text-red-500 text-xs mt-2 font-bold">{{ $message }}</p>@enderror
-    </div>
-
-    <div class="flex items-center justify-between">
-        <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
-            <input type="checkbox" name="remember" class="accent-emerald-600"> Lembrar-me
+    <div>
+        <label class="sa-label" for="email">
+            E-mail <span style="color:var(--sa-secondary)">*</span>
         </label>
+        <div class="sa-field">
+            <span class="sa-field-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+            </span>
+            <input type="email" name="email" id="email" value="{{ old('email') }}"
+                   class="sa-input {{ $errors->has('email') ? 'is-error' : '' }}"
+                   placeholder="seu@email.com" required autofocus>
+        </div>
+        @error('email')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
-    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-5 rounded-lg font-black tracking-[0.2em] shadow-xl transition-all uppercase">
-        Acessar Sistema
+    <div>
+        <label class="sa-label" for="password">
+            Senha <span style="color:var(--sa-secondary)">*</span>
+        </label>
+        <div class="sa-field">
+            <span class="sa-field-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+            </span>
+            <input type="password" name="password" id="password"
+                   class="sa-input {{ $errors->has('password') ? 'is-error' : '' }}"
+                   placeholder="Sua senha" required>
+        </div>
+        @error('password')<p class="sa-error">{{ $message }}</p>@enderror
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--sa-text2)">
+            <input type="checkbox" name="remember" style="width:14px;height:14px;accent-color:var(--sa-primary);cursor:pointer">
+            Lembrar-me
+        </label>
+        <span style="font-size:13px;color:var(--sa-secondary);font-weight:600;cursor:pointer">Esqueci a senha</span>
+    </div>
+
+    <button type="submit" class="sa-btn-primary" style="margin-top:4px">
+        Entrar
     </button>
+
+    <div class="sa-divider">ou continue com</div>
+
+    <div style="display:flex;gap:10px">
+        <button type="button" class="sa-btn-outline">Google</button>
+        <button type="button" class="sa-btn-outline">Apple</button>
+    </div>
 </form>
 
-<p class="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
+<p style="font-size:13px;color:var(--sa-text3);text-align:center;margin:16px 0 0">
     Não tem conta?
-    <a href="{{ route('register') }}" class="text-emerald-500 font-semibold hover:underline">Criar gratuitamente</a>
+    <a href="{{ route('register') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">Cadastre-se grátis</a>
 </p>
+
+{{-- ── Dev Quick Login (apenas ambiente local) ──────────────── --}}
+@if(app()->isLocal() && isset($devUsers) && $devUsers->count())
+<div class="dev-panel">
+    <div class="dev-panel-title">⚡ Login Rápido — Desenvolvimento</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+        @foreach($devUsers as $user)
+        @php
+            $role     = $user->roles->first();
+            $roleName = $role?->name ?? '';
+            $bgColor  = match($roleName) {
+                'super_admin'   => '#7c3aed',
+                'admin_empresa' => '#1a1a1a',
+                'gestor'        => '#0369a1',
+                'analista'      => '#059669',
+                default         => '#64748b',
+            };
+            $words    = explode(' ', trim($user->name));
+            $initials = strtoupper(substr($words[0] ?? '', 0, 1)) . strtoupper(substr($words[1] ?? '', 0, 1));
+        @endphp
+        <form method="POST" action="{{ route('dev.login') }}" style="margin:0">
+            @csrf
+            <input type="hidden" name="user_id" value="{{ $user->id }}">
+            <button type="submit" class="dev-user-btn">
+                <div class="dev-avatar" style="background:{{ $bgColor }}">{{ $initials }}</div>
+                <div style="flex:1;min-width:0">
+                    <div class="dev-user-name">{{ $user->name }}</div>
+                    <div class="dev-user-email">{{ $user->email }}</div>
+                </div>
+                @if($role)
+                <div class="dev-badge">{{ $role->name }}</div>
+                @endif
+            </button>
+        </form>
+        @endforeach
+    </div>
+</div>
+@endif
+
 @endsection
