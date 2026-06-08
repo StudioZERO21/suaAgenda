@@ -30,11 +30,16 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Barbearia Teste',
                 'plano' => 'trial',
+                'plan_slug' => 'starter',
                 'lgpd_consent' => true,
                 'trial_ends_at' => now()->addDays(30),
                 'ativo' => true,
             ]
         );
+
+        if (! $company->plan_slug) {
+            $company->update(['plan_slug' => 'starter']);
+        }
 
         // Admin vinculado à Barbearia Teste
         $admin = User::firstOrCreate(

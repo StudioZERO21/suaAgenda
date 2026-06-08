@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             UserSeeder::class,
             ServicoSeeder::class,
+            ClienteSeeder::class,
+            AgendamentoSeeder::class,
         ]);
     }
 }
