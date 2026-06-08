@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreLancamentoRequest;
 use App\Models\Agendamento;
+use App\Models\Lancamento;
 use App\Support\SaDemoData;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -112,6 +115,34 @@ class FinanceiroController extends Controller
             'inicio',
             'fim',
         ));
+    }
+
+    public function storeLancamento(StoreLancamentoRequest $request): RedirectResponse
+    {
+        Lancamento::create([
+            ...$request->validated(),
+            'company_id' => auth()->user()->empresa_id,
+        ]);
+
+        return back()->with('success', 'Lançamento criado.');
+    }
+
+    public function updateLancamento(StoreLancamentoRequest $request, Lancamento $lancamento): RedirectResponse
+    {
+        abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
+
+        $lancamento->update($request->validated());
+
+        return back()->with('success', 'Lançamento atualizado.');
+    }
+
+    public function destroyLancamento(Lancamento $lancamento): RedirectResponse
+    {
+        abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
+
+        $lancamento->delete();
+
+        return back()->with('success', 'Lançamento removido.');
     }
 
     /**

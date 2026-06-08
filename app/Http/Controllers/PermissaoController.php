@@ -4,19 +4,30 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Cargo;
 use App\Support\SaDemoData;
 use Illuminate\View\View;
 
-/**
- * Gestão de grupos de permissão ACL (MVP — dados de demonstração).
- */
 class PermissaoController extends Controller
 {
-    /**
-     * Exibe grupos de acesso e catálogo de permissões.
-     */
     public function index(): View
     {
+        $companyId = auth()->user()->empresa_id;
+
+        $cargos = Cargo::where('company_id', $companyId)
+            ->withCount('profissionais as membros')
+            ->orderBy('nome')
+            ->get()
+            ->map(fn (Cargo $c): array => [
+                'id' => $c->id,
+                'nome' => $c->nome,
+                'nivel' => $c->nivel,
+                'cor' => $c->cor,
+                'descricao' => $c->descricao,
+                'comissao' => (float) ($c->comissao_pct ?? 0),
+                'membros' => (int) ($c->membros ?? 0),
+            ]);
+
         $roleGroups = [
             1 => 'g-admin',
             2 => 'g-mgr',
@@ -28,7 +39,7 @@ class PermissaoController extends Controller
         return view('permissoes.index', [
             'catalogo' => SaDemoData::aclCatalogo(),
             'gruposJson' => SaDemoData::gruposAcesso(),
-            'cargosJson' => SaDemoData::cargos(),
+            'cargosJson' => $cargos,
             'roleGroupsJson' => $roleGroups,
         ]);
     }

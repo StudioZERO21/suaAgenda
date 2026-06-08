@@ -207,8 +207,27 @@ function pdvApp() {
         clearCart() { this.cart = []; this.discount = 0; this.clientId = ''; this.cashGiven = ''; this.paid = false; },
         finalize() {
             if (this.cart.length === 0) return Swal.fire({ title: 'Atenção', text: 'Adicione itens ao carrinho.', icon: 'warning', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
-            this.paid = true;
-            Swal.fire({ title: 'Venda finalizada!', text: 'Total: ' + this.formatCurrency(this.total), icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch('/pdv/venda', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify({
+                    cliente_id: this.clientId || null,
+                    items: this.cart.map(i => ({ id: i.id, type: i.type, name: i.name, price: i.price, qty: i.qty })),
+                    subtotal: this.subtotal,
+                    desconto: this.discountAmt,
+                    total: this.total,
+                    metodo_pagamento: this.method,
+                }),
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(() => {
+                this.paid = true;
+                Swal.fire({ title: 'Venda finalizada!', text: 'Total: ' + this.formatCurrency(this.total), icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            })
+            .catch(() => {
+                Swal.fire({ title: 'Erro', text: 'Não foi possível registrar a venda.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            });
         },
     };
 }

@@ -250,12 +250,13 @@ function cargosApp() {
         },
 
         deleteCargo(id) {
-            const cargo = this.cargos.find(c => c.id === id);
-            if (cargo?.nome === 'Administrador') {
-                return this.toast('Cargo padrão não pode ser excluído', 'error');
-            }
-            this.cargos = this.cargos.filter(c => c.id !== id);
-            this.toast('Cargo removido', 'error');
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(`/cargos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } })
+                .then(() => {
+                    this.cargos = this.cargos.filter(c => c.id !== id);
+                    this.toast('Cargo removido');
+                })
+                .catch(() => this.toast('Erro ao remover', 'error'));
         },
 
         saveCargo() {
@@ -263,35 +264,30 @@ function cargosApp() {
                 return this.toast('Preencha o nome do cargo', 'error');
             }
             this.saving = true;
-            setTimeout(() => {
-                const nivelLabel = this.nivelLabel(this.form.nivel);
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const url = this.editing ? `/cargos/${this.editing.id}` : '/cargos';
+            const method = this.editing ? 'PUT' : 'POST';
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify(this.form),
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(data => {
                 if (this.editing) {
-                    this.cargos = this.cargos.map(c => c.id === this.editing.id ? {
-                        ...c,
-                        nome: this.form.nome.trim(),
-                        nivel: this.form.nivel,
-                        nivel_label: nivelLabel,
-                        cor: this.form.cor,
-                        descricao: this.form.descricao,
-                        comissao: this.form.comissao,
-                    } : c);
+                    this.cargos = this.cargos.map(c => c.id === this.editing.id ? data : c);
                     this.toast('Cargo atualizado!', 'success');
                 } else {
-                    this.cargos.push({
-                        id: Date.now(),
-                        nome: this.form.nome.trim(),
-                        nivel: this.form.nivel,
-                        nivel_label: nivelLabel,
-                        cor: this.form.cor,
-                        descricao: this.form.descricao,
-                        comissao: this.form.comissao,
-                        membros: 0,
-                    });
+                    this.cargos.push(data);
                     this.toast('Cargo criado!', 'success');
                 }
                 this.saving = false;
                 this.closeModal();
-            }, 600);
+            })
+            .catch(() => {
+                this.saving = false;
+                this.toast('Erro ao salvar', 'error');
+            });
         },
     };
 }

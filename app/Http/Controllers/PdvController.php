@@ -5,41 +5,41 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Lancamento;
+use App\Models\Produto;
 use App\Models\Servico;
-use App\Support\SaDemoData;
+use App\Models\Venda;
+use App\Models\VendaItem;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-/**
- * Ponto de Venda — catálogo de produtos (demo) e serviços (banco).
- */
 class PdvController extends Controller
 {
-    /**
-     * Exibe a tela do PDV com itens disponíveis para venda.
-     */
     public function index(): View
     {
-        $empresaId = auth()->user()->empresa_id;
+        $companyId = auth()->user()->empresa_id;
 
-        // Catálogo formatado para consumo direto pelo Alpine (evita lógica
-        // complexa no Blade, que quebra o parser do diretivo @json).
-        $produtosJs = collect(SaDemoData::produtos())
+        $produtosJs = Produto::where('company_id', $companyId)
             ->where('ativo', true)
-            ->map(fn (array $p): array => [
-                'key' => 'prd-'.$p['id'],
-                'id' => $p['id'],
-                'name' => $p['nome'],
-                'price' => (float) $p['preco'],
-                'stock' => $p['estoque'],
+            ->orderBy('nome')
+            ->get()
+            ->map(fn (Produto $p): array => [
+                'key' => 'prd-'.$p->id,
+                'id' => $p->id,
+                'name' => $p->nome,
+                'price' => (float) $p->preco,
+                'stock' => $p->estoque,
                 'type' => 'product',
             ])
             ->values()
             ->all();
 
-        $servicosJs = Servico::where('company_id', $empresaId)
+        $servicosJs = Servico::where('company_id', $companyId)
             ->where('ativo', true)
             ->orderBy('nome')
-            ->get(['id', 'nome', 'preco', 'duracao_minutos', 'cor'])
+            ->get()
             ->map(fn (Servico $s): array => [
                 'key' => 'svc-'.$s->id,
                 'id' => $s->id,
@@ -52,10 +52,73 @@ class PdvController extends Controller
             ])
             ->all();
 
-        $clientes = Cliente::where('company_id', $empresaId)
+        $clientes = Cliente::where('company_id', $companyId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
         return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes'));
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['required', 'string'],
+            'items.*.type' => ['required', 'in:product,service'],
+            'items.*.name' => ['required', 'string'],
+            'items.*.price' => ['required', 'numeric', 'min:0'],
+            'items.*.qty' => ['required', 'integer', 'min:1'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+            'desconto' => ['required', 'numeric', 'min:0'],
+            'total' => ['required', 'numeric', 'min:0'],
+            'metodo_pagamento' => ['required', 'string'],
+        ]);
+
+        DB::transaction(function () use ($request, $companyId) {
+            $venda = Venda::create([
+                'company_id' => $companyId,
+                'cliente_id' => $request->input('cliente_id') ?: null,
+                'subtotal' => $request->subtotal,
+                'desconto' => $request->desconto,
+                'total' => $request->total,
+                'metodo_pagamento' => $request->metodo_pagamento,
+            ]);
+
+            foreach ($request->items as $item) {
+                VendaItem::create([
+                    'venda_id' => $venda->id,
+                    'produto_id' => $item['type'] === 'product' ? $item['id'] : null,
+                    'servico_id' => $item['type'] === 'service' ? $item['id'] : null,
+                    'descricao' => $item['name'],
+                    'qtd' => $item['qty'],
+                    'preco_unit' => $item['price'],
+                    'total' => $item['price'] * $item['qty'],
+                ]);
+
+                // Decrease stock for products
+                if ($item['type'] === 'product') {
+                    Produto::where('id', $item['id'])
+                        ->where('company_id', $companyId)
+                        ->decrement('estoque', $item['qty']);
+                }
+            }
+
+            // Auto-create lancamento for the sale
+            Lancamento::create([
+                'company_id' => $companyId,
+                'venda_id' => $venda->id,
+                'tipo' => 'receita',
+                'descricao' => 'Venda PDV #'.$venda->id,
+                'categoria' => 'venda',
+                'valor' => $request->total,
+                'data' => now()->toDateString(),
+                'status' => 'pago',
+                'metodo_pagamento' => $request->metodo_pagamento,
+            ]);
+        });
+
+        return response()->json(['ok' => true], 201);
     }
 }
