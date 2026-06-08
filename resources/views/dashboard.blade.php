@@ -28,31 +28,49 @@
     <p style="font-size:14px;color:var(--sa-text3);margin:0">{{ $hoje->translatedFormat('l, d \d\e F \d\e Y') }}</p>
 </div>
 
-{{-- Linha 1: Stats do dia --}}
+{{-- Linha 1: Stats do dia (TintCard) --}}
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px">
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:8px">Agenda Hoje</div>
-        <div style="font-size:30px;font-weight:700;color:var(--sa-text1);font-family:'Poppins',sans-serif;line-height:1">{{ $stats['agendamentosHoje'] }}</div>
-        <div style="font-size:12px;color:var(--sa-text3);margin-top:6px">pendentes e confirmados</div>
+
+    {{-- Agenda Hoje --}}
+    <div style="background:color-mix(in srgb,var(--sa-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-primary) 14%,transparent);border-radius:16px;padding:22px 22px 0;position:relative;overflow:hidden;min-height:148px;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;color:var(--sa-primary);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;opacity:.75">Agenda Hoje</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:34px;font-weight:800;color:var(--sa-text1);line-height:1;letter-spacing:-1px">{{ $stats['agendamentosHoje'] }}</div>
+        <div style="font-size:12px;color:var(--sa-text3);margin-top:8px">pendentes e confirmados</div>
+        <div style="position:absolute;bottom:-32px;right:-26px;opacity:.08;pointer-events:none">
+            <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="var(--sa-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
     </div>
 
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:8px">Finalizados Hoje</div>
-        <div style="font-size:30px;font-weight:700;color:#065f46;font-family:'Poppins',sans-serif;line-height:1">{{ $stats['finalizadosHoje'] }}</div>
-        <div style="font-size:12px;color:var(--sa-text3);margin-top:6px">atendimentos concluídos</div>
+    {{-- Finalizados Hoje --}}
+    <div style="background:color-mix(in srgb,#10b981 8%,transparent);border:1px solid color-mix(in srgb,#10b981 14%,transparent);border-radius:16px;padding:22px 22px 0;position:relative;overflow:hidden;min-height:148px;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;color:#059669;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;opacity:.75">Finalizados Hoje</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:34px;font-weight:800;color:var(--sa-text1);line-height:1;letter-spacing:-1px">{{ $stats['finalizadosHoje'] }}</div>
+        <div style="font-size:12px;color:var(--sa-text3);margin-top:8px">atendimentos concluídos</div>
+        <div style="position:absolute;bottom:-32px;right:-26px;opacity:.08;pointer-events:none">
+            <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
     </div>
 
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:8px">Receita Hoje</div>
-        <div style="font-size:24px;font-weight:700;color:var(--sa-secondary);font-family:'Poppins',sans-serif;line-height:1">R$ {{ number_format((float)$stats['receitaHoje'], 2, ',', '.') }}</div>
-        <div style="font-size:12px;color:var(--sa-text3);margin-top:6px">de serviços finalizados</div>
+    {{-- Receita Hoje --}}
+    <div style="background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 14%,transparent);border-radius:16px;padding:22px 22px 0;position:relative;overflow:hidden;min-height:148px;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;color:var(--sa-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;opacity:.85">Receita Hoje</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;color:var(--sa-text1);line-height:1;letter-spacing:-1px">R$ {{ number_format((float)$stats['receitaHoje'], 2, ',', '.') }}</div>
+        <div style="font-size:12px;color:var(--sa-text3);margin-top:8px">de serviços finalizados</div>
+        <div style="position:absolute;bottom:-32px;right:-26px;opacity:.1;pointer-events:none">
+            <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
     </div>
 
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:8px">Receita do Mês</div>
-        <div style="font-size:24px;font-weight:700;color:var(--sa-secondary);font-family:'Poppins',sans-serif;line-height:1">R$ {{ number_format((float)$stats['receitaMes'], 2, ',', '.') }}</div>
-        <div style="font-size:12px;color:var(--sa-text3);margin-top:6px">{{ $hoje->format('F Y') }}</div>
+    {{-- Receita do Mês --}}
+    <div style="background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 14%,transparent);border-radius:16px;padding:22px 22px 0;position:relative;overflow:hidden;min-height:148px;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;color:var(--sa-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;opacity:.85">Receita do Mês</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;color:var(--sa-text1);line-height:1;letter-spacing:-1px">R$ {{ number_format((float)$stats['receitaMes'], 2, ',', '.') }}</div>
+        <div style="font-size:12px;color:var(--sa-text3);margin-top:8px">{{ $hoje->translatedFormat('F Y') }}</div>
+        <div style="position:absolute;bottom:-32px;right:-26px;opacity:.1;pointer-events:none">
+            <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
     </div>
+
 </div>
 
 {{-- Linha 2: Totais de cadastro --}}
@@ -101,8 +119,10 @@
         @forelse($stats['proximosAgendamentos'] as $ag)
         @php
             $badgeStyle = match($ag->status) {
-                'confirmado' => 'background:rgba(5,150,105,.1);color:#065f46',
-                default      => 'background:rgba(245,158,11,.1);color:#92400e',
+                'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
+                'finalizado' => 'background:rgba(107,114,128,.12);color:#6b7280',
+                'cancelado'  => 'background:rgba(239,68,68,.1);color:#dc2626',
+                default      => 'background:rgba(245,158,11,.12);color:#d97706',
             };
         @endphp
         <div style="padding:14px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;gap:12px" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
@@ -114,7 +134,7 @@
                 <div style="font-size:14px;font-weight:600;color:var(--sa-text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $ag->cliente?->name ?? '—' }}</div>
                 <div style="font-size:12px;color:var(--sa-text3);margin-top:2px">{{ $ag->servico?->nome ?? '—' }} • {{ $ag->profissional?->name ?? '—' }}</div>
             </div>
-            <span style="flex-shrink:0;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}">{{ ucfirst($ag->status) }}</span>
+            <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
         </div>
         @empty
         <div style="padding:40px 20px;text-align:center;color:var(--sa-text3);font-size:14px">
@@ -132,10 +152,10 @@
 
         @php
             $statusLabels = [
-                'pendente'   => ['label' => 'Pendente',   'bg' => 'rgba(245,158,11,.1)',  'color' => '#92400e'],
-                'confirmado' => ['label' => 'Confirmado', 'bg' => 'rgba(5,150,105,.1)',   'color' => '#065f46'],
-                'finalizado' => ['label' => 'Finalizado', 'bg' => 'rgba(107,114,128,.1)','color' => '#374151'],
-                'cancelado'  => ['label' => 'Cancelado',  'bg' => 'rgba(239,68,68,.1)',   'color' => '#991b1b'],
+                'pendente'   => ['label' => 'Pendente',   'bg' => 'rgba(245,158,11,.12)',  'color' => '#d97706'],
+                'confirmado' => ['label' => 'Confirmado', 'bg' => 'rgba(16,185,129,.12)',  'color' => '#059669'],
+                'finalizado' => ['label' => 'Finalizado', 'bg' => 'rgba(107,114,128,.12)', 'color' => '#6b7280'],
+                'cancelado'  => ['label' => 'Cancelado',  'bg' => 'rgba(239,68,68,.1)',    'color' => '#dc2626'],
             ];
             $totalHoje = array_sum($stats['statusDistribuicao']);
         @endphp

@@ -65,9 +65,9 @@
                     <td style="padding:14px 16px;font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $servico->precoFormatado() }}</td>
                     <td style="padding:14px 16px" class="hide-mobile">
                         @if($servico->ativo)
-                        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(5,150,105,.1);color:#065f46">Ativo</span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Ativo</span>
                         @else
-                        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(107,114,128,.1);color:#374151">Inativo</span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(107,114,128,.12);color:#6b7280"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Inativo</span>
                         @endif
                     </td>
                     <td style="padding:14px 16px;text-align:right">

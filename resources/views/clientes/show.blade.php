@@ -17,7 +17,7 @@
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $cliente->name }}</h1>
                     @if($cliente->lgpd_consent)
-                    <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(5,150,105,.1);color:#065f46">LGPD</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669"><span style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></span>LGPD</span>
                     @endif
                 </div>
                 <p style="font-size:13px;color:var(--sa-text3);margin:2px 0 0">Cliente desde {{ $cliente->created_at->format('d/m/Y') }}</p>
@@ -93,13 +93,13 @@
 
                     <div style="padding-top:8px;border-top:1px solid var(--sa-border)">
                         @if($cliente->lgpd_consent)
-                        <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(5,150,105,.08);color:#065f46;display:inline-flex;align-items:center;gap:5px">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669">
+                            <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
                             Consentimento LGPD
                         </span>
                         @else
-                        <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(229,62,62,.08);color:#c53030;display:inline-flex;align-items:center;gap:5px">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(239,68,68,.1);color:#dc2626">
+                            <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
                             Sem consentimento LGPD
                         </span>
                         @endif
@@ -125,17 +125,17 @@
             @forelse($cliente->agendamentos as $ag)
             @php
                 $badgeStyle = match($ag->status) {
-                    'confirmado' => 'background:rgba(5,150,105,.1);color:#065f46',
-                    'finalizado' => 'background:rgba(107,114,128,.1);color:#374151',
-                    'cancelado'  => 'background:rgba(239,68,68,.1);color:#991b1b',
-                    default      => 'background:rgba(245,158,11,.1);color:#92400e',
+                    'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
+                    'finalizado' => 'background:rgba(107,114,128,.12);color:#6b7280',
+                    'cancelado'  => 'background:rgba(239,68,68,.1);color:#dc2626',
+                    default      => 'background:rgba(245,158,11,.12);color:#d97706',
                 };
             @endphp
             <div style="padding:14px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between;gap:12px" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
                 <div style="min-width:0">
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
                         <span style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $ag->data_hora->format('d/m/Y H:i') }}</span>
-                        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}">{{ ucfirst($ag->status) }}</span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
                     </div>
                     <div style="font-size:12px;color:var(--sa-text3)">
                         {{ $ag->servico?->nome ?? '—' }} • {{ $ag->profissional?->name ?? '—' }}

@@ -55,7 +55,7 @@
                             <div>
                                 <a href="{{ route('clientes.show', $cliente) }}" style="font-size:14px;font-weight:600;color:var(--sa-text1);text-decoration:none;transition:color 150ms" onmouseover="this.style.color='var(--sa-secondary)'" onmouseout="this.style.color='var(--sa-text1)'">{{ $cliente->name }}</a>
                                 @if($cliente->lgpd_consent)
-                                <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:rgba(5,150,105,.1);color:#065f46;margin-left:6px">LGPD</span>
+                                <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669;margin-left:6px"><span style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></span>LGPD</span>
                                 @endif
                             </div>
                         </div>

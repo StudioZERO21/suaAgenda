@@ -83,10 +83,10 @@
                 @php
                     $ini = strtoupper(substr($ag->cliente->name ?? '?', 0, 1));
                     $badgeStyle = match($ag->status) {
-                        'confirmado' => 'background:rgba(5,150,105,.1);color:#065f46',
-                        'finalizado' => 'background:rgba(107,114,128,.1);color:#374151',
-                        'cancelado'  => 'background:rgba(239,68,68,.1);color:#991b1b',
-                        default      => 'background:rgba(245,158,11,.1);color:#92400e',
+                        'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
+                        'finalizado' => 'background:rgba(107,114,128,.12);color:#6b7280',
+                        'cancelado'  => 'background:rgba(239,68,68,.1);color:#dc2626',
+                        default      => 'background:rgba(245,158,11,.12);color:#d97706',
                     };
                 @endphp
                 <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
@@ -115,7 +115,7 @@
                         @endif
                     </td>
                     <td style="padding:14px 16px">
-                        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;{{ $badgeStyle }}">{{ ucfirst($ag->status) }}</span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
                     </td>
                     <td style="padding:14px 16px;text-align:right">
                         <div style="display:inline-flex;gap:4px">
