@@ -5,7 +5,6 @@
 @section('content')
 @if(!$stats)
 {{-- Super admin sem empresa --}}
-<div style="max-width:640px">
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:32px;text-align:center">
         <div style="width:56px;height:56px;border-radius:14px;background:rgba(212,165,116,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -13,7 +12,6 @@
         <h1 style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:var(--sa-text1);margin:0 0 8px">Bem-vindo, {{ auth()->user()->name }}!</h1>
         <p style="font-size:14px;color:var(--sa-text3);margin:0">Você está autenticado como <strong>super_admin</strong>. Selecione uma empresa para visualizar o painel.</p>
     </div>
-</div>
 @else
 
 @php

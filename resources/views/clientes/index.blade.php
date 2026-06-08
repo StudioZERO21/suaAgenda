@@ -3,7 +3,6 @@
 @section('page-title', 'Clientes')
 
 @section('content')
-<div style="max-width:1100px">
 
     {{-- Cabeçalho --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
@@ -117,7 +116,6 @@
         </div>
         @endif
     </div>
-</div>
 
 @push('scripts')
 <script>

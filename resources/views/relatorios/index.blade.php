@@ -15,7 +15,6 @@
     ];
 @endphp
 
-<div style="max-width:1100px">
 
     {{-- Cabeçalho --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
@@ -176,6 +175,4 @@
         </div>
     </div>
     @endif
-
-</div>
 @endsection

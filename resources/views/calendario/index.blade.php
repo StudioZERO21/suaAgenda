@@ -175,7 +175,6 @@
         <span style="font-size:12px;color:var(--sa-text3);margin-left:8px">Nenhum agendamento nesta semana.</span>
         @endif
     </div>
-</div>
 
 @push('scripts')
 <script>

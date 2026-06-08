@@ -3,7 +3,6 @@
 @section('page-title', 'Profissionais')
 
 @section('content')
-<div style="max-width:1100px">
 
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <div>
@@ -107,7 +106,6 @@
         </div>
         @endif
     </div>
-</div>
 
 @push('scripts')
 <script>

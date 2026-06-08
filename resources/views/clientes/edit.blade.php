@@ -3,7 +3,6 @@
 @section('page-title', 'Editar Cliente')
 
 @section('content')
-<div style="max-width:640px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
         <a href="{{ route('clientes.show', $cliente) }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:8px;text-decoration:none;color:var(--sa-text3);transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -81,5 +80,4 @@
             </div>
         </form>
     </div>
-</div>
 @endsection

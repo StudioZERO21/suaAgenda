@@ -177,7 +177,6 @@
     </div>
     @endif
     @endcan
-</div>
 
 @push('scripts')
 <script>

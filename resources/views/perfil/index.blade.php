@@ -3,7 +3,6 @@
 @section('page-title', 'Meu Perfil')
 
 @section('content')
-<div style="max-width:640px">
 
     @if(session('success'))
     <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
@@ -95,5 +94,4 @@
             </div>
         </form>
     </div>
-</div>
 @endsection
