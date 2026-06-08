@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ConfiguracaoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\ProfissionalController;
@@ -31,6 +32,8 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::resource('clientes', ClienteController::class);
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
+    Route::get('configuracoes', [ConfiguracaoController::class, 'show'])->name('configuracoes');
+    Route::put('configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
 });
 
 if (app()->isLocal()) {
