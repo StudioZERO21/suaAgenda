@@ -86,6 +86,11 @@ class Company extends Model
         return $this->hasMany(Agendamento::class);
     }
 
+    public function portfolioItems(): HasMany
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
+
     public function scopeAtivo(Builder $query): Builder
     {
         return $query->where('ativo', true);

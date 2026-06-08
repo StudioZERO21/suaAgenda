@@ -221,8 +221,6 @@
 @push('scripts')
 <script>
 function portfolioApp() {
-    const profColors = { 1: '#1a1a1a', 2: '#d4a574', 3: '#6366f1' };
-
     return {
         photos: @json($fotosJson),
         categorias: @json($categorias),
@@ -236,10 +234,11 @@ function portfolioApp() {
         drag: false,
         uploadTitle: '',
         uploadCategory: 'Corte',
-        uploadProfId: '1',
+        uploadProfId: '',
 
         init() {
             this.$watch('photoModalOpen', val => { if (!val) this.selPhoto = null; });
+            if (this.profissionais.length) this.uploadProfId = String(this.profissionais[0].id);
         },
 
         get featuredCount() {
@@ -257,7 +256,7 @@ function portfolioApp() {
         },
 
         profColor(photo) {
-            return photo?.cor || profColors[photo?.prof_id] || '#888';
+            return photo?.cor || '#888';
         },
 
         formatDate(date) {
@@ -285,34 +284,52 @@ function portfolioApp() {
             this.toast('Foto recebida! Processando…', 'info');
         },
 
-        addPhoto() {
+        async addPhoto() {
             if (!this.uploadTitle.trim()) {
                 return this.toast('Adicione um título para a foto', 'error');
             }
-            const prof = this.profissionais.find(p => String(p.id) === this.uploadProfId);
-            const profId = Number(this.uploadProfId);
-            this.photos.unshift({
-                id: Date.now(),
-                prof_id: profId,
-                prof: prof?.nome || '',
-                categoria: this.uploadCategory,
-                titulo: this.uploadTitle.trim(),
-                data: new Date().toISOString().split('T')[0],
-                destaque: false,
-                cor: profColors[profId] || '#888',
-                tags: [],
+            const res = await fetch('{{ route('portfolio.fotos.store') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({
+                    titulo: this.uploadTitle.trim(),
+                    categoria: this.uploadCategory,
+                    profissional_id: this.uploadProfId || null,
+                }),
             });
+            if (!res.ok) {
+                return this.toast('Erro ao adicionar foto', 'error');
+            }
+            const data = await res.json();
+            const prof = this.profissionais.find(p => String(p.id) === this.uploadProfId);
+            data.cor = prof?.cor || '#888';
+            this.photos.unshift(data);
             this.uploadTitle = '';
             this.toast('Foto adicionada ao portfólio!', 'success');
         },
 
-        deletePhoto(id) {
-            this.photos = this.photos.filter(p => p.id !== id);
-            this.toast('Foto removida', 'error');
+        async deletePhoto(id) {
+            const res = await fetch(`/portfolio/fotos/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            });
+            if (res.ok || res.status === 204) {
+                this.photos = this.photos.filter(p => p.id !== id);
+                this.toast('Foto removida', 'error');
+            }
         },
 
-        toggleFeatured(id) {
-            this.photos = this.photos.map(p => p.id === id ? { ...p, destaque: !p.destaque } : p);
+        async toggleFeatured(id) {
+            const res = await fetch(`/portfolio/fotos/${id}/toggle`, {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.photos = this.photos.map(p => p.id === id ? { ...p, destaque: data.destaque } : p);
+                const msg = data.destaque ? 'Marcado como destaque!' : 'Destaque removido';
+                this.toast(msg, 'success');
+            }
         },
 
         publish() {

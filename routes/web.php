@@ -70,6 +70,11 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::put('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'updateLancamento'])->name('financeiro.lancamentos.update');
     Route::delete('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'destroyLancamento'])->name('financeiro.lancamentos.destroy');
     Route::get('site', [SitePublicoController::class, 'index'])->name('site.index');
+    Route::put('site/save', [SitePublicoController::class, 'save'])->name('site.save');
+
+    Route::post('portfolio/fotos', [PortfolioController::class, 'store'])->name('portfolio.fotos.store');
+    Route::delete('portfolio/fotos/{portfolioItem}', [PortfolioController::class, 'destroy'])->name('portfolio.fotos.destroy');
+    Route::patch('portfolio/fotos/{portfolioItem}/toggle', [PortfolioController::class, 'toggleFeatured'])->name('portfolio.fotos.toggle');
     Route::resource('clientes', ClienteController::class);
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);

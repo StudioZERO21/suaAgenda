@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-/**
- * Configurações da página pública de agendamento.
- */
 class SitePublicoController extends Controller
 {
-    /**
-     * Exibe as configurações do site público da empresa.
-     */
     public function index(): View
     {
         $company = auth()->user()->company;
@@ -59,5 +55,44 @@ class SitePublicoController extends Controller
             : null;
 
         return view('site.index', compact('company', 'site', 'publicUrl'));
+    }
+
+    public function save(Request $request): JsonResponse
+    {
+        $company = auth()->user()->company;
+
+        $data = $request->validate([
+            'headline' => ['nullable', 'string', 'max:255'],
+            'subheadline' => ['nullable', 'string', 'max:500'],
+            'cta_text' => ['nullable', 'string', 'max:100'],
+            'cta_secondary' => ['nullable', 'string', 'max:100'],
+            'show_stats' => ['nullable', 'boolean'],
+            'stats_items' => ['nullable', 'array', 'max:6'],
+            'stats_items.*.n' => ['string', 'max:20'],
+            'stats_items.*.l' => ['string', 'max:60'],
+            'show_services' => ['nullable', 'boolean'],
+            'show_portfolio' => ['nullable', 'boolean'],
+            'show_team' => ['nullable', 'boolean'],
+            'show_testimonials' => ['nullable', 'boolean'],
+            'show_store' => ['nullable', 'boolean'],
+            'show_booking_cta' => ['nullable', 'boolean'],
+            'show_map' => ['nullable', 'boolean'],
+            'confirmation_msg' => ['nullable', 'string', 'max:500'],
+            'reminder_msg' => ['nullable', 'string', 'max:500'],
+            'cancellation_msg' => ['nullable', 'string', 'max:500'],
+            'lgpd_msg' => ['nullable', 'string', 'max:500'],
+            'welcome_popup' => ['nullable', 'string', 'max:1000'],
+            'footer_text' => ['nullable', 'string', 'max:200'],
+            'meta_title' => ['nullable', 'string', 'max:60'],
+            'meta_desc' => ['nullable', 'string', 'max:160'],
+            'keywords' => ['nullable', 'string', 'max:255'],
+            'google_analytics' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $settings = $company->settings ?? [];
+        $settings['site'] = $data;
+        $company->update(['settings' => $settings]);
+
+        return response()->json(['success' => true]);
     }
 }
