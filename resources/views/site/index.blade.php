@@ -36,12 +36,21 @@
     tab: 'banner',
     saving: false,
     site: @json($site),
-    save() {
+    async save() {
         this.saving = true;
-        setTimeout(() => {
-            this.saving = false;
+        try {
+            const res = await fetch('{{ route('site.save') }}', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify(this.site),
+            });
+            if (!res.ok) throw new Error();
             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Configurações do site salvas!', showConfirmButton: false, timer: 2800, timerProgressBar: true });
-        }, 700);
+        } catch {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Erro ao salvar. Tente novamente.', showConfirmButton: false, timer: 2800 });
+        } finally {
+            this.saving = false;
+        }
     },
     uploadHint(msg) {
         Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: msg, showConfirmButton: false, timer: 2500 });
