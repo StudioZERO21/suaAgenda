@@ -27,7 +27,17 @@ class ProfissionalController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('profissionais.index', compact('profissionais'));
+        // Estatísticas agregadas (toda a empresa, não apenas a página atual)
+        // mantidas separadas da paginação para alimentar os stat cards do topo.
+        $base = Profissional::where('company_id', $empresa);
+        $stats = [
+            'total' => (clone $base)->count(),
+            'ativos' => (clone $base)->where('ativo', true)->count(),
+            'inativos' => (clone $base)->where('ativo', false)->count(),
+            'comissao_media' => (float) (clone $base)->where('ativo', true)->avg('comissao_pct'),
+        ];
+
+        return view('profissionais.index', compact('profissionais', 'stats'));
     }
 
     public function create(): View

@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use Illuminate\View\View;
+
+/**
+ * Configurações da página pública de agendamento.
+ */
+class SitePublicoController extends Controller
+{
+    /**
+     * Exibe as configurações do site público da empresa.
+     */
+    public function index(): View
+    {
+        $company = auth()->user()->company;
+        $settings = $company?->resolvedSettings() ?? [];
+        $site = $settings['site'] ?? [];
+
+        $defaults = [
+            'headline' => 'Arte em cada detalhe.',
+            'subheadline' => $company?->description
+                ?? 'Barbearia premium com os melhores profissionais. Experiência única desde 2018.',
+            'cta_text' => 'Agendar Horário',
+            'cta_secondary' => $company?->phone ?? '(11) 99999-0000',
+            'show_stats' => true,
+            'stats_items' => [
+                ['n' => '8+', 'l' => 'Anos de experiência'],
+                ['n' => '2.400', 'l' => 'Clientes atendidos'],
+                ['n' => '4.9★', 'l' => 'Avaliação média'],
+                ['n' => '98%', 'l' => 'Satisfação'],
+            ],
+            'show_services' => true,
+            'show_portfolio' => true,
+            'show_team' => true,
+            'show_testimonials' => true,
+            'show_store' => true,
+            'show_booking_cta' => true,
+            'show_map' => true,
+            'confirmation_msg' => 'Agendamento confirmado! Você receberá uma confirmação no WhatsApp em breve.',
+            'reminder_msg' => 'Lembrete: você tem um agendamento amanhã às {hora}. Nos vemos em breve!',
+            'cancellation_msg' => 'Seu agendamento foi cancelado. Sentimos muito, esperamos vê-lo em breve!',
+            'lgpd_msg' => 'Ao agendar, você concorda com nossa Política de Privacidade e autoriza o contato via WhatsApp.',
+            'welcome_popup' => '',
+            'footer_text' => 'Powered by suaAgenda.pro',
+            'meta_title' => ($company?->name ?? 'suaAgenda').' — Agendamento Online',
+            'meta_desc' => 'Agende seu horário online de forma rápida e segura.',
+            'keywords' => 'barbearia, corte, barba, agendamento online',
+            'google_analytics' => '',
+        ];
+
+        $site = array_replace_recursive($defaults, $site);
+
+        $publicUrl = $company?->slug
+            ? route('vitrine.show', $company->slug)
+            : null;
+
+        return view('site.index', compact('company', 'site', 'publicUrl'));
+    }
+}

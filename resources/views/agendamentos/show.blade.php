@@ -1,10 +1,10 @@
-ï»¿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Agendamento')
 @section('page-title', 'Agendamento')
 
 @section('content')
 
-    {{-- CabeÃ§alho --}}
+    {{-- Cabeçalho --}}
     @php
         $badgeStyle = match($agendamento->status) {
             'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
@@ -21,10 +21,10 @@
             </a>
             <div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \Ã \s H:i') }}</h1>
+                    <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \à\s H:i') }}</h1>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($agendamento->status) }}</span>
                 </div>
-                <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? 'â€”' }} â€¢ {{ $agendamento->profissional?->name ?? 'â€”' }}</p>
+                <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? '—' }} • {{ $agendamento->profissional?->name ?? '—' }}</p>
             </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -67,7 +67,7 @@
                 </div>
             </div>
             @else
-            <p style="font-size:14px;color:var(--sa-text3);margin:0">â€”</p>
+            <p style="font-size:14px;color:var(--sa-text3);margin:0">—</p>
             @endif
         </div>
 
@@ -85,12 +85,12 @@
                 </div>
             </div>
             @else
-            <p style="font-size:14px;color:var(--sa-text3);margin:0">â€”</p>
+            <p style="font-size:14px;color:var(--sa-text3);margin:0">—</p>
             @endif
         </div>
     </div>
 
-    {{-- Detalhes do serviÃ§o e horÃ¡rio --}}
+    {{-- Detalhes do serviço e horário --}}
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;margin-bottom:16px">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:20px">
             <div>
@@ -99,13 +99,13 @@
                 <div style="font-size:13px;color:var(--sa-text3)">{{ $agendamento->data_hora->format('H:i') }}</div>
             </div>
             <div>
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">DuraÃ§Ã£o</div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Duração</div>
                 <div style="font-size:15px;font-weight:600;color:var(--sa-text1)">{{ $agendamento->duracao }} min</div>
-                <div style="font-size:13px;color:var(--sa-text3)">TÃ©rmino: {{ $agendamento->data_hora->copy()->addMinutes($agendamento->duracao)->format('H:i') }}</div>
+                <div style="font-size:13px;color:var(--sa-text3)">Término: {{ $agendamento->data_hora->copy()->addMinutes($agendamento->duracao)->format('H:i') }}</div>
             </div>
             @if($agendamento->servico)
             <div>
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">ServiÃ§o</div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Serviço</div>
                 <div style="display:flex;align-items:center;gap:6px">
                     <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ $agendamento->servico->cor }}"></span>
                     <span style="font-size:15px;font-weight:600;color:var(--sa-text1)">{{ $agendamento->servico->nome }}</span>
@@ -123,13 +123,13 @@
 
         @if($agendamento->observacao)
         <div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--sa-border)">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">ObservaÃ§Ã£o</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Observação</div>
             <p style="font-size:14px;color:var(--sa-text2);line-height:1.6;margin:0;white-space:pre-wrap">{{ $agendamento->observacao }}</p>
         </div>
         @endif
     </div>
 
-    {{-- AÃ§Ãµes de status --}}
+    {{-- Ações de status --}}
     @can('update', $agendamento)
     @if($agendamento->status !== 'cancelado')
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
@@ -184,11 +184,11 @@ function confirmCancelamento(e) {
     const form = e.target;
     Swal.fire({
         title: 'Cancelar agendamento?',
-        text: 'Esta aÃ§Ã£o alterarÃ¡ o status para "Cancelado".',
+        text: 'Esta ação alterará o status para "Cancelado".',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, cancelar',
-        cancelButtonText: 'NÃ£o',
+        cancelButtonText: 'Não',
         confirmButtonColor: '#e53e3e',
     }).then(r => { if (r.isConfirmed) form.submit(); });
     return false;

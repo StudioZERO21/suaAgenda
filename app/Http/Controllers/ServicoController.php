@@ -20,13 +20,22 @@ class ServicoController extends Controller
 
         $empresa = auth()->user()->empresa_id;
 
-        $servicos = Servico::where('company_id', $empresa)
+        $baseQuery = Servico::where('company_id', $empresa);
+
+        $servicos = (clone $baseQuery)
             ->when($request->search, fn ($q) => $q->where('nome', 'like', "%{$request->search}%"))
             ->orderBy('nome')
             ->paginate(15)
             ->withQueryString();
 
-        return view('servicos.index', compact('servicos'));
+        $stats = [
+            'total' => (clone $baseQuery)->count(),
+            'ativos' => (clone $baseQuery)->where('ativo', true)->count(),
+            'ticket_medio' => (float) ((clone $baseQuery)->avg('preco') ?? 0),
+            'duracao_media' => (int) round((float) ((clone $baseQuery)->avg('duracao_minutos') ?? 0)),
+        ];
+
+        return view('servicos.index', compact('servicos', 'stats'));
     }
 
     public function create(): View

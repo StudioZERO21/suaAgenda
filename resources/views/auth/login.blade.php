@@ -18,38 +18,34 @@
 
     <div>
         <label class="sa-label" for="email">
-            E-mail <span style="color:var(--sa-secondary)">*</span>
+            E-mail <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>
             </span>
             <input type="email" name="email" id="email" value="{{ old('email') }}"
                    class="sa-input {{ $errors->has('email') ? 'is-error' : '' }}"
                    placeholder="seu@email.com" required autofocus>
         </div>
-        @error('email')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div>
         <label class="sa-label" for="password">
-            Senha <span style="color:var(--sa-secondary)">*</span>
+            Senha <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
             </span>
             <input type="password" name="password" id="password"
                    class="sa-input {{ $errors->has('password') ? 'is-error' : '' }}"
                    placeholder="Sua senha" required>
         </div>
-        @error('password')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -57,7 +53,7 @@
             <input type="checkbox" name="remember" style="width:14px;height:14px;accent-color:var(--sa-primary);cursor:pointer">
             Lembrar-me
         </label>
-        <span style="font-size:13px;color:var(--sa-secondary);font-weight:600;cursor:pointer">Esqueci a senha</span>
+        <a href="{{ route('password.request') }}" style="font-size:13px;color:var(--sa-secondary);font-weight:600;text-decoration:none">Esqueci a senha</a>
     </div>
 
     <button type="submit" class="sa-btn-primary" style="margin-top:4px">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\SaPalettes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,16 @@ class Company extends Model
         'plan_slug',
         'plano',
         'whatsapp',
+        'segment',
+        'email',
+        'phone',
+        'address',
+        'description',
+        'instagram',
+        'facebook',
+        'tiktok',
+        'youtube',
+        'settings',
         'lgpd_consent',
         'trial_ends_at',
         'ativo',
@@ -33,7 +44,21 @@ class Company extends Model
             'lgpd_consent' => 'boolean',
             'ativo' => 'boolean',
             'trial_ends_at' => 'datetime',
+            'settings' => 'array',
         ];
+    }
+
+    /**
+     * Retorna as configurações mescladas com os padrões do sistema.
+     *
+     * @return array<string, mixed>
+     */
+    public function resolvedSettings(): array
+    {
+        return array_replace_recursive(
+            SaPalettes::defaultCompanySettings(),
+            $this->settings ?? [],
+        );
     }
 
     public function plan(): BelongsTo

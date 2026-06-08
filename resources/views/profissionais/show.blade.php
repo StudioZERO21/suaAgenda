@@ -1,4 +1,4 @@
-Ôªø@extends('layouts.app')
+@extends('layouts.app')
 @section('title', $profissional->name)
 @section('page-title', 'Profissional')
 
@@ -13,7 +13,7 @@
             <div style="width:48px;height:48px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">{{ $ini }}</div>
             <div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                    <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $profissional->name }}</h1>
+                    <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $profissional->name }}</h1>
                     @if($profissional->ativo)
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Ativo</span>
                     @else
@@ -29,7 +29,7 @@
                style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:all 150ms"
                onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Hor√°rios
+                Hor·rios
             </a>
             @endcan
             @can('update', $profissional)
@@ -56,30 +56,30 @@
 
     <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
 
-        {{-- Servi√ßos vinculados --}}
+        {{-- ServiÁos vinculados --}}
         <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-            <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 14px">Servi√ßos</h2>
+            <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 14px">ServiÁos</h2>
             @forelse($profissional->servicos as $servico)
             <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--sa-border)">
                 <div style="width:10px;height:10px;border-radius:50%;background:{{ $servico->cor }};flex-shrink:0"></div>
                 <div style="flex:1;min-width:0">
                     <div style="font-size:13px;font-weight:600;color:var(--sa-text1)">{{ $servico->nome }}</div>
-                    <div style="font-size:11px;color:var(--sa-text3)">{{ $servico->duracaoFormatada() }} ‚Ä¢ {{ $servico->precoFormatado() }}</div>
+                    <div style="font-size:11px;color:var(--sa-text3)">{{ $servico->duracaoFormatada() }} ï {{ $servico->precoFormatado() }}</div>
                 </div>
             </div>
             @empty
-            <p style="font-size:13px;color:var(--sa-text3);margin:0;text-align:center;padding:16px 0">Nenhum servi√ßo vinculado.</p>
+            <p style="font-size:13px;color:var(--sa-text3);margin:0;text-align:center;padding:16px 0">Nenhum serviÁo vinculado.</p>
             @endforelse
             @can('update', $profissional)
-            <a href="{{ route('profissionais.edit', $profissional) }}" style="display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--sa-secondary);text-decoration:none;font-weight:600" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Gerenciar servi√ßos</a>
+            <a href="{{ route('profissionais.edit', $profissional) }}" style="display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--sa-secondary);text-decoration:none;font-weight:600" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Gerenciar serviÁos</a>
             @endcan
         </div>
 
         {{-- Agendamentos recentes --}}
         <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
             <div style="padding:16px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
-                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Hist√≥rico de Agendamentos</h2>
-                <span style="font-size:12px;color:var(--sa-text3)">√öltimos {{ $profissional->agendamentos->count() }}</span>
+                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">HistÛrico de Agendamentos</h2>
+                <span style="font-size:12px;color:var(--sa-text3)">⁄ltimos {{ $profissional->agendamentos->count() }}</span>
             </div>
 
             @forelse($profissional->agendamentos as $ag)
@@ -98,8 +98,8 @@
                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
                     </div>
                     <div style="font-size:12px;color:var(--sa-text3)">
-                        {{ $ag->cliente?->name ?? '‚Äî' }} ‚Ä¢ {{ $ag->servico?->nome ?? '‚Äî' }}
-                        @if($ag->valor) ‚Ä¢ R$ {{ number_format((float)$ag->valor, 2, ',', '.') }} @endif
+                        {{ $ag->cliente?->name ?? 'ó' }} ï {{ $ag->servico?->nome ?? 'ó' }}
+                        @if($ag->valor) ï R$ {{ number_format((float)$ag->valor, 2, ',', '.') }} @endif
                     </div>
                 </div>
                 <a href="{{ route('agendamentos.show', $ag) }}" style="flex-shrink:0;width:28px;height:28px;border-radius:7px;border:1px solid var(--sa-border);display:flex;align-items:center;justify-content:center;color:var(--sa-text3);text-decoration:none;transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
@@ -121,7 +121,7 @@ function confirmDelete(e, nome) {
     const form = e.target;
     Swal.fire({
         title: 'Excluir profissional?',
-        text: `"${nome}" ser√° removido permanentemente.`,
+        text: `"${nome}" ser· removido permanentemente.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, excluir',

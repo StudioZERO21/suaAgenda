@@ -1,4 +1,4 @@
-Ôªø@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Novo Profissional')
 @section('page-title', 'Novo Profissional')
 
@@ -8,7 +8,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Novo Profissional</h1>
+            <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Novo Profissional</h1>
             <p style="font-size:13px;color:var(--sa-text3);margin:0">Preencha os dados do profissional</p>
         </div>
     </div>
@@ -35,7 +35,7 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
-                        Comiss√£o (%)
+                        Comiss„o (%)
                         <span style="font-size:11px;color:var(--sa-text3);font-weight:400;margin-left:4px">opcional</span>
                     </label>
                     <input type="number" name="comissao_pct" value="{{ old('comissao_pct') }}" min="0" max="100" step="0.5" placeholder="Ex: 30"
@@ -50,13 +50,13 @@
                        style="width:16px;height:16px;accent-color:var(--sa-primary);cursor:pointer;flex-shrink:0"
                        {{ old('ativo', true) ? 'checked' : '' }}>
                 <label for="ativo" style="font-size:13px;color:var(--sa-text2);cursor:pointer">
-                    Profissional ativo (dispon√≠vel para agendamentos)
+                    Profissional ativo (disponÌvel para agendamentos)
                 </label>
             </div>
 
             @if($servicos->isNotEmpty())
             <div>
-                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">Servi√ßos que este profissional realiza</label>
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">ServiÁos que este profissional realiza</label>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
                     @foreach($servicos as $servico)
                     <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;cursor:pointer;transition:border-color 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
@@ -68,7 +68,7 @@
                                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $servico->cor }};flex-shrink:0"></span>
                                 <span style="font-size:13px;font-weight:600;color:var(--sa-text1)">{{ $servico->nome }}</span>
                             </div>
-                            <div style="font-size:11px;color:var(--sa-text3);margin-top:1px">{{ $servico->duracaoFormatada() }} ‚Ä¢ {{ $servico->precoFormatado() }}</div>
+                            <div style="font-size:11px;color:var(--sa-text3);margin-top:1px">{{ $servico->duracaoFormatada() }} ï {{ $servico->precoFormatado() }}</div>
                         </div>
                     </label>
                     @endforeach
