@@ -48,10 +48,26 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+    Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');
+    Route::put('produtos/{produto}', [ProdutoController::class, 'update'])->name('produtos.update');
+    Route::delete('produtos/{produto}', [ProdutoController::class, 'destroy'])->name('produtos.destroy');
+    Route::patch('produtos/{produto}/toggle', [ProdutoController::class, 'toggle'])->name('produtos.toggle');
+
     Route::get('pdv', [PdvController::class, 'index'])->name('pdv');
+    Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
+
     Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
+
     Route::get('cargos', [CargoController::class, 'index'])->name('cargos.index');
+    Route::post('cargos', [CargoController::class, 'store'])->name('cargos.store');
+    Route::put('cargos/{cargo}', [CargoController::class, 'update'])->name('cargos.update');
+    Route::delete('cargos/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
+
     Route::get('permissoes', [PermissaoController::class, 'index'])->name('permissoes.index');
+
+    Route::post('financeiro/lancamentos', [FinanceiroController::class, 'storeLancamento'])->name('financeiro.lancamentos.store');
+    Route::put('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'updateLancamento'])->name('financeiro.lancamentos.update');
+    Route::delete('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'destroyLancamento'])->name('financeiro.lancamentos.destroy');
     Route::get('site', [SitePublicoController::class, 'index'])->name('site.index');
     Route::resource('clientes', ClienteController::class);
     Route::resource('servicos', ServicoController::class)->except(['show']);

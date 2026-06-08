@@ -352,7 +352,10 @@ function productsApp() {
         },
 
         toggleActive(id) {
-            this.prods = this.prods.map(p => p.id === id ? { ...p, ativo: !p.ativo } : p);
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(`/produtos/${id}/toggle`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': csrf } })
+                .then(r => r.json())
+                .then(data => { this.prods = this.prods.map(p => p.id === id ? data : p); });
         },
 
         doDelete(id) {
@@ -365,10 +368,13 @@ function productsApp() {
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#ef4444',
             }).then(result => {
-                if (result.isConfirmed) {
-                    this.prods = this.prods.filter(p => p.id !== id);
-                    Swal.fire({ title: 'Produto removido', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
-                }
+                if (!result.isConfirmed) return;
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                fetch(`/produtos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } })
+                    .then(() => {
+                        this.prods = this.prods.filter(p => p.id !== id);
+                        Swal.fire({ title: 'Produto removido', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+                    });
             });
         },
 
@@ -377,21 +383,29 @@ function productsApp() {
                 return Swal.fire({ title: 'Atenção', text: 'Preencha nome e preço.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             }
             this.saving = true;
-            setTimeout(() => {
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const url = this.editing ? `/produtos/${this.editing.id}` : '/produtos';
+            const method = this.editing ? 'PUT' : 'POST';
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify(this.form),
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(data => {
                 if (this.editing) {
-                    this.prods = this.prods.map(p => p.id === this.editing.id ? { ...p, ...this.form } : p);
+                    this.prods = this.prods.map(p => p.id === this.editing.id ? data : p);
                 } else {
-                    this.prods.push({ ...this.form, id: Date.now() });
+                    this.prods.push(data);
                 }
                 this.saving = false;
                 this.modalOpen = false;
-                Swal.fire({
-                    title: this.editing ? 'Produto atualizado!' : 'Produto cadastrado!',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#1a1a1a',
-                });
-            }, 600);
+                Swal.fire({ title: this.editing ? 'Produto atualizado!' : 'Produto cadastrado!', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            })
+            .catch(() => {
+                this.saving = false;
+                Swal.fire({ title: 'Erro', text: 'Não foi possível salvar.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            });
         },
     };
 }
