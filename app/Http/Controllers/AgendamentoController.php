@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAgendamentoRequest;
 use App\Http\Requests\UpdateAgendamentoRequest;
+use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Profissional;
@@ -13,6 +14,7 @@ use App\Models\Servico;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AgendamentoController extends Controller
@@ -110,6 +112,13 @@ class AgendamentoController extends Controller
             ]);
         } finally {
             $lock->release();
+        }
+
+        $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+
+        if ($agendamento->cliente?->email) {
+            Mail::to($agendamento->cliente->email)
+                ->queue(new AgendamentoConfirmado($agendamento));
         }
 
         return redirect()->route('agendamentos.show', $agendamento)

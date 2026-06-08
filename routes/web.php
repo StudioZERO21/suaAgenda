@@ -13,6 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\HorarioTrabalhoController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PlansController;
 use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
@@ -47,6 +48,9 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::get('configuracoes', [ConfiguracaoController::class, 'show'])->name('configuracoes');
     Route::put('configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
+
+    Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
+    Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
 });
 
 // Agendamento público — sem autenticação

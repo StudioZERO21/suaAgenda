@@ -19,11 +19,21 @@ class Profissional extends Model
 
     protected $table = 'profissionais';
 
-    protected $fillable = ['company_id', 'name', 'especialidade', 'ativo'];
+    protected $fillable = ['company_id', 'name', 'especialidade', 'comissao_pct', 'ativo'];
 
     protected function casts(): array
     {
-        return ['ativo' => 'boolean'];
+        return [
+            'ativo' => 'boolean',
+            'comissao_pct' => 'decimal:2',
+        ];
+    }
+
+    public function comissaoFormatada(): string
+    {
+        return $this->comissao_pct !== null
+            ? number_format((float) $this->comissao_pct, 1, ',', '.').'%'
+            : '—';
     }
 
     public function company(): BelongsTo

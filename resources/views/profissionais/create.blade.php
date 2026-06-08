@@ -26,11 +26,22 @@
                     @error('name')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
-                <div style="grid-column:1/-1">
+                <div>
                     <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Especialidade</label>
                     <input type="text" name="especialidade" value="{{ old('especialidade') }}" placeholder="Ex: Barbeiro, Cabeleireiro, Manicure"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
+                        Comissão (%)
+                        <span style="font-size:11px;color:var(--sa-text3);font-weight:400;margin-left:4px">opcional</span>
+                    </label>
+                    <input type="number" name="comissao_pct" value="{{ old('comissao_pct') }}" min="0" max="100" step="0.5" placeholder="Ex: 30"
+                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('comissao_pct') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                    @error('comissao_pct')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
             </div>
 

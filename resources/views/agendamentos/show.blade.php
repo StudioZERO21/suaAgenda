@@ -3,7 +3,6 @@
 @section('page-title', 'Agendamento')
 
 @section('content')
-<div style="max-width:800px">
 
     {{-- Cabeçalho --}}
     @php

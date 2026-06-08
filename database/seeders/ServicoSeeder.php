@@ -38,12 +38,12 @@ class ServicoSeeder extends Seeder
         // Cria 2 profissionais de exemplo (entidades de booking, separadas dos Users)
         $carlos = Profissional::firstOrCreate(
             ['company_id' => $company->id, 'name' => 'Carlos Silva'],
-            ['especialidade' => 'Barbeiro', 'ativo' => true]
+            ['especialidade' => 'Barbeiro', 'comissao_pct' => 30.00, 'ativo' => true]
         );
 
         $joao = Profissional::firstOrCreate(
             ['company_id' => $company->id, 'name' => 'João Barbeiro'],
-            ['especialidade' => 'Cabeleireiro', 'ativo' => true]
+            ['especialidade' => 'Cabeleireiro', 'comissao_pct' => 25.00, 'ativo' => true]
         );
 
         // Vincula serviços: Carlos faz corte, barba e combo; João faz tudo
