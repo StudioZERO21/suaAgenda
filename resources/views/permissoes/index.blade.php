@@ -34,6 +34,12 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Cargos & Grupos
                 </button>
+                <button type="button" @click="tab = 'users'"
+                        :style="tabStyle('users')"
+                        style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;border:none;cursor:pointer;width:100%;text-align:left;font-size:13px;font-family:var(--sa-font-body);margin-bottom:2px;transition:all 150ms">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Usuários & Funções
+                </button>
             </div>
 
             <div style="flex:1;min-width:0">
@@ -217,6 +223,49 @@
                     </div>
                 </div>
 
+                {{-- USERS TAB --}}
+                <div x-show="tab === 'users'" x-cloak>
+                    <p style="font-size:13px;color:var(--sa-text3);margin:0 0 16px;line-height:1.6">
+                        Gerencie as funções dos membros da empresa. A função determina o acesso ao painel.
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                        <template x-for="u in users" :key="u.id">
+                            <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--sa-surface);border:1px solid var(--sa-border);border-radius:12px;transition:box-shadow 150ms"
+                                 @mouseenter="$el.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'"
+                                 @mouseleave="$el.style.boxShadow='none'">
+                                <div style="width:38px;height:38px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;flex-shrink:0"
+                                     x-text="(u.name || '?').charAt(0).toUpperCase()"></div>
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="u.name"></div>
+                                    <div style="font-size:12px;color:var(--sa-text3);margin-top:1px" x-text="u.email"></div>
+                                </div>
+                                <div style="flex-shrink:0">
+                                    <span x-show="!u.ativo" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(107,114,128,.12);color:#6b7280;margin-right:8px">Inativo</span>
+                                </div>
+                                <select x-model="u.role"
+                                        @change="changeUserRole(u)"
+                                        style="font-size:13px;padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;min-width:160px;appearance:none"
+                                        onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                                    <option value="">Sem função</option>
+                                    <option value="admin_empresa">Administrador</option>
+                                    <option value="gestor">Gestor</option>
+                                    <option value="analista">Analista</option>
+                                </select>
+                            </div>
+                        </template>
+                        <template x-if="users.length === 0">
+                            <p style="font-size:14px;color:var(--sa-text3);text-align:center;padding:32px 0">Nenhum membro cadastrado.</p>
+                        </template>
+                    </div>
+                    <div style="margin-top:16px;padding:14px 16px;background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 20%,transparent);border-radius:10px">
+                        <div style="font-size:13px;font-weight:600;color:var(--sa-secondary);margin-bottom:4px">💡 Funções disponíveis</div>
+                        <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.7">
+                            <strong>Administrador</strong> — acesso total. <strong>Gestor</strong> — gerencia equipe e relatórios.
+                            <strong>Analista</strong> — visualização e agendamentos. Alterações têm efeito imediato.
+                        </p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </x-sa.body>
@@ -363,6 +412,7 @@ function permissionsApp() {
         grupos: @json($gruposJson),
         cargos: @json($cargosJson),
         roleGroups: @json($roleGroupsJson),
+        users: @json($usersJson),
         expandedCat: {},
         groupModalOpen: false,
         assignModalOpen: false,
@@ -525,6 +575,24 @@ function permissionsApp() {
             this.roleGroups = { ...this.roleGroups, [this.assignRole.id]: this.assignSel };
             this.assignModalOpen = false;
             Swal.fire({ title: 'Grupo atribuído!', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+        },
+
+        async changeUserRole(user) {
+            if (!user.role) {
+                return Swal.fire({ title: 'Atenção', text: 'Selecione uma função válida.', icon: 'warning', confirmButtonColor: '#1a1a1a' });
+            }
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                const r = await fetch('/permissoes/usuarios/' + user.id + '/role', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ role: user.role }),
+                });
+                if (!r.ok) throw new Error('Sem permissão para alterar esta função.');
+                Swal.fire({ title: 'Função atualizada!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            }
         },
     };
 }

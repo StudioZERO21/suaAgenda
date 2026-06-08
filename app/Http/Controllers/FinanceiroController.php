@@ -9,18 +9,13 @@ use App\Models\Agendamento;
 use App\Models\Lancamento;
 use App\Support\SaDemoData;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
-/**
- * Painel financeiro com receita, transações e comissões.
- */
 class FinanceiroController extends Controller
 {
-    /**
-     * Exibe o dashboard financeiro do mês corrente.
-     */
     public function index(Request $request): View
     {
         $empresaId = auth()->user()->empresa_id;
@@ -43,7 +38,6 @@ class FinanceiroController extends Controller
         $ticketMedio = $totalFinalizados > 0
             ? $receitaTotal / $totalFinalizados
             : 0.0;
-        $comissaoTotal = round($receitaTotal * 0.30, 2);
 
         $pendentes = (clone $base)
             ->whereIn('status', [
@@ -54,11 +48,20 @@ class FinanceiroController extends Controller
         $aReceber = (float) (clone $pendentes)->sum('valor');
         $qtdPendentes = (clone $pendentes)->count();
 
+        // Compute commissions first so comissaoTotal can be derived from real data
+        $comissoesProfissionais = $this->comissoesPorProfissional(
+            $empresaId,
+            $inicio,
+            $fim,
+            $receitaTotal,
+        );
+        $comissaoTotal = (float) array_sum(array_column($comissoesProfissionais, 'valor'));
+
         $metodoLabels = ['Pix', 'Cartão Crédito', 'Cartão Débito', 'Dinheiro'];
 
-        $transacoes = (clone $base)
+        $agTransacoes = (clone $base)
             ->orderByDesc('data_hora')
-            ->limit(50)
+            ->limit(40)
             ->get()
             ->map(fn (Agendamento $a, int $i) => [
                 'id' => $a->id,
@@ -75,27 +78,29 @@ class FinanceiroController extends Controller
                 },
                 'tipo' => 'receita',
                 'metodo' => $metodoLabels[$i % count($metodoLabels)],
+                'source' => 'agendamento',
             ]);
 
-        $profissionaisFiltro = $transacoes
+        $lancTransacoes = Lancamento::where('company_id', $empresaId)
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->orderByDesc('data')
+            ->limit(20)
+            ->get()
+            ->map(fn (Lancamento $l) => $this->lancamentoToJson($l));
+
+        $transacoes = $agTransacoes->concat($lancTransacoes)
+            ->sortByDesc('data')
+            ->values()
+            ->take(50);
+
+        $profissionaisFiltro = $agTransacoes
             ->pluck('profissional')
             ->unique()
             ->filter(fn (string $nome) => $nome !== '—')
             ->values()
             ->all();
 
-        $receitaDiaria = $this->receitaDiaria(
-            $empresaId,
-            $inicio,
-            $fim,
-        );
-
-        $comissoesProfissionais = $this->comissoesPorProfissional(
-            $empresaId,
-            $inicio,
-            $fim,
-            $receitaTotal,
-        );
+        $receitaDiaria = $this->receitaDiaria($empresaId, $inicio, $fim);
 
         $metodos = SaDemoData::metodosPagamento();
 
@@ -117,37 +122,56 @@ class FinanceiroController extends Controller
         ));
     }
 
-    public function storeLancamento(StoreLancamentoRequest $request): RedirectResponse
+    public function storeLancamento(StoreLancamentoRequest $request): JsonResponse
     {
-        Lancamento::create([
+        $lancamento = Lancamento::create([
             ...$request->validated(),
             'company_id' => auth()->user()->empresa_id,
         ]);
 
-        return back()->with('success', 'Lançamento criado.');
+        return response()->json($this->lancamentoToJson($lancamento), 201);
     }
 
-    public function updateLancamento(StoreLancamentoRequest $request, Lancamento $lancamento): RedirectResponse
+    public function updateLancamento(StoreLancamentoRequest $request, Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
 
         $lancamento->update($request->validated());
 
-        return back()->with('success', 'Lançamento atualizado.');
+        return response()->json($this->lancamentoToJson($lancamento));
     }
 
-    public function destroyLancamento(Lancamento $lancamento): RedirectResponse
+    public function destroyLancamento(Lancamento $lancamento): Response
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
 
         $lancamento->delete();
 
-        return back()->with('success', 'Lançamento removido.');
+        return response()->noContent();
+    }
+
+    private function lancamentoToJson(Lancamento $l): array
+    {
+        return [
+            'id' => $l->id,
+            'data' => $l->data->format('Y-m-d'),
+            'cliente' => $l->descricao,
+            'servico' => $l->categoria ?? '—',
+            'profissional' => '—',
+            'valor' => (float) $l->valor,
+            'status' => $l->status,
+            'status_key' => match ($l->status) {
+                'pago' => 'paid',
+                'cancelado' => 'refunded',
+                default => 'pending',
+            },
+            'tipo' => $l->tipo,
+            'metodo' => $l->metodo_pagamento ?? '—',
+            'source' => 'lancamento',
+        ];
     }
 
     /**
-     * Resolve intervalo de datas conforme o período selecionado.
-     *
      * @return array{0: Carbon, 1: Carbon}
      */
     private function resolverPeriodo(string $periodo): array
@@ -162,8 +186,6 @@ class FinanceiroController extends Controller
     }
 
     /**
-     * Monta série de receita diária para o gráfico.
-     *
      * @return list<float>
      */
     private function receitaDiaria(
@@ -187,8 +209,6 @@ class FinanceiroController extends Controller
     }
 
     /**
-     * Calcula comissões estimadas por profissional.
-     *
      * @return list<array{name: string, cor: string, valor: float, pct: float}>
      */
     private function comissoesPorProfissional(
@@ -216,11 +236,12 @@ class FinanceiroController extends Controller
         return $porProf->map(function ($row) use ($receitaTotal) {
             $total = (float) $row->total;
             $pct = $total / $receitaTotal;
+            $comissaoPct = (float) ($row->profissional?->comissao_pct ?? 0);
 
             return [
                 'name' => $row->profissional?->name ?? 'Sem profissional',
                 'cor' => '#6366f1',
-                'valor' => round($total * 0.30, 2),
+                'valor' => round($total * $comissaoPct / 100, 2),
                 'pct' => $pct,
             ];
         })->values()->all();

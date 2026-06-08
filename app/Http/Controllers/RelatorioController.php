@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Cliente;
+use App\Models\Lancamento;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,14 +24,37 @@ class RelatorioController extends Controller
 
         $finalizados = (clone $base)->where('status', Agendamento::STATUS_FINALIZADO);
 
-        $receitaTotal = (clone $finalizados)->sum('valor');
+        $receitaAgendamentos = (float) (clone $finalizados)->sum('valor');
         $totalAgendamentos = (clone $base)->count();
         $totalFinalizados = (clone $finalizados)->count();
-        $ticketMedio = $totalFinalizados > 0 ? $receitaTotal / $totalFinalizados : 0;
+        $ticketMedio = $totalFinalizados > 0 ? $receitaAgendamentos / $totalFinalizados : 0.0;
 
         $novosClientes = Cliente::where('company_id', $empresaId)
             ->whereBetween('created_at', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->count();
+
+        // Lancamentos financeiros do período
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->get();
+
+        $receitaLancamentos = (float) $lancamentos->where('tipo', 'receita')->sum('valor');
+        $totalDespesas = (float) $lancamentos->where('tipo', 'despesa')->sum('valor');
+        $receitaBruta = $receitaAgendamentos + $receitaLancamentos;
+        $lucroLiquido = $receitaBruta - $totalDespesas;
+
+        $despesasPorCategoria = $lancamentos
+            ->where('tipo', 'despesa')
+            ->groupBy(fn (Lancamento $l) => $l->categoria ?: 'Sem categoria')
+            ->map(fn ($items, string $cat) => [
+                'categoria' => $cat,
+                'total' => (float) $items->sum('valor'),
+                'quantidade' => $items->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $maxDespesa = $despesasPorCategoria->max('total') ?: 1;
 
         $receitaPorServico = (clone $finalizados)
             ->with('servico')
@@ -64,15 +88,21 @@ class RelatorioController extends Controller
         $maxProfissional = $agendamentosPorProfissional->max('total') ?: 1;
 
         return view('relatorios.index', compact(
-            'receitaTotal',
+            'receitaAgendamentos',
+            'receitaLancamentos',
+            'receitaBruta',
+            'totalDespesas',
+            'lucroLiquido',
             'totalAgendamentos',
             'totalFinalizados',
             'ticketMedio',
             'novosClientes',
             'receitaPorServico',
             'agendamentosPorProfissional',
+            'despesasPorCategoria',
             'maxServico',
             'maxProfissional',
+            'maxDespesa',
             'inicio',
             'fim',
             'request',
@@ -86,9 +116,9 @@ class RelatorioController extends Controller
         $hoje = Carbon::today();
 
         return match ($preset) {
-            '7d' => [$hoje->copy()->subDays(6),    $hoje],
-            '3m' => [$hoje->copy()->subMonths(3),  $hoje],
-            '6m' => [$hoje->copy()->subMonths(6),  $hoje],
+            '7d' => [$hoje->copy()->subDays(6), $hoje],
+            '3m' => [$hoje->copy()->subMonths(3), $hoje],
+            '6m' => [$hoje->copy()->subMonths(6), $hoje],
             'mes' => [$hoje->copy()->startOfMonth(), $hoje->copy()->endOfMonth()],
             'custom' => [
                 Carbon::parse($request->input('de', $hoje->copy()->subDays(29)->toDateString())),
