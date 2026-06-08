@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Relatórios')
 @section('page-title', 'Relatórios')
 
@@ -15,7 +15,6 @@
     ];
 @endphp
 
-<div style="max-width:1100px">
 
     {{-- Cabeçalho --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
@@ -40,15 +39,15 @@
         @if($preset === 'custom')
         <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
             <input type="date" name="de" value="{{ $request->input('de', $inicio->format('Y-m-d')) }}"
-                   style="font-size:12px;padding:5px 8px;border:1.5px solid var(--sa-border);border-radius:7px;background:var(--sa-surface);color:var(--sa-text1);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   style="font-size:12px;padding:5px 8px;border:1.5px solid var(--sa-border);border-radius:7px;background:var(--sa-surface);color:var(--sa-text1);outline:none;transition:border-color 180ms,outline 180ms"
+                   onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
             <span style="font-size:11px;color:var(--sa-text3)">a</span>
             <input type="date" name="ate" value="{{ $request->input('ate', $fim->format('Y-m-d')) }}"
-                   style="font-size:12px;padding:5px 8px;border:1.5px solid var(--sa-border);border-radius:7px;background:var(--sa-surface);color:var(--sa-text1);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   style="font-size:12px;padding:5px 8px;border:1.5px solid var(--sa-border);border-radius:7px;background:var(--sa-surface);color:var(--sa-text1);outline:none;transition:border-color 180ms,outline 180ms"
+                   onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
             <button type="submit" name="preset" value="custom"
                     style="padding:5px 12px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                    onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">Filtrar</button>
+                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">Filtrar</button>
         </div>
         @endif
     </form>
@@ -176,6 +175,4 @@
         </div>
     </div>
     @endif
-
-</div>
 @endsection

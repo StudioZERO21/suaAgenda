@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Configurações')
 @section('page-title', 'Configurações')
 
@@ -28,14 +28,14 @@
 
                 <button @click="tab='empresa'"
                         :style="tab==='empresa' ? 'background:color-mix(in srgb,var(--sa-primary) 8%,transparent);color:var(--sa-primary);font-weight:600;border-left:2px solid var(--sa-primary)' : 'background:transparent;color:var(--sa-text2);font-weight:500;border-left:2px solid transparent'"
-                        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;border:none;border-right:none;border-top:none;border-bottom:none;cursor:pointer;text-align:left;width:100%;font-size:13px;font-family:'Inter',sans-serif;transition:all 150ms">
+                        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:none;border-right:none;border-top:none;border-bottom:none;cursor:pointer;text-align:left;width:100%;font-size:13px;font-family:'Inter',sans-serif;transition:all 150ms">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     Empresa
                 </button>
 
                 <button @click="tab='plano'"
                         :style="tab==='plano' ? 'background:color-mix(in srgb,var(--sa-primary) 8%,transparent);color:var(--sa-primary);font-weight:600;border-left:2px solid var(--sa-primary)' : 'background:transparent;color:var(--sa-text2);font-weight:500;border-left:2px solid transparent'"
-                        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;border:none;border-right:none;border-top:none;border-bottom:none;cursor:pointer;text-align:left;width:100%;font-size:13px;font-family:'Inter',sans-serif;transition:all 150ms">
+                        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:none;border-right:none;border-top:none;border-bottom:none;cursor:pointer;text-align:left;width:100%;font-size:13px;font-family:'Inter',sans-serif;transition:all 150ms">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                     Plano
                 </button>
@@ -59,11 +59,11 @@
 
                             {{-- Nome --}}
                             <div>
-                                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">
+                                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
                                     Nome da empresa <span style="color:var(--sa-secondary)">*</span>
                                 </label>
                                 <input type="text" name="name" value="{{ old('name', $company->name) }}" required
-                                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('name') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
+                                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('name') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                                        onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='{{ $errors->has('name') ? '#ef4444' : 'var(--sa-border)' }}'">
                                 @error('name')
                                 <p style="font-size:12px;color:#ef4444;margin-top:4px">{{ $message }}</p>
@@ -72,13 +72,13 @@
 
                             {{-- WhatsApp --}}
                             <div>
-                                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">WhatsApp</label>
+                                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">WhatsApp</label>
                                 <div style="position:relative">
                                     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--sa-text3)">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/></svg>
                                     </span>
                                     <input type="text" name="whatsapp" value="{{ old('whatsapp', $company->whatsapp) }}" placeholder="(11) 99999-0000"
-                                           style="width:100%;padding:10px 13px 10px 36px;border:1.5px solid {{ $errors->has('whatsapp') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
+                                           style="width:100%;padding:10px 13px 10px 36px;border:1.5px solid {{ $errors->has('whatsapp') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='{{ $errors->has('whatsapp') ? '#ef4444' : 'var(--sa-border)' }}'">
                                 </div>
                                 @error('whatsapp')
@@ -88,7 +88,7 @@
 
                             {{-- Slug (read-only) --}}
                             <div>
-                                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Identificador (slug)</label>
+                                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Identificador (slug)</label>
                                 <input type="text" value="{{ $company->slug }}" disabled
                                        style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',monospace;color:var(--sa-text3);background:var(--sa-surface2);outline:none;cursor:not-allowed">
                                 <p style="font-size:12px;color:var(--sa-text3);margin-top:4px">O identificador não pode ser alterado após a criação.</p>
@@ -120,7 +120,7 @@
                     <div style="display:flex;gap:10px">
                         <button type="submit"
                                 style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                                onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                                onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                             Salvar alterações
                         </button>
@@ -202,7 +202,7 @@
                     @if($company->whatsapp)
                     <a href="https://wa.me/55{{ preg_replace('/\D/', '', $company->whatsapp) }}" target="_blank"
                        style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;text-decoration:none;transition:filter 200ms"
-                       onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                       onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/></svg>
                         Contato via WhatsApp
                     </a>
@@ -212,5 +212,4 @@
 
         </div>
     </div>
-</div>
 @endsection

@@ -41,6 +41,11 @@ class Profissional extends Model
         return $this->hasMany(Agendamento::class);
     }
 
+    public function horarios(): HasMany
+    {
+        return $this->hasMany(HorarioTrabalho::class);
+    }
+
     public function scopeAtivo(Builder $query): Builder
     {
         return $query->where('ativo', true);

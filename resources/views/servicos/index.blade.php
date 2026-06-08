@@ -1,9 +1,8 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Serviços')
 @section('page-title', 'Serviços')
 
 @section('content')
-<div style="max-width:1100px">
 
     {{-- Cabeçalho --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
@@ -13,8 +12,8 @@
         </div>
         @can('create', \App\Models\Servico::class)
         <a href="{{ route('servicos.create') }}"
-           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
-           onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Serviço
         </a>
@@ -28,8 +27,8 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nome..."
-                   style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                   onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
         </div>
     </form>
 
@@ -111,7 +110,6 @@
         </div>
         @endif
     </div>
-</div>
 
 @push('scripts')
 <script>

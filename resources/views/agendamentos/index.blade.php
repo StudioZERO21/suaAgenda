@@ -1,9 +1,8 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Agendamentos')
 @section('page-title', 'Agendamentos')
 
 @section('content')
-<div style="max-width:1100px">
 
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <div>
@@ -12,8 +11,8 @@
         </div>
         @can('create', \App\Models\Agendamento::class)
         <a href="{{ route('agendamentos.create') }}"
-           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
-           onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Agendamento
         </a>
@@ -25,14 +24,14 @@
         <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Data</label>
             <input type="date" name="data" value="{{ request('data') }}"
-                   style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                   onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
         </div>
         <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Status</label>
             <select name="status"
-                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
-                    onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms,outline 180ms"
+                    onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 <option value="">Todos (exceto cancelados)</option>
                 @foreach(['pendente','confirmado','finalizado','cancelado'] as $s)
                 <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
@@ -42,8 +41,8 @@
         <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Profissional</label>
             <select name="profissional_id"
-                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
-                    onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                    style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms,outline 180ms"
+                    onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 <option value="">Todos</option>
                 @foreach($profissionais as $prof)
                 <option value="{{ $prof->id }}" {{ request('profissional_id') === $prof->id ? 'selected' : '' }}>{{ $prof->name }}</option>
@@ -52,13 +51,13 @@
         </div>
         <div style="display:flex;gap:8px">
             <button type="submit"
-                    style="padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                    onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                    style="padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                 Filtrar
             </button>
             @if(request()->hasAny(['data','status','profissional_id']))
             <a href="{{ route('agendamentos.index') }}"
-               style="padding:9px 14px;border-radius:9px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:all 180ms"
+               style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:all 180ms"
                onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
                 Limpar
             </a>
@@ -157,7 +156,6 @@
         </div>
         @endif
     </div>
-</div>
 
 @push('scripts')
 <script>
