@@ -22,20 +22,22 @@
         body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
         :root {
-            --sa-primary:    #1a1a1a;
-            --sa-primary-l:  #2d2d2d;
-            --sa-secondary:  #d4a574;
-            --sa-bg:         #f0f0f0;
-            --sa-surface:    #ffffff;
-            --sa-surface2:   #fafafa;
-            --sa-text1:      #1a1a1a;
-            --sa-text2:      #5a5a5a;
-            --sa-text3:      #999999;
-            --sa-border:     #e2e2e2;
-            --sa-side-bg:    #111111;
-            --sa-side-text:  #eeeeee;
-            --sa-side-muted: #888888;
-            --sa-side-accent:#d4a574;
+            --sa-primary:      #1a1a1a;
+            --sa-primary-l:    #2d2d2d;
+            --sa-secondary:    #d4a574;
+            --sa-secondary-l:  #e6c299;
+            --sa-bg:           #f5f5f5;
+            --sa-surface:      #ffffff;
+            --sa-surface2:     #fafafa;
+            --sa-text1:        #1a1a1a;
+            --sa-text2:        #5a5a5a;
+            --sa-text3:        #999999;
+            --sa-border:       #e2e2e2;
+            --sa-border2:      #d0d0d0;
+            --sa-side-bg:      #111111;
+            --sa-side-text:    #eeeeee;
+            --sa-side-muted:   #888888;
+            --sa-side-accent:  #d4a574;
         }
 
         body {

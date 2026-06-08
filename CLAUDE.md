@@ -1,5 +1,45 @@
 # CLAUDE.md
 
+---
+
+## ⚠️ REGRA IMUTÁVEL — CONSULTAR DESIGN ANTES DE QUALQUER VIEW
+
+> **Esta regra NÃO pode ser ignorada, contornada ou esquecida. É a regra mais importante do projeto.**
+
+Antes de criar ou modificar QUALQUER view Blade, você DEVE ler o arquivo JSX correspondente em:
+**`DOCS/Layout/suaagenda/project/`**
+
+Os JSX são a **única fonte de verdade** do design. CSS vars, espaçamentos, tipografia, componentes e comportamentos interativos são todos derivados desses protótipos. Se uma view parecer diferente do protótipo, o protótipo vence.
+
+### Mapa de telas → arquivos JSX obrigatórios
+
+| Tela / Feature | Arquivo JSX a ler |
+|---|---|
+| Dashboard | `DashboardScreen.jsx` |
+| Clientes | `ClientsScreen.jsx` |
+| Profissionais / Equipe | `StaffScreen.jsx` |
+| Serviços | `ServicesScreen.jsx` |
+| Agendamentos (lista) | `DashboardScreen.jsx` + `layout.jsx` |
+| Calendário | `CalendarScreen.jsx` |
+| Relatórios / Financeiro | `ReportsScreen.jsx` + `FinancialScreen.jsx` |
+| Configurações / Empresa | `SiteSettingsScreen.jsx` |
+| Planos | `PlansScreen.jsx` |
+| Perfil do usuário | `layout.jsx` (AppHeader dropdown) |
+| Permissões / Roles | `PermissionsScreen.jsx` + `RolesScreen.jsx` |
+| Agendamento público | `PublicScreen.jsx` + `BookingModal.jsx` |
+| Login / Recuperação | `LoginScreen.jsx` + `RecoverScreen.jsx` |
+| Qualquer componente UI | `ui.jsx` (Btn, Inp, Sel, Badge, Card, TintCard, Avt, Modal) |
+| Layout geral / Sidebar | `layout.jsx` (AppShell, AppHeader, Sidebar, BottomTabBar) |
+| Modais | `Modals.jsx` + `BookingModal.jsx` |
+
+**Protocolo obrigatório:**
+1. Identificar qual tela será criada/editada
+2. Ler o(s) JSX correspondente(s) **antes** de escrever qualquer linha Blade
+3. Extrair: CSS vars usadas, espaçamentos exatos, tipografia, cores, comportamentos hover/focus
+4. Implementar pixel-a-pixel conforme o protótipo
+
+---
+
 ## Commands
 ```bash
 composer dev                # Dev completo (serve + queue + pail + vite)
@@ -56,20 +96,22 @@ bash backup.sh [etapa]      # Exemplo: bash backup.sh 1.5
 
 ### CSS Variables (--sa-*)
 ```
---sa-primary:    #1a1a1a   → fundo de botão primário, avatar, textos fortes
---sa-primary-l:  #2d2d2d   → hover do primário
---sa-secondary:  #d4a574   → accent/ouro: ícones de destaque, valores em R$, logo dot
---sa-bg:         #f0f0f0   → fundo geral do body
---sa-surface:    #ffffff   → fundo de cards, inputs, tabelas
---sa-surface2:   #fafafa   → fundo de table-header, row-hover, surface alternativo
---sa-text1:      #1a1a1a   → texto primário (headings, valores importantes)
---sa-text2:      #5a5a5a   → texto secundário (labels, conteúdo geral)
---sa-text3:      #999999   → texto terciário (placeholders, timestamps, subtítulos)
---sa-border:     #e2e2e2   → bordas de cards, inputs, dividers
---sa-side-bg:    #111111   → fundo da sidebar
---sa-side-text:  #eeeeee   → texto na sidebar
---sa-side-muted: #888888   → texto muted na sidebar
---sa-side-accent:#d4a574   → item ativo na sidebar (mesmo que secondary)
+--sa-primary:      #1a1a1a   → fundo de botão primário, avatar, textos fortes
+--sa-primary-l:    #2d2d2d   → hover do primário
+--sa-secondary:    #d4a574   → accent/ouro: ícones de destaque, valores em R$, logo dot
+--sa-secondary-l:  #e6c299   → hover/tint do secondary (ouro claro)
+--sa-bg:           #f5f5f5   → fundo geral do body
+--sa-surface:      #ffffff   → fundo de cards, inputs, tabelas
+--sa-surface2:     #fafafa   → fundo de table-header, row-hover, surface alternativo
+--sa-text1:        #1a1a1a   → texto primário (headings, valores importantes)
+--sa-text2:        #5a5a5a   → texto secundário (labels, conteúdo geral)
+--sa-text3:        #999999   → texto terciário (placeholders, timestamps, subtítulos)
+--sa-border:       #e2e2e2   → bordas de cards, inputs, dividers
+--sa-border2:      #d0d0d0   → bordas mais escuras / separadores com mais contraste
+--sa-side-bg:      #111111   → fundo da sidebar
+--sa-side-text:    #eeeeee   → texto na sidebar
+--sa-side-muted:   #888888   → texto muted na sidebar
+--sa-side-accent:  #d4a574   → item ativo na sidebar (mesmo que secondary)
 ```
 **NUNCA hardcodar valores de cor** — sempre `var(--sa-*)`.
 
@@ -120,11 +162,11 @@ bash backup.sh [etapa]      # Exemplo: bash backup.sh 1.5
                font-size:14px;font-weight:600;font-family:'Inter',sans-serif;
                background:var(--sa-primary);color:#fff;
                transition:filter 200ms"
-        onmouseover="this.style.filter='brightness(1.15)'"
+        onmouseover="this.style.filter='brightness(1.1)'"
         onmouseout="this.style.filter='none'">
 ```
 **ERRADO**: `onmouseover="this.style.background='var(--sa-secondary)'"` — NÃO mudar cor no hover.
-**CORRETO**: usar `filter:brightness(1.15)` no hover do botão primário.
+**CORRETO**: usar `filter:brightness(1.1)` no hover do botão primário.
 
 ### Botão Secundário (outline)
 ```html
@@ -151,19 +193,20 @@ Botão destrutivo (delete): hover com `#ef4444` em vez de secondary.
 
 ### Input / Select / Textarea
 ```html
-<label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">
+<label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
     Nome <span style="color:var(--sa-secondary)">*</span>
 </label>
 <input type="text" name="campo"
        style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);
               border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;
               color:var(--sa-text1);background:var(--sa-surface);
-              outline:none;transition:border-color 180ms"
-       onfocus="this.style.borderColor='var(--sa-primary)'"
-       onblur="this.style.borderColor='var(--sa-border)'">
+              outline:none;transition:border-color 180ms,outline 180ms"
+       onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+       onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
 ```
-**CRÍTICO**: `focus = var(--sa-primary)` (preto), **NÃO** `var(--sa-secondary)` (ouro).
-- Input com erro: `border-color:#ef4444` inicial, mensagem `<p style="font-size:12px;color:#ef4444;margin-top:4px">`
+**CRÍTICO**: `focus = var(--sa-primary)` (preto) + glow `outline:3px solid rgba(0,0,0,.06)`, **NÃO** `var(--sa-secondary)` (ouro).
+- Labels: `font-size:13px`, `color:var(--sa-text1)`, `letter-spacing:.2px` — NÃO text2/12px
+- Input com erro: `border-color:#ef4444` inicial + `outline:3px solid rgba(239,68,68,.12)`, mensagem `<p style="font-size:12px;color:#ef4444;margin-top:4px">`
 - Select: adicionar `appearance:none; background-image: url('chevron SVG data URI')`
 
 ---
@@ -304,15 +347,13 @@ Swal.fire({
 ---
 
 ### Seção de Referência — Protótipos JSX
-Antes de criar uma nova tela, consultar o arquivo correspondente em `DOCS/Layout/suaagenda/project/`:
-- `DashboardScreen.jsx` → dashboard com TintCard, Timeline, KanbanBoard, DonutChart
-- `ClientsScreen.jsx` → tabela de clientes com modal de detalhe
-- `StaffScreen.jsx` → tela de profissionais
-- `ServicesScreen.jsx` → tela de serviços
-- `CalendarScreen.jsx` → visão de calendário semanal
-- `ReportsScreen.jsx` → relatórios financeiros
-- `layout.jsx` → AppShell, AppHeader, Sidebar, BottomTabBar
-- `ui.jsx` → Btn, Inp, Sel, Badge, Card, Modal, TintCard, Avt primitives
+> Ver tabela completa no início deste arquivo (REGRA IMUTÁVEL). Arquivos disponíveis em `DOCS/Layout/suaagenda/project/`:
+
+**Telas principais:** `DashboardScreen.jsx`, `ClientsScreen.jsx`, `StaffScreen.jsx`, `ServicesScreen.jsx`, `CalendarScreen.jsx`, `ReportsScreen.jsx`, `FinancialScreen.jsx`, `PlansScreen.jsx`, `PermissionsScreen.jsx`, `RolesScreen.jsx`, `SiteSettingsScreen.jsx`, `PortfolioScreen.jsx`, `POSScreen.jsx`, `ProductsScreen.jsx`
+
+**Auth / Public:** `LoginScreen.jsx`, `RecoverScreen.jsx`, `PublicScreen.jsx`
+
+**Infra:** `layout.jsx`, `ui.jsx`, `Modals.jsx`, `BookingModal.jsx`, `app.jsx`, `utils.js`
 
 ---
 
