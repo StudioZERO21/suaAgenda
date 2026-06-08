@@ -9,6 +9,14 @@ composer test               # Testes Pest
 npm run build               # Build frontend
 ```
 
+## Backup — OBRIGATÓRIO antes de qualquer migration
+```bash
+bash backup.sh [etapa]      # Exemplo: bash backup.sh 1.5
+```
+- Dumpa o banco suaAgenda em BACKUPS/db-etapa-*.sql.gz (local, gitignored)
+- Executar ANTES de `php artisan migrate` em toda sessão de desenvolvimento
+- mysqldump em D:\laragon3\bin\mysql\mysql-8.4.3-winx64\bin\mysqldump.exe
+
 ## Git & GitHub — REGRA OBRIGATÓRIA
 - Repositório: https://github.com/StudioZERO21/suaAgenda.git
 - Branch principal: `master` (base estável)

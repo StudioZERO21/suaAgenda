@@ -26,6 +26,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 
-# Backups locais
-BACKUPS/
+# Backups locais — ignora conteúdo mas mantém o diretório via .gitkeep
+BACKUPS/*.gz
+BACKUPS/*.sql
 
