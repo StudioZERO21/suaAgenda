@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Cargo;
+use App\Models\User;
 use App\Support\SaDemoData;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PermissaoController extends Controller
@@ -28,19 +31,55 @@ class PermissaoController extends Controller
                 'membros' => (int) ($c->membros ?? 0),
             ]);
 
-        $roleGroups = [
-            1 => 'g-admin',
-            2 => 'g-mgr',
-            3 => 'g-prof',
-            4 => 'g-prof',
-            5 => 'g-recep',
+        // Map cargo nivel to a default ACL group
+        $nivelToGroup = [
+            'admin' => 'g-admin',
+            'manager' => 'g-mgr',
+            'professional' => 'g-prof',
+            'receptionist' => 'g-recep',
+            'intern' => 'g-intern',
+            'operacional' => 'g-prof',
+            'gerencial' => 'g-mgr',
+            'diretivo' => 'g-admin',
         ];
+
+        $roleGroups = $cargos->mapWithKeys(fn (array $c): array => [
+            $c['id'] => $nivelToGroup[strtolower($c['nivel'])] ?? 'g-prof',
+        ])->all();
+
+        $users = User::where('empresa_id', $companyId)
+            ->with('roles')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $u): array => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'ativo' => (bool) $u->ativo,
+                'role' => $u->roles->first()?->name ?? '',
+            ]);
 
         return view('permissoes.index', [
             'catalogo' => SaDemoData::aclCatalogo(),
             'gruposJson' => SaDemoData::gruposAcesso(),
             'cargosJson' => $cargos,
             'roleGroupsJson' => $roleGroups,
+            'usersJson' => $users,
         ]);
+    }
+
+    public function assignUserRole(Request $request, User $user): JsonResponse
+    {
+        abort_if(! auth()->user()->hasRole('admin_empresa'), 403);
+        abort_if($user->empresa_id !== auth()->user()->empresa_id, 403);
+        abort_if($user->id === auth()->id(), 403);
+
+        $request->validate([
+            'role' => ['required', 'in:admin_empresa,gestor,analista'],
+        ]);
+
+        $user->syncRoles([$request->role]);
+
+        return response()->json(['success' => true, 'role' => $request->role]);
     }
 }

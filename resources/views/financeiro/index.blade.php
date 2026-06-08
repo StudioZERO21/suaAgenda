@@ -28,6 +28,9 @@
         pending:  { label: 'Pendente',    bg: 'rgba(245,158,11,.1)',  color: '#d97706' },
         refunded: { label: 'Reembolsado', bg: 'rgba(239,68,68,.08)', color: '#dc2626' },
     },
+    lancModalOpen: false,
+    lancSaving: false,
+    lancForm: { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' },
     get filtersActive() {
         return this.filters.type !== 'all' || this.filters.status !== 'all'
             || this.filters.prof !== 'all' || this.filters.method !== 'all';
@@ -46,6 +49,41 @@
     resetFilters() {
         this.filters = { type: 'all', status: 'all', prof: 'all', method: 'all' };
     },
+    openLancModal() {
+        this.lancForm = { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' };
+        this.lancModalOpen = true;
+    },
+    async saveLancamento() {
+        if (!this.lancForm.descricao || !this.lancForm.valor || !this.lancForm.data) {
+            return Swal.fire({ title: 'Atenção', text: 'Preencha os campos obrigatórios.', icon: 'error', confirmButtonColor: '#1a1a1a' });
+        }
+        this.lancSaving = true;
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const r = await fetch('/financeiro/lancamentos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify(this.lancForm)
+            });
+            if (!r.ok) { const e = await r.json(); throw new Error(Object.values(e.errors || {}).flat().join(', ') || 'Erro ao salvar'); }
+            const data = await r.json();
+            this.transacoes.unshift(data);
+            this.lancModalOpen = false;
+            Swal.fire({ title: 'Lançamento criado!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        } catch (e) {
+            Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+        } finally {
+            this.lancSaving = false;
+        }
+    },
+    async deleteLancamento(id) {
+        const confirm = await Swal.fire({ title: 'Excluir lançamento?', text: 'Esta ação não pode ser desfeita.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444' });
+        if (!confirm.isConfirmed) return;
+        const csrf = document.querySelector('meta[name="csrf-token"]').content;
+        await fetch('/financeiro/lancamentos/' + id, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+        this.transacoes = this.transacoes.filter(tx => tx.id !== id);
+        Swal.fire({ title: 'Removido!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    },
     fmtDate(iso) {
         const [y, m, d] = iso.split('-');
         return `${d}/${m}/${y}`;
@@ -59,7 +97,13 @@
 }">
     <x-sa.app-header title="Financeiro" subtitle="Receita, comissões e pagamentos">
         <x-slot:actions>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" @click="openLancModal()"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Novo Lançamento
+                </button>
                 @foreach(['month' => 'Este mês', 'quarter' => 'Trimestre', 'year' => 'Este ano'] as $key => $label)
                 <x-sa.btn :href="route('financeiro', ['periodo' => $key])" size="sm" :variant="$periodo === $key ? 'primary' : 'muted'">{{ $label }}</x-sa.btn>
                 @endforeach
@@ -197,18 +241,19 @@
                         <thead>
                             <tr style="background:var(--sa-surface2)">
                                 <th class="sa-th">Data</th>
-                                <th class="sa-th">Cliente</th>
-                                <th class="sa-th hide-mobile">Serviço</th>
+                                <th class="sa-th">Descrição</th>
+                                <th class="sa-th hide-mobile">Categoria</th>
                                 <th class="sa-th hide-mobile">Profissional</th>
                                 <th class="sa-th">Tipo</th>
                                 <th class="sa-th hide-mobile">Método</th>
                                 <th class="sa-th">Valor</th>
                                 <th class="sa-th">Status</th>
+                                <th class="sa-th" style="width:40px"></th>
                             </tr>
                         </thead>
                         <tbody>
                             <template x-if="filtered.length === 0">
-                                <tr><td colspan="8" style="padding:32px;text-align:center;color:var(--sa-text3)">Nenhuma transação encontrada.</td></tr>
+                                <tr><td colspan="9" style="padding:32px;text-align:center;color:var(--sa-text3)">Nenhuma transação encontrada.</td></tr>
                             </template>
                             <template x-for="tx in filtered" :key="tx.id">
                                 <tr class="sa-tr">
@@ -231,6 +276,16 @@
                                         <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px"
                                             :style="'background:' + statusCfg[tx.status_key].bg + ';color:' + statusCfg[tx.status_key].color"
                                             x-text="statusCfg[tx.status_key].label"></span>
+                                    </td>
+                                    <td class="sa-td" style="padding:10px 8px">
+                                        <template x-if="tx.source === 'lancamento'">
+                                            <button type="button" @click="deleteLancamento(tx.id)"
+                                                style="width:28px;height:28px;border-radius:6px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);transition:all 150ms"
+                                                onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                                                onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                            </button>
+                                        </template>
                                     </td>
                                 </tr>
                             </template>
@@ -269,5 +324,112 @@
             </x-sa.card>
         </div>
     </x-sa.body>
+
+    {{-- Novo Lançamento Modal --}}
+    <div x-show="lancModalOpen" x-cloak
+         @keydown.escape.window="lancModalOpen = false"
+         style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px"
+         @click.self="lancModalOpen = false">
+        <div style="background:var(--sa-surface);border-radius:16px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+            <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
+                <div>
+                    <h3 style="font-family:var(--sa-font-heading);font-size:18px;font-weight:600;color:var(--sa-text1);margin:0">Novo Lançamento</h3>
+                    <p style="font-size:13px;color:var(--sa-text3);margin:4px 0 0">Registre uma receita ou despesa manual</p>
+                </div>
+                <button type="button" @click="lancModalOpen = false" style="background:none;border:none;cursor:pointer;color:var(--sa-text3);padding:4px;display:flex;border-radius:6px">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div style="padding:20px 28px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">
+                {{-- Tipo --}}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Tipo <span style="color:var(--sa-secondary)">*</span></label>
+                        <select x-model="lancForm.tipo" style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;appearance:none"
+                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Status <span style="color:var(--sa-secondary)">*</span></label>
+                        <select x-model="lancForm.status" style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;appearance:none"
+                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <option value="pendente">Pendente</option>
+                            <option value="pago">Pago</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                {{-- Descricao --}}
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Descrição <span style="color:var(--sa-secondary)">*</span></label>
+                    <input type="text" x-model="lancForm.descricao" placeholder="Ex: Pagamento de aluguel"
+                        style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms;box-sizing:border-box"
+                        onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+                        onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                </div>
+                {{-- Categoria + Metodo --}}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Categoria</label>
+                        <select x-model="lancForm.categoria" style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;appearance:none"
+                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <option value="">Sem categoria</option>
+                            <option value="Serviço">Serviço</option>
+                            <option value="Produto">Produto</option>
+                            <option value="Aluguel">Aluguel</option>
+                            <option value="Insumos">Insumos</option>
+                            <option value="Salários">Salários</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Método de Pagamento</label>
+                        <select x-model="lancForm.metodo_pagamento" style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;appearance:none"
+                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <option value="">—</option>
+                            <option value="Pix">Pix</option>
+                            <option value="Cartão Crédito">Cartão Crédito</option>
+                            <option value="Cartão Débito">Cartão Débito</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Transferência">Transferência</option>
+                        </select>
+                    </div>
+                </div>
+                {{-- Valor + Data --}}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Valor (R$) <span style="color:var(--sa-secondary)">*</span></label>
+                        <input type="number" x-model="lancForm.valor" step="0.01" min="0.01" placeholder="0,00"
+                            style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms;box-sizing:border-box"
+                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+                            onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Data <span style="color:var(--sa-secondary)">*</span></label>
+                        <input type="date" x-model="lancForm.data"
+                            style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms;box-sizing:border-box"
+                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+                            onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                    </div>
+                </div>
+            </div>
+            <div style="padding:16px 28px 24px;border-top:1px solid var(--sa-border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0">
+                <button type="button" @click="lancModalOpen = false"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:border-color 180ms,color 180ms"
+                    onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    Cancelar
+                </button>
+                <button type="button" @click="saveLancamento()" :disabled="lancSaving"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span x-text="lancSaving ? 'Salvando...' : 'Salvar Lançamento'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
 </x-sa.page>
 @endsection
