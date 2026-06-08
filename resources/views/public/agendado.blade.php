@@ -1,4 +1,4 @@
-@extends('layouts.public')
+﻿@extends('layouts.public')
 @section('title', 'Agendamento Confirmado')
 
 @section('content')
@@ -43,7 +43,7 @@
 
 <div style="text-align:center">
     <a href="{{ route('agendar.show', $company->slug) }}"
-       style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+       style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,outline 180ms,color 180ms"
        onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
         Fazer outro agendamento

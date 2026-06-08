@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Clientes')
 @section('page-title', 'Clientes')
 
@@ -13,8 +13,8 @@
         </div>
         @can('create', \App\Models\Cliente::class)
         <a href="{{ route('clientes.create') }}"
-           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
-           onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Cliente
         </a>
@@ -22,16 +22,26 @@
     </div>
 
     {{-- Busca --}}
-    <form method="GET" style="margin-bottom:16px">
-        <div style="position:relative;max-width:360px">
-            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--sa-text3);pointer-events:none">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </span>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nome, e-mail ou telefone..."
-                   style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
-        </div>
-    </form>
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <form method="GET">
+            <div style="display:flex;gap:12px;align-items:center">
+                <div style="position:relative;flex:1">
+                    <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--sa-text3);pointer-events:none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nome, e-mail ou telefone..."
+                           style="width:100%;padding:10px 12px 10px 34px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                </div>
+                @if(request('search'))
+                <a href="{{ route('clientes.index') }}"
+                   style="padding:10px 14px;border-radius:8px;border:1.5px solid var(--sa-border);color:var(--sa-text2);font-size:13px;font-weight:500;text-decoration:none;white-space:nowrap;transition:border-color 180ms,color 180ms"
+                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">Limpar</a>
+                @endif
+            </div>
+        </form>
+    </div>
 
     {{-- Tabela --}}
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">

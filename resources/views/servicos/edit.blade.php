@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Editar Serviço')
 @section('page-title', 'Editar Serviço')
 
@@ -23,54 +23,54 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                 <div style="grid-column:1/-1">
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Nome do serviço <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Nome do serviço <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="text" name="nome" value="{{ old('nome', $servico->nome) }}" required placeholder="Ex: Corte de cabelo"
-                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('nome') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('nome') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     @error('nome')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Duração (minutos) <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Duração (minutos) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="duracao_minutos" value="{{ old('duracao_minutos', $servico->duracao_minutos) }}" min="5" max="480" step="5" required
-                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('duracao_minutos') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('duracao_minutos') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     @error('duracao_minutos')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Preço (R$) <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Preço (R$) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="preco" value="{{ old('preco', $servico->preco) }}" min="0" step="0.01" required
-                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('preco') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('preco') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     @error('preco')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Categoria</label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Categoria</label>
                     <input type="text" name="categoria" value="{{ old('categoria', $servico->categoria) }}" placeholder="Ex: Cabelo, Barba, Tratamento"
-                           style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                           onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Cor (no calendário)</label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Cor (no calendário)</label>
                     <div style="display:flex;align-items:center;gap:10px">
                         <input type="color" name="cor" value="{{ old('cor', $servico->cor) }}"
-                               style="width:44px;height:40px;padding:2px;border:1.5px solid var(--sa-border);border-radius:9px;cursor:pointer;background:var(--sa-surface)">
+                               style="width:44px;height:40px;padding:2px;border:1.5px solid var(--sa-border);border-radius:8px;cursor:pointer;background:var(--sa-surface)">
                         <span style="font-size:13px;color:var(--sa-text3)">Cor de identificação no calendário</span>
                     </div>
                 </div>
 
                 <div style="grid-column:1/-1">
-                    <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Descrição</label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Descrição</label>
                     <textarea name="descricao" rows="2" placeholder="Descrição opcional do serviço"
-                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms;font-family:'Inter',sans-serif"
-                              onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">{{ old('descricao', $servico->descricao) }}</textarea>
+                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms,outline 180ms;font-family:'Inter',sans-serif"
+                              onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">{{ old('descricao', $servico->descricao) }}</textarea>
                 </div>
             </div>
 
-            <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--sa-surface2);border-radius:9px;border:1px solid var(--sa-border)">
+            <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--sa-surface2);border-radius:8px;border:1px solid var(--sa-border)">
                 <input type="checkbox" name="ativo" id="ativo" value="1"
                        style="width:16px;height:16px;accent-color:var(--sa-primary);cursor:pointer;flex-shrink:0"
                        {{ old('ativo', $servico->ativo) ? 'checked' : '' }}>
@@ -81,11 +81,11 @@
 
             @if($profissionais->isNotEmpty())
             <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:10px">Profissionais que realizam este serviço</label>
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">Profissionais que realizam este serviço</label>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
                     @foreach($profissionais as $prof)
                     @php $checked = in_array((string)$prof->id, old('profissionais', $vinculados)); @endphp
-                    <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid {{ $checked ? 'var(--sa-secondary)' : 'var(--sa-border)' }};border-radius:9px;cursor:pointer;transition:border-color 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='{{ $checked ? 'var(--sa-secondary)' : 'var(--sa-border)' }}'">
+                    <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid {{ $checked ? 'var(--sa-secondary)' : 'var(--sa-border)' }};border-radius:8px;cursor:pointer;transition:border-color 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='{{ $checked ? 'var(--sa-secondary)' : 'var(--sa-border)' }}'">
                         <input type="checkbox" name="profissionais[]" value="{{ $prof->id }}"
                                style="accent-color:var(--sa-primary);width:15px;height:15px;flex-shrink:0"
                                {{ $checked ? 'checked' : '' }}>
@@ -103,12 +103,12 @@
 
             <div style="display:flex;gap:10px;padding-top:4px">
                 <button type="submit"
-                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                        style="padding:11px 24px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                        onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                     Salvar Alterações
                 </button>
                 <a href="{{ route('servicos.index') }}"
-                   style="padding:11px 20px;border-radius:9px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:all 180ms"
+                   style="padding:11px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:all 180ms"
                    onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
                     Cancelar
                 </a>

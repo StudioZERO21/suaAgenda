@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Agendamento')
 @section('page-title', 'Agendamento')
 
@@ -142,7 +142,7 @@
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="confirmado">
                 <button type="submit"
-                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:rgba(5,150,105,.1);color:#065f46;transition:background 150ms"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:rgba(5,150,105,.1);color:#065f46;transition:background 150ms"
                         onmouseover="this.style.background='rgba(5,150,105,.2)'" onmouseout="this.style.background='rgba(5,150,105,.1)'">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     Confirmar
@@ -155,7 +155,7 @@
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="finalizado">
                 <button type="submit"
-                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:rgba(107,114,128,.1);color:#374151;transition:background 150ms"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:rgba(107,114,128,.1);color:#374151;transition:background 150ms"
                         onmouseover="this.style.background='rgba(107,114,128,.2)'" onmouseout="this.style.background='rgba(107,114,128,.1)'">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     Finalizar
@@ -167,7 +167,7 @@
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="cancelado">
                 <button type="submit"
-                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;border:1.5px solid var(--sa-border);cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:var(--sa-text3);transition:all 150ms"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:var(--sa-text3);transition:all 150ms"
                         onmouseover="this.style.borderColor='#e53e3e';this.style.color='#e53e3e'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     Cancelar agendamento

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Calendário')
 @section('page-title', 'Calendário')
 
@@ -32,8 +32,8 @@
                 <input type="hidden" name="semana" value="{{ $semana->format('Y-m-d') }}">
                 <select name="profissional_id"
                         onchange="document.getElementById('form-filtro').submit()"
-                        style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms"
-                        onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                        style="padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;transition:border-color 180ms,outline 180ms"
+                        onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     <option value="">Todos os profissionais</option>
                     @foreach($profissionais as $prof)
                     <option value="{{ $prof->id }}" {{ $profissionalId === $prof->id ? 'selected' : '' }}>{{ $prof->name }}</option>
@@ -50,7 +50,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </a>
                 <a href="{{ route('calendario', array_filter(['profissional_id' => $profissionalId])) }}"
-                   style="padding:6px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:12px;font-weight:600;color:var(--sa-text2);text-decoration:none;transition:all 150ms"
+                   style="padding:6px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;text-decoration:none;transition:all 150ms"
                    onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">Hoje</a>
                 <a href="{{ route('calendario', array_filter(['semana' => $proximaSemana, 'profissional_id' => $profissionalId])) }}"
@@ -64,7 +64,7 @@
             @can('create', \App\Models\Agendamento::class)
             <a href="{{ route('agendamentos.create') }}"
                style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:13px;font-weight:600;transition:filter 200ms"
-               onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+               onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Novo
             </a>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard')
 
@@ -73,131 +73,176 @@
 
 </div>
 
-{{-- Linha 2: Totais de cadastro --}}
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
-    <a href="{{ route('clientes.index') }}" style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 20px;text-decoration:none;display:flex;align-items:center;gap:14px;transition:border-color 180ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
-        <div style="width:40px;height:40px;border-radius:10px;background:rgba(26,26,26,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        </div>
-        <div>
-            <div style="font-size:22px;font-weight:700;color:var(--sa-text1);font-family:'Poppins',sans-serif">{{ $stats['totalClientes'] }}</div>
-            <div style="font-size:12px;color:var(--sa-text3);margin-top:1px">Clientes</div>
-        </div>
-    </a>
+{{-- Linha 2: Timeline + Painel Direito --}}
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
 
-    <a href="{{ route('profissionais.index') }}" style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 20px;text-decoration:none;display:flex;align-items:center;gap:14px;transition:border-color 180ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
-        <div style="width:40px;height:40px;border-radius:10px;background:rgba(26,26,26,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <div>
-            <div style="font-size:22px;font-weight:700;color:var(--sa-text1);font-family:'Poppins',sans-serif">{{ $stats['totalProfissionais'] }}</div>
-            <div style="font-size:12px;color:var(--sa-text3);margin-top:1px">Profissionais ativos</div>
-        </div>
-    </a>
-
-    <a href="{{ route('servicos.index') }}" style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 20px;text-decoration:none;display:flex;align-items:center;gap:14px;transition:border-color 180ms" onmouseover="this.style.borderColor='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
-        <div style="width:40px;height:40px;border-radius:10px;background:rgba(26,26,26,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-        </div>
-        <div>
-            <div style="font-size:22px;font-weight:700;color:var(--sa-text1);font-family:'Poppins',sans-serif">{{ $stats['totalServicos'] }}</div>
-            <div style="font-size:12px;color:var(--sa-text3);margin-top:1px">Serviços ativos</div>
-        </div>
-    </a>
-</div>
-
-{{-- Linha 3: Próximos agendamentos + Status do dia --}}
-<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
-
-    {{-- Próximos agendamentos --}}
+    {{-- Timeline: Próximos Agendamentos --}}
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
-            <h2 style="font-size:14px;font-weight:700;color:var(--sa-text1);margin:0">Próximos Agendamentos</h2>
-            <a href="{{ route('agendamentos.index') }}" style="font-size:12px;color:var(--sa-secondary);text-decoration:none;font-weight:600">Ver todos</a>
-        </div>
-
-        @forelse($stats['proximosAgendamentos'] as $ag)
-        @php
-            $badgeStyle = match($ag->status) {
-                'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
-                'finalizado' => 'background:rgba(107,114,128,.12);color:#6b7280',
-                'cancelado'  => 'background:rgba(239,68,68,.1);color:#dc2626',
-                default      => 'background:rgba(245,158,11,.12);color:#d97706',
-            };
-        @endphp
-        <div style="padding:14px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;gap:12px" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
-            <div style="flex-shrink:0;text-align:center;min-width:44px">
-                <div style="font-size:18px;font-weight:700;color:var(--sa-text1);font-family:'Poppins',sans-serif;line-height:1">{{ $ag->data_hora->format('H:i') }}</div>
-                <div style="font-size:10px;color:var(--sa-text3);margin-top:2px">{{ $ag->data_hora->format('d/m') }}</div>
+        <div style="padding:20px 20px 16px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+                <h2 style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:600;color:var(--sa-text1);margin:0">Próximos Agendamentos</h2>
+                <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">Linha do tempo</p>
             </div>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:14px;font-weight:600;color:var(--sa-text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $ag->cliente?->name ?? '—' }}</div>
-                <div style="font-size:12px;color:var(--sa-text3);margin-top:2px">{{ $ag->servico?->nome ?? '—' }} • {{ $ag->profissional?->name ?? '—' }}</div>
-            </div>
-            <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
+            <a href="{{ route('agendamentos.index') }}"
+               style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+               onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+               onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Agenda
+            </a>
         </div>
-        @empty
-        <div style="padding:40px 20px;text-align:center;color:var(--sa-text3);font-size:14px">
-            Nenhum agendamento futuro encontrado.
-            @can('create', \App\Models\Agendamento::class)
-            <br><a href="{{ route('agendamentos.create') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none;margin-top:6px;display:inline-block">Criar agendamento</a>
-            @endcan
-        </div>
-        @endforelse
-    </div>
 
-    {{-- Status do dia --}}
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-        <h2 style="font-size:14px;font-weight:700;color:var(--sa-text1);margin:0 0 16px">Status de Hoje</h2>
+        {{-- Timeline container --}}
+        <div style="padding:20px 16px;position:relative">
+            <div style="position:absolute;left:31px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,var(--sa-secondary),var(--sa-border) 80%);border-radius:1px;opacity:.5"></div>
 
-        @php
-            $statusLabels = [
-                'pendente'   => ['label' => 'Pendente',   'bg' => 'rgba(245,158,11,.12)',  'color' => '#d97706'],
-                'confirmado' => ['label' => 'Confirmado', 'bg' => 'rgba(16,185,129,.12)',  'color' => '#059669'],
-                'finalizado' => ['label' => 'Finalizado', 'bg' => 'rgba(107,114,128,.12)', 'color' => '#6b7280'],
-                'cancelado'  => ['label' => 'Cancelado',  'bg' => 'rgba(239,68,68,.1)',    'color' => '#dc2626'],
-            ];
-            $totalHoje = array_sum($stats['statusDistribuicao']);
-        @endphp
-
-        @if($totalHoje > 0)
-        <div style="display:flex;flex-direction:column;gap:10px">
-            @foreach($statusLabels as $status => $cfg)
-            @php $count = $stats['statusDistribuicao'][$status] ?? 0; @endphp
-            @if($count > 0)
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                <div style="display:flex;align-items:center;gap:8px">
-                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $cfg['color'] }}"></span>
-                    <span style="font-size:13px;color:var(--sa-text2)">{{ $cfg['label'] }}</span>
+            @forelse($stats['proximosAgendamentos'] as $ag)
+            @php
+                $dotColor = match($ag->status) {
+                    'confirmado' => '#10b981',
+                    'finalizado' => '#6b7280',
+                    'cancelado'  => '#ef4444',
+                    default      => '#f59e0b',
+                };
+            @endphp
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-left:6px">
+                <div style="position:relative;flex-shrink:0;margin-top:10px;z-index:1">
+                    <div style="width:20px;height:20px;border-radius:50%;background:{{ $dotColor }}18;border:2px solid {{ $dotColor }};display:flex;align-items:center;justify-content:center">
+                        <div style="width:6px;height:6px;border-radius:50%;background:{{ $dotColor }}"></div>
+                    </div>
                 </div>
-                <span style="font-size:13px;font-weight:700;padding:2px 10px;border-radius:20px;background:{{ $cfg['bg'] }};color:{{ $cfg['color'] }}">{{ $count }}</span>
+                <div style="flex:1;background:var(--sa-surface2);border-radius:10px;padding:10px 14px;border:1px solid var(--sa-border);border-left:3px solid {{ $dotColor }};transition:box-shadow 150ms"
+                     onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'"
+                     onmouseout="this.style.boxShadow='none'">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                            <div style="width:28px;height:28px;border-radius:50%;background:{{ $dotColor }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">{{ strtoupper(substr($ag->cliente?->name ?? '?', 0, 1)) }}</div>
+                            <div style="min-width:0">
+                                <div style="font-size:13px;font-weight:700;color:var(--sa-text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $ag->cliente?->name ?? '—' }}</div>
+                                <div style="font-size:11px;color:var(--sa-text3);margin-top:1px">{{ $ag->servico?->nome ?? '—' }} · {{ $ag->profissional?->name ?? '—' }}</div>
+                            </div>
+                        </div>
+                        <div style="flex-shrink:0;text-align:right">
+                            <div style="font-family:'Poppins',sans-serif;font-size:13px;font-weight:800;color:var(--sa-secondary)">{{ $ag->data_hora->format('H:i') }}</div>
+                            <div style="font-size:10px;color:var(--sa-text3)">{{ $ag->data_hora->format('d/m') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @empty
+            <div style="padding:40px 0;text-align:center;color:var(--sa-text3);font-size:14px;padding-left:30px">
+                Nenhum agendamento futuro.
+                @can('create', \App\Models\Agendamento::class)
+                <br><a href="{{ route('agendamentos.create') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none;margin-top:6px;display:inline-block">Criar agendamento</a>
+                @endcan
+            </div>
+            @endforelse
+
+            @if(count($stats['proximosAgendamentos']) >= 8)
+            <div style="padding-left:30px;margin-top:8px">
+                <a href="{{ route('agendamentos.index') }}" style="font-size:13px;font-weight:600;color:var(--sa-secondary);text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+                    Ver agenda completa <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
             </div>
             @endif
+        </div>
+    </div>
+
+    {{-- Painel Direito --}}
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+        {{-- Resumo de Hoje --}}
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <h3 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:var(--sa-text1);margin:0 0 14px">Resumo de Hoje</h3>
+            @php
+                $totalHoje = array_sum($stats['statusDistribuicao']);
+                $resumoHoje = [
+                    ['label'=>'Agendamentos',    'value'=>$stats['agendamentosHoje'],                                                 'icon'=>'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
+                    ['label'=>'Receita Prevista','value'=>'R$ '.number_format((float)$stats['receitaHoje'],2,',','.'),                'icon'=>'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'],
+                    ['label'=>'Confirmados',     'value'=>$stats['statusDistribuicao']['confirmado'] ?? 0,                            'icon'=>'<polyline points="20 6 9 17 4 12"/>'],
+                    ['label'=>'Pendentes',       'value'=>$stats['statusDistribuicao']['pendente'] ?? 0,                              'icon'=>'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'],
+                ];
+            @endphp
+            @foreach($resumoHoje as $i => $item)
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;{{ $i < count($resumoHoje)-1 ? 'border-bottom:1px solid var(--sa-border)' : '' }}">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $item['icon'] !!}</svg>
+                    <span style="font-size:13px;color:var(--sa-text2)">{{ $item['label'] }}</span>
+                </div>
+                <span style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:800;color:var(--sa-text1)">{{ $item['value'] }}</span>
+            </div>
             @endforeach
         </div>
 
-        {{-- Barra de progresso simples --}}
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--sa-border)">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                <span style="font-size:12px;color:var(--sa-text3)">Total hoje</span>
-                <span style="font-size:13px;font-weight:700;color:var(--sa-text1)">{{ $totalHoje }}</span>
+        {{-- Status do Dia --}}
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <h3 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:var(--sa-text1);margin:0 0 14px">Status de Hoje</h3>
+            @php
+                $statusLabels = [
+                    'confirmado'=>['label'=>'Confirmado','color'=>'#059669','bg'=>'rgba(16,185,129,.12)'],
+                    'pendente'  =>['label'=>'Pendente',  'color'=>'#d97706','bg'=>'rgba(245,158,11,.12)'],
+                    'finalizado'=>['label'=>'Finalizado','color'=>'#6b7280','bg'=>'rgba(107,114,128,.12)'],
+                    'cancelado' =>['label'=>'Cancelado', 'color'=>'#dc2626','bg'=>'rgba(239,68,68,.1)'],
+                ];
+            @endphp
+            @if($totalHoje > 0)
+            <div style="display:flex;flex-direction:column;gap:8px">
+                @foreach($statusLabels as $status => $cfg)
+                @php $cnt = $stats['statusDistribuicao'][$status] ?? 0; @endphp
+                @if($cnt > 0)
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="width:8px;height:8px;border-radius:50%;background:{{ $cfg['color'] }};flex-shrink:0;display:inline-block"></span>
+                        <span style="font-size:13px;color:var(--sa-text2)">{{ $cfg['label'] }}</span>
+                    </div>
+                    <span style="font-size:13px;font-weight:700;padding:2px 10px;border-radius:20px;background:{{ $cfg['bg'] }};color:{{ $cfg['color'] }}">{{ $cnt }}</span>
+                </div>
+                @endif
+                @endforeach
             </div>
-            <div style="height:6px;background:var(--sa-surface2);border-radius:3px;overflow:hidden;border:1px solid var(--sa-border)">
-                @php $pct = $totalHoje > 0 ? round(($stats['statusDistribuicao']['finalizado'] ?? 0) / $totalHoje * 100) : 0; @endphp
-                <div style="height:100%;width:{{ $pct }}%;background:var(--sa-secondary);border-radius:3px;transition:width 600ms ease"></div>
+            @php $pct = $totalHoje > 0 ? round(($stats['statusDistribuicao']['finalizado'] ?? 0) / $totalHoje * 100) : 0; @endphp
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--sa-border)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                    <span style="font-size:12px;color:var(--sa-text3)">Total hoje</span>
+                    <span style="font-size:12px;font-weight:700;color:var(--sa-text1)">{{ $totalHoje }}</span>
+                </div>
+                <div style="height:5px;background:var(--sa-surface2);border-radius:3px;overflow:hidden">
+                    <div style="height:100%;width:{{ $pct }}%;background:var(--sa-secondary);border-radius:3px;transition:width 600ms ease"></div>
+                </div>
+                <div style="font-size:11px;color:var(--sa-text3);margin-top:4px">{{ $pct }}% concluídos</div>
             </div>
-            <div style="font-size:11px;color:var(--sa-text3);margin-top:5px">{{ $pct }}% concluídos</div>
+            @else
+            <p style="font-size:14px;color:var(--sa-text3);margin:0;text-align:center;padding:16px 0">Nenhum agendamento hoje.</p>
+            @endif
         </div>
-        @else
-        <p style="font-size:14px;color:var(--sa-text3);margin:0;text-align:center;padding:20px 0">Nenhum agendamento hoje.</p>
-        @endif
 
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--sa-border)">
-            <a href="{{ route('agendamentos.create') }}"
-               style="display:block;text-align:center;padding:10px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:13px;font-weight:600;transition:filter 200ms"
-               onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
-                + Novo Agendamento
-            </a>
+        {{-- Atalhos --}}
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <h3 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:var(--sa-text1);margin:0 0 12px">Atalhos</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                @can('create', \App\Models\Agendamento::class)
+                <a href="{{ route('agendamentos.create') }}"
+                   style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:13px;font-weight:600;transition:filter 200ms"
+                   onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Novo Agendamento
+                </a>
+                @endcan
+                <a href="{{ route('clientes.index') }}"
+                   style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--sa-border);color:var(--sa-text2);text-decoration:none;font-size:13px;font-weight:500;transition:border-color 180ms,color 180ms"
+                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    {{ $stats['totalClientes'] }} Clientes
+                </a>
+                <a href="{{ route('profissionais.index') }}"
+                   style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--sa-border);color:var(--sa-text2);text-decoration:none;font-size:13px;font-weight:500;transition:border-color 180ms,color 180ms"
+                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    {{ $stats['totalProfissionais'] }} Profissionais
+                </a>
+            </div>
         </div>
     </div>
 </div>

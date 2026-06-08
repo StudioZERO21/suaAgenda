@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Meu Perfil')
 @section('page-title', 'Meu Perfil')
 
@@ -37,22 +37,22 @@
             <h2 style="font-size:14px;font-weight:700;color:var(--sa-text1);margin:0">Dados Pessoais</h2>
 
             <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
                     Nome <span style="color:var(--sa-secondary)">*</span>
                 </label>
                 <input type="text" name="name" value="{{ old('name', $user->name) }}" required
-                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('name') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                       onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('name') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                       onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 @error('name')<p style="font-size:12px;color:#ef4444;margin-top:4px">{{ $message }}</p>@enderror
             </div>
 
             <div>
-                <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
                     E-mail <span style="color:var(--sa-secondary)">*</span>
                 </label>
                 <input type="email" name="email" value="{{ old('email', $user->email) }}" required
-                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('email') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                       onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                       style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('email') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                       onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 @error('email')<p style="font-size:12px;color:#ef4444;margin-top:4px">{{ $message }}</p>@enderror
             </div>
 
@@ -62,26 +62,26 @@
 
                 <div style="display:flex;flex-direction:column;gap:16px">
                     <div>
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Senha Atual</label>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Senha Atual</label>
                         <input type="password" name="current_password" autocomplete="current-password"
-                               style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('current_password') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                               onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                               style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('current_password') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                         @error('current_password')<p style="font-size:12px;color:#ef4444;margin-top:4px">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Nova Senha</label>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Nova Senha</label>
                         <input type="password" name="password" autocomplete="new-password"
-                               style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('password') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                               onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                               style="width:100%;padding:10px 13px;border:1.5px solid {{ $errors->has('password') ? '#ef4444' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                         @error('password')<p style="font-size:12px;color:#ef4444;margin-top:4px">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Confirmar Nova Senha</label>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Confirmar Nova Senha</label>
                         <input type="password" name="password_confirmation" autocomplete="new-password"
-                               style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                               onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                               style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@
             <div style="display:flex;gap:10px;padding-top:8px">
                 <button type="submit"
                         style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                        onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                     Salvar Alterações
                 </button>
             </div>

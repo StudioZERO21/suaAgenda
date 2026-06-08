@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Horários — ' . $profissional->name)
 @section('page-title', 'Horários de Trabalho')
 
@@ -65,16 +65,16 @@
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:3px">Início</label>
                         <input type="time" name="dias[{{ $num }}][hora_inicio]"
                                value="{{ $h?->hora_inicio ?? '08:00' }}"
-                               style="padding:8px 10px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                               onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                               style="padding:8px 10px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     </div>
                     <span style="font-size:14px;color:var(--sa-text3);margin-top:16px">até</span>
                     <div>
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:3px">Fim</label>
                         <input type="time" name="dias[{{ $num }}][hora_fim]"
                                value="{{ $h?->hora_fim ?? '18:00' }}"
-                               style="padding:8px 10px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                               onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                               style="padding:8px 10px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
+                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                     </div>
                 </div>
 
@@ -88,7 +88,7 @@
             <div style="padding:16px 20px">
                 <button type="submit"
                         style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+                        onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     Salvar Horários
                 </button>
