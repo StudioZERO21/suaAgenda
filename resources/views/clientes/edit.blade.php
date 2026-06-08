@@ -24,7 +24,7 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Nome completo <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="text" name="name" value="{{ old('name', $cliente->name) }}" required placeholder="Nome do cliente"
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('name') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('name')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -32,14 +32,14 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Telefone / WhatsApp</label>
                     <input type="text" name="phone" value="{{ old('phone', $cliente->phone) }}" placeholder="(00) 00000-0000"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 </div>
 
                 <div>
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">E-mail</label>
                     <input type="email" name="email" value="{{ old('email', $cliente->email) }}" placeholder="email@exemplo.com"
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('email') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                     @error('email')<p style="font-size:12px;color:#e53e3e;margin-top:4px">{{ $message }}</p>@enderror
                 </div>
 
@@ -47,14 +47,14 @@
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Data de nascimento</label>
                     <input type="date" name="data_nasc" value="{{ old('data_nasc', $cliente->data_nasc?->format('Y-m-d')) }}"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                           onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
                 </div>
 
                 <div style="grid-column:1/-1">
                     <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Observações</label>
                     <textarea name="observacao" rows="3" placeholder="Preferências, alergias, etc."
                               style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms;font-family:'Inter',sans-serif"
-                              onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">{{ old('observacao', $cliente->observacao) }}</textarea>
+                              onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">{{ old('observacao', $cliente->observacao) }}</textarea>
                 </div>
             </div>
 
@@ -69,8 +69,8 @@
 
             <div style="display:flex;gap:10px;padding-top:4px">
                 <button type="submit"
-                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:background 180ms"
-                        onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+                        style="padding:11px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                        onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
                     Salvar Alterações
                 </button>
                 <a href="{{ route('clientes.show', $cliente) }}"

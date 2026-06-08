@@ -8,10 +8,10 @@
     {{-- Cabeçalho --}}
     @php
         $badgeStyle = match($agendamento->status) {
-            'confirmado' => 'background:rgba(5,150,105,.1);color:#065f46',
-            'finalizado' => 'background:rgba(107,114,128,.1);color:#374151',
-            'cancelado'  => 'background:rgba(239,68,68,.1);color:#991b1b',
-            default      => 'background:rgba(245,158,11,.1);color:#92400e',
+            'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
+            'finalizado' => 'background:rgba(107,114,128,.12);color:#6b7280',
+            'cancelado'  => 'background:rgba(239,68,68,.1);color:#dc2626',
+            default      => 'background:rgba(245,158,11,.12);color:#d97706',
         };
     @endphp
 
@@ -23,7 +23,7 @@
             <div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                     <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \à\s H:i') }}</h1>
-                    <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;{{ $badgeStyle }}">{{ ucfirst($agendamento->status) }}</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($agendamento->status) }}</span>
                 </div>
                 <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? '—' }} • {{ $agendamento->profissional?->name ?? '—' }}</p>
             </div>

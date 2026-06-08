@@ -5,10 +5,13 @@ declare(strict_types=1);
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ConfiguracaoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Middleware\SetTenantMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -28,9 +31,13 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::resource('agendamentos', AgendamentoController::class);
     Route::patch('agendamentos/{agendamento}/status', [AgendamentoController::class, 'updateStatus'])->name('agendamentos.updateStatus');
+    Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
+    Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
     Route::resource('clientes', ClienteController::class);
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
+    Route::get('configuracoes', [ConfiguracaoController::class, 'show'])->name('configuracoes');
+    Route::put('configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
 });
 
 if (app()->isLocal()) {

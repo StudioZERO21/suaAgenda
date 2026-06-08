@@ -13,8 +13,8 @@
         </div>
         @can('create', \App\Models\Cliente::class)
         <a href="{{ route('clientes.create') }}"
-           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:background 180ms"
-           onmouseover="this.style.background='var(--sa-secondary)'" onmouseout="this.style.background='var(--sa-primary)'">
+           style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:9px;background:var(--sa-primary);color:#fff;text-decoration:none;font-size:14px;font-weight:600;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Cliente
         </a>
@@ -29,33 +29,33 @@
             </span>
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nome, e-mail ou telefone..."
                    style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms"
-                   onfocus="this.style.borderColor='var(--sa-secondary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
         </div>
     </form>
 
     {{-- Tabela --}}
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden">
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <table style="width:100%;border-collapse:collapse">
             <thead>
                 <tr style="background:var(--sa-surface2);border-bottom:1px solid var(--sa-border)">
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Nome</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Telefone</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">E-mail</th>
-                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Cadastro</th>
-                    <th style="padding:11px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Ações</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Nome</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Telefone</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">E-mail</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em" class="hide-mobile">Cadastro</th>
+                    <th style="padding:11px 16px;text-align:right;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($clientes as $cliente)
                 @php $ini = strtoupper(substr($cliente->name, 0, 1)); @endphp
-                <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='rgba(0,0,0,.02)'" onmouseout="this.style.background='transparent'">
+                <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms" onmouseover="this.style.background='var(--sa-surface2)'" onmouseout="this.style.background='transparent'">
                     <td style="padding:14px 16px">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">{{ $ini }}</div>
                             <div>
                                 <a href="{{ route('clientes.show', $cliente) }}" style="font-size:14px;font-weight:600;color:var(--sa-text1);text-decoration:none;transition:color 150ms" onmouseover="this.style.color='var(--sa-secondary)'" onmouseout="this.style.color='var(--sa-text1)'">{{ $cliente->name }}</a>
                                 @if($cliente->lgpd_consent)
-                                <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:rgba(5,150,105,.1);color:#065f46;margin-left:6px">LGPD</span>
+                                <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669;margin-left:6px"><span style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></span>LGPD</span>
                                 @endif
                             </div>
                         </div>
