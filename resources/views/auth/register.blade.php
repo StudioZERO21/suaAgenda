@@ -18,7 +18,7 @@
 
     <div>
         <label class="sa-label" for="name">
-            Nome completo <span style="color:var(--sa-secondary)">*</span>
+            Nome completo <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
@@ -31,12 +31,11 @@
                    class="sa-input {{ $errors->has('name') ? 'is-error' : '' }}"
                    placeholder="Seu nome completo" required autofocus>
         </div>
-        @error('name')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div>
         <label class="sa-label" for="company_name">
-            Nome da empresa <span style="color:var(--sa-secondary)">*</span>
+            Nome da empresa <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
@@ -52,12 +51,11 @@
                    class="sa-input {{ $errors->has('company_name') ? 'is-error' : '' }}"
                    placeholder="Ex: Barbearia Central" required>
         </div>
-        @error('company_name')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div>
         <label class="sa-label" for="email">
-            E-mail <span style="color:var(--sa-secondary)">*</span>
+            E-mail <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
@@ -70,12 +68,11 @@
                    class="sa-input {{ $errors->has('email') ? 'is-error' : '' }}"
                    placeholder="seu@email.com" required>
         </div>
-        @error('email')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div>
         <label class="sa-label" for="password">
-            Senha <span style="color:var(--sa-secondary)">*</span>
+            Senha <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
@@ -88,12 +85,11 @@
                    class="sa-input {{ $errors->has('password') ? 'is-error' : '' }}"
                    placeholder="Mínimo 6 caracteres" required>
         </div>
-        @error('password')<p class="sa-error">{{ $message }}</p>@enderror
     </div>
 
     <div>
         <label class="sa-label" for="password_confirmation">
-            Confirmar senha <span style="color:var(--sa-secondary)">*</span>
+            Confirmar senha <span style="color:#ef4444;margin-left:2px">*</span>
         </label>
         <div class="sa-field">
             <span class="sa-field-icon">
@@ -119,7 +115,6 @@
             (LGPD).
         </label>
     </div>
-    @error('lgpd_consent')<p class="sa-error">{{ $message }}</p>@enderror
 
     <button type="submit" class="sa-btn-primary" style="margin-top:4px">
         Criar conta grátis

@@ -1,4 +1,4 @@
-ï»¿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Editar Profissional')
 @section('page-title', 'Editar Profissional')
 
@@ -8,7 +8,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar Profissional</h1>
+            <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar Profissional</h1>
             <p style="font-size:13px;color:var(--sa-text3);margin:0">{{ $profissional->name }}</p>
         </div>
     </div>
@@ -38,7 +38,7 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
-                        ComissÃ£o (%)
+                        Comissão (%)
                         <span style="font-size:11px;color:var(--sa-text3);font-weight:400;margin-left:4px">opcional</span>
                     </label>
                     <input type="number" name="comissao_pct" value="{{ old('comissao_pct', $profissional->comissao_pct) }}" min="0" max="100" step="0.5" placeholder="Ex: 30"
@@ -53,13 +53,13 @@
                        style="width:16px;height:16px;accent-color:var(--sa-primary);cursor:pointer;flex-shrink:0"
                        {{ old('ativo', $profissional->ativo) ? 'checked' : '' }}>
                 <label for="ativo" style="font-size:13px;color:var(--sa-text2);cursor:pointer">
-                    Profissional ativo (disponÃ­vel para agendamentos)
+                    Profissional ativo (disponível para agendamentos)
                 </label>
             </div>
 
             @if($servicos->isNotEmpty())
             <div>
-                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">ServiÃ§os que este profissional realiza</label>
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">Serviços que este profissional realiza</label>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
                     @foreach($servicos as $servico)
                     @php $checked = in_array((string)$servico->id, old('servicos', $vinculados)); @endphp
@@ -72,7 +72,7 @@
                                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $servico->cor }};flex-shrink:0"></span>
                                 <span style="font-size:13px;font-weight:600;color:var(--sa-text1)">{{ $servico->nome }}</span>
                             </div>
-                            <div style="font-size:11px;color:var(--sa-text3);margin-top:1px">{{ $servico->duracaoFormatada() }} â€¢ {{ $servico->precoFormatado() }}</div>
+                            <div style="font-size:11px;color:var(--sa-text3);margin-top:1px">{{ $servico->duracaoFormatada() }} • {{ $servico->precoFormatado() }}</div>
                         </div>
                     </label>
                     @endforeach
@@ -84,7 +84,7 @@
                 <button type="submit"
                         style="padding:11px 24px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
                         onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
-                    Salvar AlteraÃ§Ãµes
+                    Salvar Alterações
                 </button>
                 <a href="{{ route('profissionais.show', $profissional) }}"
                    style="padding:11px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:all 180ms"

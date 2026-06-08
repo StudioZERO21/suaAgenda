@@ -47,6 +47,30 @@ class AgendamentoPublicoController extends Controller
         return view('public.agendar', compact('company', 'servicos', 'profissionais', 'servicosMap'));
     }
 
+    /**
+     * Landing pública (vitrine de marketing) da empresa.
+     *
+     * Exibe hero, serviços, equipe e depoimentos com dados reais; os botões
+     * de ação encaminham para o fluxo de agendamento (rota agendar.show).
+     */
+    public function landing(string $slug): View
+    {
+        $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
+
+        $servicos = Servico::where('company_id', $company->id)
+            ->ativo()
+            ->orderBy('nome')
+            ->get();
+
+        $profissionais = Profissional::where('company_id', $company->id)
+            ->ativo()
+            ->withCount('agendamentos')
+            ->orderBy('name')
+            ->get();
+
+        return view('public.vitrine', compact('company', 'servicos', 'profissionais'));
+    }
+
     public function slots(string $slug, Request $request): JsonResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();

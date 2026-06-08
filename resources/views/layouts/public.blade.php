@@ -4,14 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Agendamento') — suaAgenda</title>
+    @php
+        use App\Support\SaPalettes;
+        $pubSettings = isset($company) ? $company->resolvedSettings() : [];
+        $pubHeading = $pubSettings['heading_font'] ?? 'poppins';
+        $pubBody = $pubSettings['body_font'] ?? 'inter';
+        $pubFonts = SaPalettes::resolveFonts($pubHeading, $pubBody);
+    @endphp
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="{{ $pubFonts['google_url'] }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
+            {{-- Whitelist em SaPalettes: seguro emitir sem escape. --}}
+            --sa-font-body:    {!! $pubFonts['body_css'] !!};
+            --sa-font-heading: {!! $pubFonts['heading_css'] !!};
             --sa-primary:     #1a1a1a;
             --sa-primary-l:   #2d2d2d;
             --sa-secondary:   #d4a574;
@@ -26,11 +36,13 @@
             --sa-border2:     #d0d0d0;
         }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--sa-font-body);
             background: var(--sa-bg);
             color: var(--sa-text1);
             min-height: 100vh;
         }
+        h1, h2, h3, h4 { font-family: var(--sa-font-heading); }
+        input, button, select, textarea { font-family: var(--sa-font-body); }
         .pub-header {
             background: var(--sa-primary);
             padding: 16px 24px;
@@ -48,23 +60,30 @@
     @stack('styles')
 </head>
 <body>
-    <header class="pub-header">
-        <div style="width:30px;height:30px;border-radius:8px;background:var(--sa-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
-                <line x1="20" y1="4" x2="8.12" y2="15.88"/>
-                <line x1="14.47" y1="14.48" x2="20" y2="20"/>
-                <line x1="8.12" y1="8.12" x2="12" y2="12"/>
-            </svg>
-        </div>
-        <div>
-            <span style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px">suaAgenda</span><span style="font-size:11px;color:var(--sa-secondary);font-weight:600;letter-spacing:.4px">.pro</span>
-        </div>
-        @yield('header-right')
-    </header>
-
-    <main class="pub-main">
+    @hasSection('fullBleed')
+        {{-- Landing pública (vitrine): cabeçalho e largura próprios da view --}}
         @yield('content')
-    </main>
+    @else
+        <header class="pub-header">
+            <div style="width:30px;height:30px;border-radius:8px;background:var(--sa-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
+                    <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+                    <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+                    <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+                </svg>
+            </div>
+            <div>
+                <span style="font-family:var(--sa-font-heading);font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px">suaAgenda</span><span style="font-size:11px;color:var(--sa-secondary);font-weight:600;letter-spacing:.4px">.pro</span>
+            </div>
+            @yield('header-right')
+        </header>
+
+        <main class="pub-main">
+            @yield('content')
+        </main>
+    @endif
+
+    @stack('scripts')
 </body>
 </html>

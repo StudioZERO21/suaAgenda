@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,8 +69,8 @@
 
         /* ── Form primitives ──────────────────────────── */
         .sa-label {
-            display: block; font-size: 12px; font-weight: 600;
-            color: var(--sa-text2); margin-bottom: 5px;
+            display: block; font-size: 13px; font-weight: 600;
+            color: var(--sa-text1); margin-bottom: 5px; letter-spacing: .2px;
         }
 
         .sa-field { position: relative; display: flex; align-items: center; }
@@ -80,24 +81,25 @@
         }
 
         .sa-input {
-            width: 100%; padding: 10px 12px 10px 36px;
-            border: 1.5px solid var(--sa-border); border-radius: 9px;
+            width: 100%; padding: 10px 13px 10px 36px;
+            border: 1.5px solid var(--sa-border); border-radius: 8px;
             font-size: 14px; background: var(--sa-surface); color: var(--sa-text1);
             outline: none; transition: border-color 180ms, box-shadow 180ms;
+            box-sizing: border-box;
         }
-        .sa-input:focus { border-color: var(--sa-secondary); box-shadow: 0 0 0 3px rgba(212,165,116,.15); }
+        .sa-input:focus { border-color: var(--sa-primary); box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
         .sa-input.is-error { border-color: #e53e3e; }
 
         .sa-error { font-size: 12px; color: #e53e3e; margin-top: 4px; }
 
         .sa-btn-primary {
-            width: 100%; padding: 12px; border-radius: 9px; border: none;
-            cursor: pointer; font-size: 14px; font-weight: 600;
+            width: 100%; padding: 12px 28px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 15px; font-weight: 600; height: 48px;
             background: var(--sa-primary); color: #fff;
-            transition: background 180ms;
+            transition: filter 200ms ease;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .sa-btn-primary:hover { background: #2d2d2d; }
+        .sa-btn-primary:hover { filter: brightness(1.1); }
 
         .sa-btn-outline {
             flex: 1; padding: 10px 0; border: 1.5px solid var(--sa-border);
@@ -114,7 +116,7 @@
 
         .sa-tabs {
             display: flex; background: var(--sa-surface2);
-            border-radius: 10px; padding: 4px; margin-bottom: 32px;
+            border-radius: 10px; padding: 4px; margin-bottom: 36px;
         }
         .sa-tab {
             flex: 1; padding: 9px 0; border-radius: 8px; border: none; cursor: pointer;
@@ -164,6 +166,14 @@
     </style>
 </head>
 <body>
+    @hasSection('authBare')
+    {{-- ── Modo centralizado (sem hero): recuperação de senha ─── --}}
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="width:100%;max-width:440px">
+            @yield('content')
+        </div>
+    </div>
+    @else
     <div class="auth-wrap">
 
         {{-- ── Hero Left ────────────────────────────────────────── --}}
@@ -226,12 +236,28 @@
         </div>
 
     </div>
+    @endif
+
+    @if($errors->any())
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Swal.fire({
+                title: 'Erro de validação',
+                html: @json(implode('<br>', $errors->all())),
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#1a1a1a',
+            });
+        });
+    </script>
+    @endif
 
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
     </script>
+    @stack('scripts')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>

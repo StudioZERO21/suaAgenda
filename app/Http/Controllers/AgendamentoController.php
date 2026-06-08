@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MoveAgendamentoRequest;
 use App\Http\Requests\StoreAgendamentoRequest;
 use App\Http\Requests\UpdateAgendamentoRequest;
 use App\Mail\AgendamentoConfirmado;
@@ -11,6 +12,8 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -183,6 +186,50 @@ class AgendamentoController extends Controller
             ->with('success', 'Agendamento atualizado com sucesso.');
     }
 
+    /**
+     * Reposiciona um agendamento na grade do calendário (drag-and-drop).
+     */
+    public function move(MoveAgendamentoRequest $request, Agendamento $agendamento): JsonResponse
+    {
+        if ($agendamento->status === Agendamento::STATUS_CANCELADO) {
+            return response()->json([
+                'message' => 'Agendamentos cancelados não podem ser movidos.',
+            ], 422);
+        }
+
+        $novaData = $request->dataHora();
+
+        if ($this->temConflitoHorario($agendamento, $novaData)) {
+            return response()->json([
+                'message' => 'Horário já ocupado para este profissional.',
+            ], 422);
+        }
+
+        $lockKey = "agendamento:{$agendamento->profissional_id}:{$novaData->format('Y-m-d H:i')}";
+        $lock = Cache::lock($lockKey, 10);
+
+        if (! $lock->get()) {
+            return response()->json([
+                'message' => 'Horário já está sendo reservado. Tente novamente.',
+            ], 409);
+        }
+
+        try {
+            $agendamento->update(['data_hora' => $novaData]);
+        } finally {
+            $lock->release();
+        }
+
+        return response()->json([
+            'message' => 'Movido para '.$novaData->format('H:i'),
+            'data_hora' => $novaData->toIso8601String(),
+            'data' => $novaData->format('Y-m-d'),
+            'hora' => (int) $novaData->format('H'),
+            'minuto' => (int) $novaData->format('i'),
+            'hora_label' => $novaData->format('H:i'),
+        ]);
+    }
+
     public function updateStatus(Request $request, Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('update', $agendamento);
@@ -205,5 +252,24 @@ class AgendamentoController extends Controller
 
         return redirect()->route('agendamentos.index')
             ->with('success', 'Agendamento cancelado com sucesso.');
+    }
+
+    /**
+     * Verifica sobreposição de horários para o mesmo profissional.
+     */
+    private function temConflitoHorario(Agendamento $agendamento, Carbon $inicio): bool
+    {
+        $fim = $inicio->copy()->addMinutes($agendamento->duracao);
+
+        return Agendamento::ativo()
+            ->where('profissional_id', $agendamento->profissional_id)
+            ->where('id', '!=', $agendamento->id)
+            ->get()
+            ->contains(function (Agendamento $outro) use ($inicio, $fim) {
+                $outroInicio = $outro->data_hora;
+                $outroFim = $outroInicio->copy()->addMinutes($outro->duracao);
+
+                return $inicio->lt($outroFim) && $fim->gt($outroInicio);
+            });
     }
 }

@@ -3,14 +3,9 @@
 @section('page-title', 'Planos & Assinatura')
 
 @section('content')
-
-    {{-- Cabeçalho --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-        <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">Planos & Assinatura</h1>
-            <p style="font-size:14px;color:var(--sa-text3);margin:0">Gerencie seu plano e uso de mensagens</p>
-        </div>
-    </div>
+<x-sa.page>
+    <x-sa.app-header title="Planos" subtitle="Escolha o plano ideal para o seu negócio" />
+    <x-sa.body padding="24px 32px 0">
 
     {{-- Banner plano atual --}}
     @if($company && $currentPlan)
@@ -18,7 +13,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:24px;align-items:center">
             <div>
                 <div style="font-size:11px;font-weight:700;color:var(--sa-text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Plano Atual</div>
-                <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:var(--sa-text1)">{{ $currentPlan->nome }}</div>
+                <div style="font-family:var(--sa-font-heading);font-size:22px;font-weight:800;color:var(--sa-text1)">{{ $currentPlan->nome }}</div>
                 <div style="font-size:13px;color:var(--sa-text3)">{{ $currentPlan->precoFormatado() }}/mês</div>
             </div>
             <div>
@@ -46,7 +41,7 @@
     @endif
 
     {{-- Grid: comparação de planos --}}
-    <h2 style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:600;color:var(--sa-text1);margin:0 0 16px">Comparar Planos</h2>
+    <h2 style="font-family:var(--sa-font-heading);font-size:16px;font-weight:600;color:var(--sa-text1);margin:0 0 16px">Comparar Planos</h2>
 
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px">
         @foreach($plans as $plan)
@@ -70,9 +65,9 @@
                 </svg>
             </div>
 
-            <div style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;color:var(--sa-text1);margin-bottom:4px">{{ $plan->nome }}</div>
+            <div style="font-family:var(--sa-font-heading);font-size:16px;font-weight:700;color:var(--sa-text1);margin-bottom:4px">{{ $plan->nome }}</div>
             <div style="margin-bottom:16px">
-                <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;color:{{ $planColor }}">{{ $plan->precoFormatado() }}</span>
+                <span style="font-family:var(--sa-font-heading);font-size:28px;font-weight:800;color:{{ $planColor }}">{{ $plan->precoFormatado() }}</span>
                 <span style="font-size:12px;color:var(--sa-text3)">/mês</span>
             </div>
 
@@ -129,7 +124,7 @@
     @if($profissionaisComComissao->isNotEmpty())
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <div style="padding:18px 20px;border-bottom:1px solid var(--sa-border)">
-            <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--sa-text1);margin:0">
+            <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0">
                 Comissões — {{ now()->translatedFormat('F Y') }}
             </h3>
             <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">Baseado em agendamentos finalizados no mês</p>
@@ -170,7 +165,7 @@
                         R$ {{ number_format((float)$receitaProf, 2, ',', '.') }}
                     </td>
                     <td style="padding:14px 16px;text-align:right">
-                        <span style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:800;color:var(--sa-secondary)">
+                        <span style="font-family:var(--sa-font-heading);font-size:15px;font-weight:800;color:var(--sa-secondary)">
                             R$ {{ number_format((float)$comissaoValor, 2, ',', '.') }}
                         </span>
                     </td>
@@ -180,7 +175,7 @@
                 <tr style="background:var(--sa-surface2)">
                     <td colspan="3" style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--sa-text2);text-align:right">Total de comissões a pagar:</td>
                     <td style="padding:12px 16px;text-align:right">
-                        <span style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:800;color:var(--sa-secondary)">
+                        <span style="font-family:var(--sa-font-heading);font-size:16px;font-weight:800;color:var(--sa-secondary)">
                             R$ {{ number_format((float)$totalComissoes, 2, ',', '.') }}
                         </span>
                     </td>
@@ -189,5 +184,6 @@
         </table>
     </div>
     @endif
-
+    </x-sa.body>
+</x-sa.page>
 @endsection

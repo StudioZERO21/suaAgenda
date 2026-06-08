@@ -1,6 +1,6 @@
-Ôªø@extends('layouts.app')
-@section('title', 'Editar Servi√ßo')
-@section('page-title', 'Editar Servi√ßo')
+@extends('layouts.app')
+@section('title', 'Editar ServiÁo')
+@section('page-title', 'Editar ServiÁo')
 
 @section('content')
 <div style="max-width:680px">
@@ -9,7 +9,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar Servi√ßo</h1>
+            <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar ServiÁo</h1>
             <p style="font-size:13px;color:var(--sa-text3);margin:0">{{ $servico->nome }}</p>
         </div>
     </div>
@@ -23,7 +23,7 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                 <div style="grid-column:1/-1">
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Nome do servi√ßo <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Nome do serviÁo <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="text" name="nome" value="{{ old('nome', $servico->nome) }}" required placeholder="Ex: Corte de cabelo"
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('nome') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
@@ -31,7 +31,7 @@
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Dura√ß√£o (minutos) <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">DuraÁ„o (minutos) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="duracao_minutos" value="{{ old('duracao_minutos', $servico->duracao_minutos) }}" min="5" max="480" step="5" required
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('duracao_minutos') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
@@ -39,7 +39,7 @@
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Pre√ßo (R$) <span style="color:var(--sa-secondary)">*</span></label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">PreÁo (R$) <span style="color:var(--sa-secondary)">*</span></label>
                     <input type="number" name="preco" value="{{ old('preco', $servico->preco) }}" min="0" step="0.01" required
                            style="width:100%;padding:10px 12px;border:1.5px solid {{ $errors->has('preco') ? '#e53e3e' : 'var(--sa-border)' }};border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
@@ -54,18 +54,18 @@
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Cor (no calend√°rio)</label>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Cor (no calend·rio)</label>
                     <div style="display:flex;align-items:center;gap:10px">
                         <input type="color" name="cor" value="{{ old('cor', $servico->cor) }}"
                                style="width:44px;height:40px;padding:2px;border:1.5px solid var(--sa-border);border-radius:8px;cursor:pointer;background:var(--sa-surface)">
-                        <span style="font-size:13px;color:var(--sa-text3)">Cor de identifica√ß√£o no calend√°rio</span>
+                        <span style="font-size:13px;color:var(--sa-text3)">Cor de identificaÁ„o no calend·rio</span>
                     </div>
                 </div>
 
                 <div style="grid-column:1/-1">
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Descri√ß√£o</label>
-                    <textarea name="descricao" rows="2" placeholder="Descri√ß√£o opcional do servi√ßo"
-                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms,outline 180ms;font-family:'Inter',sans-serif"
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">DescriÁ„o</label>
+                    <textarea name="descricao" rows="2" placeholder="DescriÁ„o opcional do serviÁo"
+                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms,outline 180ms;font-family:var(--sa-font-body)"
                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">{{ old('descricao', $servico->descricao) }}</textarea>
                 </div>
             </div>
@@ -75,13 +75,13 @@
                        style="width:16px;height:16px;accent-color:var(--sa-primary);cursor:pointer;flex-shrink:0"
                        {{ old('ativo', $servico->ativo) ? 'checked' : '' }}>
                 <label for="ativo" style="font-size:13px;color:var(--sa-text2);cursor:pointer">
-                    Servi√ßo ativo (dispon√≠vel para agendamento)
+                    ServiÁo ativo (disponÌvel para agendamento)
                 </label>
             </div>
 
             @if($profissionais->isNotEmpty())
             <div>
-                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">Profissionais que realizam este servi√ßo</label>
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:10px">Profissionais que realizam este serviÁo</label>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
                     @foreach($profissionais as $prof)
                     @php $checked = in_array((string)$prof->id, old('profissionais', $vinculados)); @endphp
@@ -105,7 +105,7 @@
                 <button type="submit"
                         style="padding:11px 24px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
                         onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
-                    Salvar Altera√ß√µes
+                    Salvar AlteraÁıes
                 </button>
                 <a href="{{ route('servicos.index') }}"
                    style="padding:11px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:all 180ms"

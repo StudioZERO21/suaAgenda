@@ -1,4 +1,4 @@
-ï»¿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Editar Cliente')
 @section('page-title', 'Editar Cliente')
 
@@ -8,7 +8,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar Cliente</h1>
+            <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0 0 2px">Editar Cliente</h1>
             <p style="font-size:13px;color:var(--sa-text3);margin:0">{{ $cliente->name }}</p>
         </div>
     </div>
@@ -50,9 +50,9 @@
                 </div>
 
                 <div style="grid-column:1/-1">
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">ObservaÃ§Ãµes</label>
-                    <textarea name="observacao" rows="3" placeholder="PreferÃªncias, alergias, etc."
-                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms,outline 180ms;font-family:'Inter',sans-serif"
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">Observações</label>
+                    <textarea name="observacao" rows="3" placeholder="Preferências, alergias, etc."
+                              style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;resize:vertical;transition:border-color 180ms,outline 180ms;font-family:var(--sa-font-body)"
                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">{{ old('observacao', $cliente->observacao) }}</textarea>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                 <button type="submit"
                         style="padding:11px 24px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
                         onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
-                    Salvar AlteraÃ§Ãµes
+                    Salvar Alterações
                 </button>
                 <a href="{{ route('clientes.show', $cliente) }}"
                    style="padding:11px 20px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:all 180ms"
