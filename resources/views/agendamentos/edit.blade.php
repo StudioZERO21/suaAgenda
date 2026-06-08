@@ -3,34 +3,6 @@
 @section('page-title', 'Editar Agendamento')
 
 @section('content')
-<div style="max-width:760px"
-     x-data="{
-         servicoId: '{{ old('servico_id', $agendamento->servico_id ?? '') }}',
-         duracao: {{ old('duracao', $agendamento->duracao) }},
-         valor: '{{ old('valor', $agendamento->valor ?? '') }}',
-         profissionalId: '{{ old('profissional_id', $agendamento->profissional_id) }}',
-         servicoData: {{ Js::from($servicosMap) }},
-         allProfissionais: {{ Js::from($profissionaisMap) }},
-         get profissionaisFiltrados() {
-             if (!this.servicoId) return this.allProfissionais;
-             const s = this.servicoData[this.servicoId];
-             if (!s || !s.profissionais.length) return this.allProfissionais;
-             return this.allProfissionais.filter(p => s.profissionais.includes(p.id));
-         },
-         onServicoChange() {
-             const s = this.servicoData[this.servicoId];
-             if (s) {
-                 this.duracao = s.duracao_minutos;
-                 this.valor = s.preco;
-             } else {
-                 this.duracao = {{ $agendamento->duracao }};
-                 this.valor = '{{ $agendamento->valor ?? '' }}';
-             }
-             if (this.profissionalId && !this.profissionaisFiltrados.find(p => p.id === this.profissionalId)) {
-                 this.profissionalId = '';
-             }
-         }
-     }">
 
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
         <a href="{{ route('agendamentos.show', $agendamento) }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:8px;text-decoration:none;color:var(--sa-text3);transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
@@ -42,7 +14,34 @@
         </div>
     </div>
 
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:28px">
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:28px"
+         x-data="{
+             servicoId: '{{ old('servico_id', $agendamento->servico_id ?? '') }}',
+             duracao: {{ old('duracao', $agendamento->duracao) }},
+             valor: '{{ old('valor', $agendamento->valor ?? '') }}',
+             profissionalId: '{{ old('profissional_id', $agendamento->profissional_id) }}',
+             servicoData: {{ Js::from($servicosMap) }},
+             allProfissionais: {{ Js::from($profissionaisMap) }},
+             get profissionaisFiltrados() {
+                 if (!this.servicoId) return this.allProfissionais;
+                 const s = this.servicoData[this.servicoId];
+                 if (!s || !s.profissionais.length) return this.allProfissionais;
+                 return this.allProfissionais.filter(p => s.profissionais.includes(p.id));
+             },
+             onServicoChange() {
+                 const s = this.servicoData[this.servicoId];
+                 if (s) {
+                     this.duracao = s.duracao_minutos;
+                     this.valor = s.preco;
+                 } else {
+                     this.duracao = {{ $agendamento->duracao }};
+                     this.valor = '{{ $agendamento->valor ?? '' }}';
+                 }
+                 if (this.profissionalId && !this.profissionaisFiltrados.find(p => p.id === this.profissionalId)) {
+                     this.profissionalId = '';
+                 }
+             }
+         }">
         <form method="POST" action="{{ route('agendamentos.update', $agendamento) }}" style="display:flex;flex-direction:column;gap:18px">
             @csrf
             @method('PUT')
