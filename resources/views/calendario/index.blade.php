@@ -107,6 +107,14 @@
 
     $nomesDia = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
     $nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    $statusCfg = [
+        'pendente'       => ['color' => '#f59e0b', 'label' => 'Aguardando',     'svg' => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'],
+        'confirmado'     => ['color' => '#6366f1', 'label' => 'Confirmado',     'svg' => '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
+        'em_atendimento' => ['color' => '#0ea5e9', 'label' => 'Em atendimento', 'svg' => '<polygon points="5 3 19 12 5 21 5 3"/>'],
+        'finalizado'     => ['color' => '#10b981', 'label' => 'Concluído',      'svg' => '<circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>'],
+        'cancelado'      => ['color' => '#ef4444', 'label' => 'Cancelado',      'svg' => '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'],
+    ];
 @endphp
 
 <div class="sa-cal-shell">
@@ -285,6 +293,9 @@
                               border-right:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               border-bottom:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               opacity:{$opacity}";
+
+                        $stCfg = $statusCfg[$ag->status] ?? ['color' => '#999999', 'label' => ucfirst($ag->status), 'svg' => '<circle cx="12" cy="12" r="3"/>'];
+                        $statusIconHtml = '<span title="'.$stCfg['label'].'" style="flex-shrink:0;display:inline-flex;align-items:center;opacity:.9"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'.$stCfg['color'].'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'.$stCfg['svg'].'</svg></span>';
                     @endphp
                     @can('update', $ag)
                     <div class="sa-cal-appt sa-cal-appt--draggable"
@@ -298,8 +309,9 @@
                          data-color="{{ $cor }}"
                          title="{{ $ag->cliente?->name }} — {{ $ag->servico?->nome }}"
                          style="{{ $apptStyle }}">
-                        <div style="font-size:11px;font-weight:700;color:{{ $cor }};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                            {{ $ag->servico?->nome ?? '—' }}
+                        <div style="display:flex;align-items:center;gap:3px;line-height:1.2;overflow:hidden">
+                            <span style="font-size:11px;font-weight:700;color:{{ $cor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">{{ $ag->servico?->nome ?? '—' }}</span>
+                            {!! $statusIconHtml !!}
                         </div>
                         @if($altPx > 28)
                         <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
@@ -323,8 +335,9 @@
                        class="sa-cal-appt"
                        title="{{ $ag->cliente?->name }} — {{ $ag->servico?->nome }}"
                        style="{{ $apptStyle }}">
-                        <div style="font-size:11px;font-weight:700;color:{{ $cor }};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                            {{ $ag->servico?->nome ?? '—' }}
+                        <div style="display:flex;align-items:center;gap:3px;line-height:1.2;overflow:hidden">
+                            <span style="font-size:11px;font-weight:700;color:{{ $cor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">{{ $ag->servico?->nome ?? '—' }}</span>
+                            {!! $statusIconHtml !!}
                         </div>
                         @if($altPx > 28)
                         <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
