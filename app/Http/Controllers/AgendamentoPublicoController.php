@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAgendamentoPublicoRequest;
 use App\Models\Agendamento;
+use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\HorarioTrabalho;
@@ -110,6 +111,10 @@ class AgendamentoPublicoController extends Controller
             ->map(fn ($ags) => $ags->map(fn ($ag) => $ag->data_hora->format('H:i'))->values());
 
         $result = $profissionais->map(function (Profissional $prof) use ($data, $diaSemana, $duracao, $ocupadosPorProf) {
+            if (BloqueioAgenda::blockedOn($prof->id, $data->format('Y-m-d'))) {
+                return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
+            }
+
             $horario = HorarioTrabalho::where('profissional_id', $prof->id)
                 ->where('dia_semana', $diaSemana)
                 ->where('ativo', true)
@@ -155,6 +160,10 @@ class AgendamentoPublicoController extends Controller
 
         $data = Carbon::parse($request->data)->startOfDay();
         $diaSemana = (int) $data->format('w'); // 0=Dom,1=Seg,...,6=Sáb
+
+        if (BloqueioAgenda::blockedOn($profissional->id, $data->format('Y-m-d'))) {
+            return response()->json([]);
+        }
 
         $horario = HorarioTrabalho::where('profissional_id', $profissional->id)
             ->where('dia_semana', $diaSemana)
