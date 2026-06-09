@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Agendamento;
 use App\Models\Company;
+use App\Observers\AgendamentoObserver;
 use App\Support\SaPalettes;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -15,6 +17,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Agendamento::observe(AgendamentoObserver::class);
+
         View::composer('layouts.app', function ($view): void {
             $user = auth()->user();
 

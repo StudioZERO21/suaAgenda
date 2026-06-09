@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\FinanceiroController;
 use App\Http\Controllers\HorarioTrabalhoController;
+use App\Http\Controllers\NotificacaoController;
 use App\Http\Controllers\PdvController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermissaoController;
@@ -104,6 +105,10 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
+
+    Route::get('notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');
+    Route::patch('notificacoes/todas-lidas', [NotificacaoController::class, 'markAllRead'])->name('notificacoes.todas-lidas');
+    Route::patch('notificacoes/{notificacao}/lida', [NotificacaoController::class, 'markRead'])->name('notificacoes.lida');
 });
 
 // Agendamento público — sem autenticação

@@ -819,8 +819,11 @@
                             <button type="button" @click="markAllRead()" x-show="unreadCount > 0" style="font-size:12px;color:var(--sa-secondary);font-weight:600;background:none;border:none;cursor:pointer">Marcar todas como lidas</button>
                         </div>
                         <div style="max-height:380px;overflow-y:auto">
+                            <div x-show="notifications.length === 0" style="padding:32px 18px;text-align:center;color:var(--sa-text3);font-size:13px">
+                                Nenhuma notificação.
+                            </div>
                             <template x-for="(n, i) in notifications" :key="n.id">
-                                <div @click="markRead(n.id)" style="display:flex;gap:12;padding:12px 18px;cursor:pointer;border-bottom:1px solid var(--sa-border);transition:background 150ms"
+                                <div @click="markRead(n.id)" style="display:flex;gap:12px;padding:12px 18px;cursor:pointer;border-bottom:1px solid var(--sa-border);transition:background 150ms"
                                      :style="n.read ? '' : 'background:color-mix(in srgb, var(--sa-primary) 4%, transparent)'"
                                      @mouseenter="$el.style.background='var(--sa-surface2)'"
                                      @mouseleave="$el.style.background = n.read ? 'transparent' : 'color-mix(in srgb, var(--sa-primary) 4%, transparent)'">
@@ -962,17 +965,11 @@
             drawerOpen: false,
             notifOpen: false,
             dark: false,
-            notifications: [
-                { id: 1, type: 'booking', title: 'Novo agendamento', msg: 'Miguel Santos agendou Corte + Barba — 14:00', time: '5min', read: false, color: '#10b981', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
-                { id: 2, type: 'cancel', title: 'Cancelamento', msg: 'Rafael Costa cancelou agendamento das 10:30 de amanhã', time: '1h', read: false, color: '#ef4444', icon: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
-                { id: 3, type: 'pending', title: 'Confirmação pendente', msg: 'Bruno Lima aguarda confirmação para amanhã às 9:00', time: '2h', read: false, color: '#f59e0b', icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
-                { id: 4, type: 'system', title: 'Limite de WhatsApp', msg: 'Você usou 71% do limite mensal de mensagens', time: '3h', read: true, color: '#6366f1', icon: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>' },
-                { id: 5, type: 'booking', title: 'Agendamento confirmado', msg: 'Pedro Oliveira confirmou Coloração com Ana Costa', time: '4h', read: true, color: '#10b981', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
-            ],
+            notifications: [],
             get unreadCount() {
                 return this.notifications.filter(n => !n.read).length;
             },
-            init() {
+            async init() {
                 const el = document.getElementById('sa-date');
                 if (el) {
                     el.textContent = new Date().toLocaleDateString('pt-BR', {
@@ -981,19 +978,40 @@
                 }
                 this.dark = localStorage.getItem('sa-dark') === '1';
                 document.documentElement.classList.toggle('sa-dark', this.dark);
+                await this.loadNotifications();
+            },
+            async loadNotifications() {
+                try {
+                    const r = await fetch('{{ route('notificacoes.index') }}', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (r.ok) this.notifications = await r.json();
+                } catch(e) {}
             },
             toggleDark() {
                 this.dark = !this.dark;
                 document.documentElement.classList.toggle('sa-dark', this.dark);
                 localStorage.setItem('sa-dark', this.dark ? '1' : '0');
             },
-            markRead(id) {
+            async markRead(id) {
                 this.notifications = this.notifications.map(n =>
                     n.id === id ? { ...n, read: true } : n
                 );
+                try {
+                    await fetch(`/notificacoes/${id}/lida`, {
+                        method: 'PATCH',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                    });
+                } catch(e) {}
             },
-            markAllRead() {
+            async markAllRead() {
                 this.notifications = this.notifications.map(n => ({ ...n, read: true }));
+                try {
+                    await fetch('{{ route('notificacoes.todas-lidas') }}', {
+                        method: 'PATCH',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                    });
+                } catch(e) {}
             },
         };
     }
