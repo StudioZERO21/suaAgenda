@@ -73,6 +73,70 @@ class AgendamentoPublicoController extends Controller
         return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg'));
     }
 
+    /**
+     * Retorna disponibilidade de todos os profissionais para um serviço + data.
+     * Usada pela seção de horários na vitrine pública.
+     *
+     * GET /vitrine/{slug}/disponibilidade?servico_id=X&data=Y
+     */
+    public function disponibilidade(string $slug, Request $request): JsonResponse
+    {
+        $company = Company::where('slug', $slug)->firstOrFail();
+
+        $request->validate([
+            'servico_id' => ['required', 'uuid'],
+            'data' => ['required', 'date', 'after_or_equal:today'],
+        ]);
+
+        $servico = Servico::where('company_id', $company->id)
+            ->findOrFail($request->servico_id);
+
+        $data = Carbon::parse($request->data)->startOfDay();
+        $diaSemana = (int) $data->format('w');
+        $duracao = $servico->duracao_minutos;
+
+        $profissionaisIds = $servico->profissionais()->pluck('profissionais.id');
+        $profissionais = Profissional::where('company_id', $company->id)
+            ->ativo()
+            ->when($profissionaisIds->isNotEmpty(), fn ($q) => $q->whereIn('id', $profissionaisIds))
+            ->orderBy('name')
+            ->get();
+
+        $ocupadosPorProf = Agendamento::whereIn('profissional_id', $profissionais->pluck('id'))
+            ->whereDate('data_hora', $data)
+            ->whereIn('status', ['pendente', 'confirmado', 'em_atendimento'])
+            ->get()
+            ->groupBy('profissional_id')
+            ->map(fn ($ags) => $ags->map(fn ($ag) => $ag->data_hora->format('H:i'))->values());
+
+        $result = $profissionais->map(function (Profissional $prof) use ($data, $diaSemana, $duracao, $ocupadosPorProf) {
+            $horario = HorarioTrabalho::where('profissional_id', $prof->id)
+                ->where('dia_semana', $diaSemana)
+                ->where('ativo', true)
+                ->first();
+
+            if (! $horario) {
+                return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
+            }
+
+            $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
+            $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
+            $ocupados = $ocupadosPorProf->get($prof->id, collect());
+
+            $slots = [];
+            $current = $inicio->copy();
+            while ($current->copy()->addMinutes($duracao)->lte($fim)) {
+                $hora = $current->format('H:i');
+                $slots[] = ['hora' => $hora, 'disponivel' => ! $ocupados->contains($hora)];
+                $current->addMinutes($duracao);
+            }
+
+            return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => $slots];
+        });
+
+        return response()->json($result->values());
+    }
+
     public function slots(string $slug, Request $request): JsonResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();
