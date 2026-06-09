@@ -10,6 +10,7 @@ use App\Models\Lancamento;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RelatorioController extends Controller
 {
@@ -87,6 +88,19 @@ class RelatorioController extends Controller
         $maxServico = $receitaPorServico->max('total') ?: 1;
         $maxProfissional = $agendamentosPorProfissional->max('total') ?: 1;
 
+        // Heatmap: 7 dias (0=Seg…6=Dom) × 24 horas — processado em PHP para compatibilidade DB
+        $heatmap = array_fill(0, 7, array_fill(0, 24, 0));
+        Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->pluck('data_hora')
+            ->each(function (Carbon $dt) use (&$heatmap): void {
+                // Carbon dayOfWeek: 0=Dom…6=Sáb → converter para 0=Seg…6=Dom
+                $day = $dt->dayOfWeek === 0 ? 6 : $dt->dayOfWeek - 1;
+                $heatmap[$day][$dt->hour]++;
+            });
+
+        $maxHeatmap = max(array_map('max', $heatmap)) ?: 1;
+
         return view('relatorios.index', compact(
             'receitaAgendamentos',
             'receitaLancamentos',
@@ -103,10 +117,72 @@ class RelatorioController extends Controller
             'maxServico',
             'maxProfissional',
             'maxDespesa',
+            'heatmap',
+            'maxHeatmap',
             'inicio',
             'fim',
             'request',
         ));
+    }
+
+    public function exportarCsv(Request $request): StreamedResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->with(['cliente', 'servico', 'profissional'])
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->orderByDesc('data_hora')
+            ->get();
+
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->orderByDesc('data')
+            ->get();
+
+        $filename = 'relatorio-'.$inicio->format('Y-m-d').'-ao-'.$fim->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($agendamentos, $lancamentos): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Data', 'Cliente', 'Serviço', 'Profissional', 'Tipo', 'Valor (R$)', 'Status'], ';');
+
+            foreach ($agendamentos as $a) {
+                fputcsv($out, [
+                    $a->data_hora->format('d/m/Y H:i'),
+                    $a->cliente?->name ?? 'Cliente avulso',
+                    $a->servico?->nome ?? '—',
+                    $a->profissional?->name ?? '—',
+                    'agendamento',
+                    number_format((float) $a->valor, 2, ',', '.'),
+                    match ($a->status) {
+                        Agendamento::STATUS_FINALIZADO => 'Finalizado',
+                        Agendamento::STATUS_CANCELADO => 'Cancelado',
+                        Agendamento::STATUS_CONFIRMADO => 'Confirmado',
+                        default => 'Pendente',
+                    },
+                ], ';');
+            }
+
+            foreach ($lancamentos as $l) {
+                fputcsv($out, [
+                    $l->data->format('d/m/Y'),
+                    $l->descricao,
+                    $l->categoria ?? '—',
+                    '—',
+                    $l->tipo,
+                    number_format((float) $l->valor, 2, ',', '.'),
+                    match ($l->status) {
+                        'pago' => 'Pago',
+                        'cancelado' => 'Cancelado',
+                        default => 'Pendente',
+                    },
+                ], ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /** @return array{0: Carbon, 1: Carbon} */

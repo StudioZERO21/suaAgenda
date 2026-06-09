@@ -18,83 +18,7 @@
     $mesAnterior = $inicio->copy()->subMonth()->translatedFormat('F');
 @endphp
 
-<x-sa.page x-data="{
-    transacoes: @json($transacoes->values()),
-    filters: { type: 'all', status: 'all', prof: 'all', method: 'all' },
-    dateFrom: '{{ $inicio->format('Y-m-d') }}',
-    dateTo: '{{ $fim->format('Y-m-d') }}',
-    statusCfg: {
-        paid:     { label: 'Pago',        bg: 'rgba(16,185,129,.1)',  color: '#059669' },
-        pending:  { label: 'Pendente',    bg: 'rgba(245,158,11,.1)',  color: '#d97706' },
-        refunded: { label: 'Reembolsado', bg: 'rgba(239,68,68,.08)', color: '#dc2626' },
-    },
-    lancModalOpen: false,
-    lancSaving: false,
-    lancForm: { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' },
-    get filtersActive() {
-        return this.filters.type !== 'all' || this.filters.status !== 'all'
-            || this.filters.prof !== 'all' || this.filters.method !== 'all';
-    },
-    get filtered() {
-        return this.transacoes.filter(tx => {
-            if (this.filters.type !== 'all' && tx.tipo !== this.filters.type) return false;
-            if (this.filters.status !== 'all' && tx.status_key !== this.filters.status) return false;
-            if (this.filters.prof !== 'all' && !tx.profissional.startsWith(this.filters.prof)) return false;
-            if (this.filters.method !== 'all' && tx.metodo !== this.filters.method) return false;
-            if (this.dateFrom && tx.data < this.dateFrom) return false;
-            if (this.dateTo && tx.data > this.dateTo) return false;
-            return true;
-        });
-    },
-    resetFilters() {
-        this.filters = { type: 'all', status: 'all', prof: 'all', method: 'all' };
-    },
-    openLancModal() {
-        this.lancForm = { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' };
-        this.lancModalOpen = true;
-    },
-    async saveLancamento() {
-        if (!this.lancForm.descricao || !this.lancForm.valor || !this.lancForm.data) {
-            return Swal.fire({ title: 'Atenção', text: 'Preencha os campos obrigatórios.', icon: 'error', confirmButtonColor: '#1a1a1a' });
-        }
-        this.lancSaving = true;
-        try {
-            const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const r = await fetch('/financeiro/lancamentos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-                body: JSON.stringify(this.lancForm)
-            });
-            if (!r.ok) { const e = await r.json(); throw new Error(Object.values(e.errors || {}).flat().join(', ') || 'Erro ao salvar'); }
-            const data = await r.json();
-            this.transacoes.unshift(data);
-            this.lancModalOpen = false;
-            Swal.fire({ title: 'Lançamento criado!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
-        } catch (e) {
-            Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
-        } finally {
-            this.lancSaving = false;
-        }
-    },
-    async deleteLancamento(id) {
-        const confirm = await Swal.fire({ title: 'Excluir lançamento?', text: 'Esta ação não pode ser desfeita.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444' });
-        if (!confirm.isConfirmed) return;
-        const csrf = document.querySelector('meta[name="csrf-token"]').content;
-        await fetch('/financeiro/lancamentos/' + id, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
-        this.transacoes = this.transacoes.filter(tx => tx.id !== id);
-        Swal.fire({ title: 'Removido!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-    },
-    fmtDate(iso) {
-        const [y, m, d] = iso.split('-');
-        return `${d}/${m}/${y}`;
-    },
-    fmtCurrency(v) {
-        return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    },
-    profFirst(name) {
-        return (name || '').split(' ')[0] || '—';
-    }
-}">
+<x-sa.page x-data="financeiroApp()">
     <x-sa.app-header title="Financeiro" subtitle="Receita, comissões e pagamentos">
         <x-slot:actions>
             <div style="display:flex;gap:8px;align-items:center">
@@ -234,7 +158,10 @@
                         <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0">Transações</h3>
                         <span style="font-size:12px;color:var(--sa-text3)" x-text="filtered.length + ' resultado(s)'"></span>
                     </div>
-                    <x-sa.btn variant="ghost" size="sm" onclick="Swal.fire({toast:true,position:'top-end',icon:'info',title:'Exportação CSV será habilitada na próxima etapa.',showConfirmButton:false,timer:2500})">Exportar</x-sa.btn>
+                    <x-sa.btn variant="ghost" size="sm" :href="route('financeiro.exportar', ['periodo' => $periodo])">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Exportar CSV
+                    </x-sa.btn>
                 </div>
                 <div style="overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse">
@@ -433,3 +360,99 @@
     </div>
 </x-sa.page>
 @endsection
+
+@push('scripts')
+<script>
+function financeiroApp() {
+    return {
+        transacoes: @json($transacoes->values()),
+        filters: { type: 'all', status: 'all', prof: 'all', method: 'all' },
+        dateFrom: '{{ $inicio->format('Y-m-d') }}',
+        dateTo: '{{ $fim->format('Y-m-d') }}',
+        statusCfg: {
+            paid:     { label: 'Pago',        bg: 'rgba(16,185,129,.1)',  color: '#059669' },
+            pending:  { label: 'Pendente',    bg: 'rgba(245,158,11,.1)',  color: '#d97706' },
+            refunded: { label: 'Reembolsado', bg: 'rgba(239,68,68,.08)', color: '#dc2626' },
+        },
+        lancModalOpen: false,
+        lancSaving: false,
+        lancForm: { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' },
+
+        get filtersActive() {
+            return this.filters.type !== 'all' || this.filters.status !== 'all'
+                || this.filters.prof !== 'all' || this.filters.method !== 'all';
+        },
+
+        get filtered() {
+            return this.transacoes.filter(tx => {
+                if (this.filters.type !== 'all' && tx.tipo !== this.filters.type) return false;
+                if (this.filters.status !== 'all' && tx.status_key !== this.filters.status) return false;
+                if (this.filters.prof !== 'all' && !tx.profissional.startsWith(this.filters.prof)) return false;
+                if (this.filters.method !== 'all' && tx.metodo !== this.filters.method) return false;
+                if (this.dateFrom && tx.data < this.dateFrom) return false;
+                if (this.dateTo && tx.data > this.dateTo) return false;
+                return true;
+            });
+        },
+
+        resetFilters() {
+            this.filters = { type: 'all', status: 'all', prof: 'all', method: 'all' };
+        },
+
+        openLancModal() {
+            this.lancForm = { tipo: 'receita', descricao: '', categoria: '', valor: '', data: '{{ now()->format('Y-m-d') }}', status: 'pendente', metodo_pagamento: '' };
+            this.lancModalOpen = true;
+        },
+
+        async saveLancamento() {
+            if (!this.lancForm.descricao || !this.lancForm.valor || !this.lancForm.data) {
+                return Swal.fire({ title: 'Atenção', text: 'Preencha os campos obrigatórios.', icon: 'error', confirmButtonColor: '#1a1a1a' });
+            }
+            this.lancSaving = true;
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                const r = await fetch('/financeiro/lancamentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify(this.lancForm),
+                });
+                if (!r.ok) {
+                    const e = await r.json();
+                    throw new Error(Object.values(e.errors || {}).flat().join(', ') || 'Erro ao salvar');
+                }
+                const data = await r.json();
+                this.transacoes.unshift(data);
+                this.lancModalOpen = false;
+                Swal.fire({ title: 'Lançamento criado!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            } finally {
+                this.lancSaving = false;
+            }
+        },
+
+        async deleteLancamento(id) {
+            const confirm = await Swal.fire({ title: 'Excluir lançamento?', text: 'Esta ação não pode ser desfeita.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444' });
+            if (!confirm.isConfirmed) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            await fetch('/financeiro/lancamentos/' + id, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+            this.transacoes = this.transacoes.filter(tx => tx.id !== id);
+            Swal.fire({ title: 'Removido!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        },
+
+        fmtDate(iso) {
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y}`;
+        },
+
+        fmtCurrency(v) {
+            return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        profFirst(name) {
+            return (name || '').split(' ')[0] || '—';
+        },
+    };
+}
+</script>
+@endpush

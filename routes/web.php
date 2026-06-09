@@ -46,7 +46,9 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('agendamentos/{agendamento}/move', [AgendamentoController::class, 'move'])->name('agendamentos.move');
     Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
+    Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
+    Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
     Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');
     Route::put('produtos/{produto}', [ProdutoController::class, 'update'])->name('produtos.update');
