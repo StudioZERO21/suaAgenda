@@ -40,6 +40,111 @@
     </div>
     @endif
 
+    {{-- Usage Dashboard --}}
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:20px;margin-bottom:28px;align-items:start">
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0">Uso de Mensagens — {{ now()->translatedFormat('M/Y') }}</h3>
+                <span style="font-size:11px;color:var(--sa-text3)">Renova em {{ $diasRestantes }} dias</span>
+            </div>
+
+            @foreach($usage as $key => $u)
+            @php
+                $unlimited = $u['limite'] < 0;
+                $noQuota = $u['limite'] === 0;
+                $pct = $noQuota ? 0 : ($unlimited ? 0 : min(round($u['usado'] / max($u['limite'], 1) * 100), 100));
+                $isDanger = !$unlimited && !$noQuota && $pct > 90;
+                $isWarn = !$unlimited && !$noQuota && $pct > 70 && !$isDanger;
+                $barColor = $isDanger ? '#ef4444' : ($isWarn ? '#f59e0b' : $u['cor']);
+            @endphp
+            <div style="margin-bottom:{{ $loop->last ? '16px' : '22px' }}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:7px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $u['label'] }}</span>
+                        @if($isWarn && !$isDanger)
+                        <span style="font-size:10px;font-weight:700;color:#d97706;background:rgba(245,158,11,.1);border-radius:20px;padding:2px 7px">⚠ Atenção</span>
+                        @elseif($isDanger)
+                        <span style="font-size:10px;font-weight:700;color:#dc2626;background:rgba(239,68,68,.1);border-radius:20px;padding:2px 7px">🔴 Limite próximo</span>
+                        @endif
+                    </div>
+                    <span style="font-size:12px;color:var(--sa-text3)">
+                        @if($unlimited)
+                            <span style="color:#10b981;font-weight:600">Ilimitado</span>
+                        @elseif($noQuota)
+                            <span style="color:var(--sa-text3)">Não incluso</span>
+                        @else
+                            {{ $u['usado'] }} / {{ $u['limite'] }} msgs
+                        @endif
+                    </span>
+                </div>
+                @if(!$unlimited && !$noQuota)
+                <div style="height:10px;border-radius:5px;background:var(--sa-surface2);overflow:hidden;border:1px solid var(--sa-border)">
+                    <div style="height:100%;border-radius:5px;background:{{ $barColor }};width:{{ $pct }}%;transition:width 900ms cubic-bezier(.4,0,.2,1)"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:4px">
+                    <span style="font-size:11px;color:{{ $isDanger ? '#ef4444' : ($isWarn ? '#f59e0b' : 'var(--sa-text3)') }}">{{ $pct }}% utilizado</span>
+                    <span style="font-size:11px;color:var(--sa-text3)">{{ $u['limite'] - $u['usado'] }} restantes</span>
+                </div>
+                @elseif($noQuota)
+                <div style="height:10px;border-radius:5px;background:var(--sa-surface2);border:1px solid var(--sa-border)"></div>
+                <div style="margin-top:4px;font-size:11px;color:var(--sa-text3)">Disponível no plano Pro ou superior</div>
+                @endif
+            </div>
+            @endforeach
+
+            <div style="background:var(--sa-surface2);border-radius:10px;padding:12px 14px;border:1px solid var(--sa-border)">
+                <div style="font-size:12px;font-weight:700;color:var(--sa-text1);margin-bottom:6px">💡 Dica para economizar</div>
+                <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.6">
+                    Notificações via e-mail são ilimitadas. Use-as para confirmações detalhadas e reserve o WhatsApp para lembretes urgentes.
+                </p>
+            </div>
+        </div>
+
+        {{-- Invoice history (mockup) --}}
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0 0 16px">Histórico de Faturas</h3>
+            @if($company->plano === 'trial')
+            <div style="text-align:center;padding:28px;color:var(--sa-text3)">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;display:block;opacity:.4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <div style="font-size:14px;font-weight:600;color:var(--sa-text2);margin-bottom:4px">Período de Teste</div>
+                <p style="font-size:13px;margin:0;line-height:1.5">
+                    Você está no período gratuito. Escolha um plano abaixo para ativar sua assinatura.
+                </p>
+                @if($company->trial_ends_at)
+                <div style="margin-top:12px;font-size:12px;font-weight:600;color:{{ $company->trial_ends_at->isPast() ? '#ef4444' : 'var(--sa-secondary)' }}">
+                    {{ $company->trial_ends_at->isPast() ? 'Trial expirado' : 'Trial ativo até ' . $company->trial_ends_at->translatedFormat('d/m/Y') }}
+                </div>
+                @endif
+            </div>
+            @else
+            <div style="font-size:13px;color:var(--sa-text3);font-style:italic;padding:16px 0">
+                Histórico de faturas em breve.
+            </div>
+            @endif
+
+            <div style="border-top:1px solid var(--sa-border);padding-top:16px;margin-top:8px">
+                <div style="font-size:12px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Pagamento</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--sa-border);border-radius:10px">
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div style="width:38px;height:24px;border-radius:4px;background:color-mix(in srgb,var(--sa-primary) 8%,transparent);border:1px solid var(--sa-border);display:flex;align-items:center;justify-content:center">
+                            <svg width="16" height="12" viewBox="0 0 24 16" fill="none" stroke="var(--sa-text3)" stroke-width="1.5"><rect x="1" y="1" width="22" height="14" rx="2"/><line x1="1" y1="5" x2="23" y2="5"/></svg>
+                        </div>
+                        <div>
+                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1)">Cartão não configurado</div>
+                            <div style="font-size:11px;color:var(--sa-text3)">Adicione um método de pagamento</div>
+                        </div>
+                    </div>
+                    <button onclick="Swal.fire({title:'Em breve',text:'Gerenciamento de pagamento em breve.',icon:'info',confirmButtonColor:'#1a1a1a'})"
+                            style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:12px;font-weight:600;cursor:pointer;transition:border-color 180ms,color 180ms"
+                            onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                            onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                        Configurar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Grid: comparação de planos --}}
     <h2 style="font-family:var(--sa-font-heading);font-size:16px;font-weight:600;color:var(--sa-text1);margin:0 0 16px">Comparar Planos</h2>
 

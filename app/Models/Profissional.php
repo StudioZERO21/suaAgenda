@@ -19,13 +19,14 @@ class Profissional extends Model
 
     protected $table = 'profissionais';
 
-    protected $fillable = ['company_id', 'cargo_id', 'name', 'especialidade', 'comissao_pct', 'ativo'];
+    protected $fillable = ['company_id', 'cargo_id', 'name', 'especialidade', 'comissao_pct', 'ativo', 'cor', 'phone', 'admissao', 'instagram', 'tiktok', 'facebook'];
 
     protected function casts(): array
     {
         return [
             'ativo' => 'boolean',
             'comissao_pct' => 'decimal:2',
+            'admissao' => 'date',
         ];
     }
 

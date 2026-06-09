@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Cargo;
+use App\Models\Profissional;
 use App\Models\User;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
@@ -57,7 +58,13 @@ class PermissaoController extends Controller
                 'email' => $u->email,
                 'ativo' => (bool) $u->ativo,
                 'role' => $u->roles->first()?->name ?? '',
+                'profissional_id' => $u->profissional_id ?? '',
             ]);
+
+        $profissionais = Profissional::where('company_id', $companyId)
+            ->ativo()
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade']);
 
         return view('permissoes.index', [
             'catalogo' => SaDemoData::aclCatalogo(),
@@ -65,6 +72,7 @@ class PermissaoController extends Controller
             'cargosJson' => $cargos,
             'roleGroupsJson' => $roleGroups,
             'usersJson' => $users,
+            'profissionaisJson' => $profissionais,
         ]);
     }
 
@@ -81,5 +89,30 @@ class PermissaoController extends Controller
         $user->syncRoles([$request->role]);
 
         return response()->json(['success' => true, 'role' => $request->role]);
+    }
+
+    public function assignUserProfissional(Request $request, User $user): JsonResponse
+    {
+        abort_if(! auth()->user()->hasRole('admin_empresa'), 403);
+        abort_if($user->empresa_id !== auth()->user()->empresa_id, 403);
+
+        $companyId = auth()->user()->empresa_id;
+
+        $request->validate([
+            'profissional_id' => ['nullable', 'string'],
+        ]);
+
+        $profissionalId = $request->profissional_id ?: null;
+
+        if ($profissionalId !== null) {
+            $exists = Profissional::where('id', $profissionalId)
+                ->where('company_id', $companyId)
+                ->exists();
+            abort_if(! $exists, 422);
+        }
+
+        $user->update(['profissional_id' => $profissionalId]);
+
+        return response()->json(['success' => true, 'profissional_id' => $profissionalId]);
     }
 }
