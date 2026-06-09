@@ -159,9 +159,14 @@
                 <div style="display:flex;flex-direction:column;gap:14px">
                     {{-- Preview card --}}
                     <div style="display:flex;gap:14px;padding:14px;background:var(--sa-surface2);border-radius:12px;border:1px solid var(--sa-border);align-items:center">
-                        <div style="width:56px;height:56px;border-radius:12px;background:color-mix(in srgb,var(--sa-secondary) 15%,transparent);border:1px dashed var(--sa-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer"
-                             @click="Swal.fire({title:'Em breve',text:'Upload de foto em breve!',icon:'info',confirmButtonText:'OK',confirmButtonColor:'#1a1a1a'})">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" style="opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <div style="width:56px;height:56px;border-radius:12px;background:color-mix(in srgb,var(--sa-secondary) 15%,transparent);border:1px dashed var(--sa-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative"
+                             @click="editing && $refs.fileInput && $refs.fileInput.click()">
+                            <template x-if="capaImagem">
+                                <img :src="capaImagem.url" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
+                            </template>
+                            <template x-if="!capaImagem">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" style="opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </template>
                         </div>
                         <div style="flex:1">
                             <div style="font-family:var(--sa-font-heading);font-size:16px;font-weight:700;color:var(--sa-text1)" x-text="form.nome || 'Nome do produto'"></div>
@@ -233,6 +238,70 @@
                                    style="width:100%;padding:9px 12px;font-size:13px;border:1px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);outline:none;box-sizing:border-box">
                         </div>
                     </div>
+                    {{-- Photo gallery --}}
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                            <label style="font-size:13px;font-weight:600;color:var(--sa-text1)">Fotos do Produto</label>
+                            <button type="button" x-show="editing && (form.imagens || []).length < 7"
+                                    @click="$refs.fileInput.click()"
+                                    style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body)"
+                                    onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Adicionar Foto
+                            </button>
+                            <input type="file" x-ref="fileInput" accept="image/*" style="display:none" @change="uploadImagem($event)">
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                            {{-- Cover slot --}}
+                            <div @click="editing && $refs.fileInput.click()"
+                                 :style="'position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:' + (editing ? 'pointer' : 'default') + ';background:color-mix(in srgb,var(--sa-secondary) 12%,transparent);border:2px solid ' + ((form.imagens || []).length > 0 ? 'var(--sa-secondary)' : 'var(--sa-border)')">
+                                <template x-if="capaImagem">
+                                    <img :src="capaImagem.url" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+                                </template>
+                                <template x-if="!capaImagem">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" style="opacity:.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </template>
+                                <span x-show="!capaImagem" style="font-size:10px;font-weight:700;color:var(--sa-secondary);letter-spacing:.5px">CAPA</span>
+                                <div x-show="(form.imagens || []).length > 0" style="position:absolute;top:4px;right:4px;background:var(--sa-secondary);border-radius:20px;padding:2px 6px">
+                                    <span style="font-size:9px;font-weight:700;color:#fff">CAPA</span>
+                                </div>
+                            </div>
+                            {{-- Existing images --}}
+                            <template x-for="img in (form.imagens || []).filter(i => !i.is_capa)" :key="img.id">
+                                <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid var(--sa-border);background:var(--sa-surface2)"
+                                     @mouseenter="img._hover = true" @mouseleave="img._hover = false">
+                                    <img :src="img.url" style="width:100%;height:100%;object-fit:cover">
+                                    <div x-show="img._hover" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);padding:4px 6px;display:flex;gap:4px;justify-content:space-between">
+                                        <button type="button" @click.stop="setCapaImagem(img)"
+                                                style="font-size:9px;background:var(--sa-secondary);color:#fff;border:none;border-radius:4px;padding:2px 5px;cursor:pointer;font-weight:700">Capa</button>
+                                        <button type="button" @click.stop="deleteImagem(img)"
+                                                style="font-size:9px;background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 5px;cursor:pointer">✕</button>
+                                    </div>
+                                </div>
+                            </template>
+                            {{-- Add slot (when editing and < 7 additional images) --}}
+                            <div x-show="editing && (form.imagens || []).length < 7"
+                                 @click="$refs.fileInput.click()"
+                                 style="aspect-ratio:1;border-radius:10px;border:2px dashed var(--sa-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all 160ms"
+                                 onmouseover="this.style.borderColor='var(--sa-primary)';this.style.background='color-mix(in srgb,var(--sa-primary) 4%,transparent)'"
+                                 onmouseout="this.style.borderColor='var(--sa-border)';this.style.background='transparent'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span style="font-size:9px;font-family:monospace;color:var(--sa-text3)">Adicionar</span>
+                            </div>
+                            {{-- Placeholder when creating new product --}}
+                            <div x-show="!editing" style="aspect-ratio:1;border-radius:10px;border:2px dashed var(--sa-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:default;opacity:.5">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <span style="font-size:9px;font-family:monospace;color:var(--sa-text3)">Salve primeiro</span>
+                            </div>
+                        </div>
+                        <p style="font-size:11px;color:var(--sa-text3);margin-top:6px">Passe o mouse nas fotos para definir como capa ou remover. Máx. 8 fotos.</p>
+                        <div x-show="uploadingImagem" style="font-size:12px;color:var(--sa-text2);margin-top:4px">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" style="animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:4px"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                            Enviando imagem...
+                        </div>
+                    </div>
+
                     <div>
                         <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6">Descrição</label>
                         <textarea x-model="form.descricao" rows="2" placeholder="Descreva o produto..."
@@ -275,7 +344,7 @@ function productsApp() {
     const blankForm = () => ({
         nome: '', categoria: categorias.find(c => c !== 'Todos') || 'Cabelo',
         preco: 0, custo: 0, estoque: 0, unidade: unidades[0] || 'un.',
-        ativo: true, sku: '', descricao: '',
+        ativo: true, sku: '', descricao: '', imagens: [],
     });
 
     return {
@@ -289,6 +358,7 @@ function productsApp() {
         lowStockOnly: false,
         form: blankForm(),
         saving: false,
+        uploadingImagem: false,
 
         get stats() {
             const active = this.prods.filter(p => p.ativo);
@@ -312,6 +382,10 @@ function productsApp() {
 
         get formMargin() {
             return this.calcMargin(this.form);
+        },
+
+        get capaImagem() {
+            return (this.form.imagens || []).find(i => i.is_capa) || null;
         },
 
         calcMargin(p) {
@@ -347,7 +421,7 @@ function productsApp() {
 
         openEdit(p) {
             this.editing = p;
-            this.form = { ...p };
+            this.form = { ...p, imagens: [...(p.imagens || [])] };
             this.modalOpen = true;
         },
 
@@ -384,8 +458,9 @@ function productsApp() {
             }
             this.saving = true;
             const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const url = this.editing ? `/produtos/${this.editing.id}` : '/produtos';
-            const method = this.editing ? 'PUT' : 'POST';
+            const isEditing = !!this.editing;
+            const url = isEditing ? `/produtos/${this.editing.id}` : '/produtos';
+            const method = isEditing ? 'PUT' : 'POST';
             fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -393,19 +468,90 @@ function productsApp() {
             })
             .then(r => r.ok ? r.json() : Promise.reject(r))
             .then(data => {
-                if (this.editing) {
-                    this.prods = this.prods.map(p => p.id === this.editing.id ? data : p);
+                if (isEditing) {
+                    this.prods = this.prods.map(p => p.id === data.id ? data : p);
+                    this.editing = data;
+                    this.form = { ...data, imagens: [...(data.imagens || [])] };
+                    this.saving = false;
+                    this.modalOpen = false;
+                    Swal.fire({ title: 'Produto atualizado!', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
                 } else {
                     this.prods.push(data);
+                    this.editing = data;
+                    this.form = { ...data, imagens: [...(data.imagens || [])] };
+                    this.saving = false;
+                    Swal.fire({ title: 'Produto cadastrado!', text: 'Agora você pode adicionar fotos ao produto.', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
                 }
-                this.saving = false;
-                this.modalOpen = false;
-                Swal.fire({ title: this.editing ? 'Produto atualizado!' : 'Produto cadastrado!', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             })
             .catch(() => {
                 this.saving = false;
                 Swal.fire({ title: 'Erro', text: 'Não foi possível salvar.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             });
+        },
+
+        uploadImagem(event) {
+            if (!this.editing) return;
+            const file = event.target.files[0];
+            if (!file) return;
+            event.target.value = '';
+
+            this.uploadingImagem = true;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const fd = new FormData();
+            fd.append('imagem', file);
+
+            fetch(`/produtos/${this.editing.id}/imagens`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf },
+                body: fd,
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(img => {
+                this.form.imagens = [...(this.form.imagens || []), img];
+                this.prods = this.prods.map(p => p.id === this.editing.id ? { ...p, imagens: this.form.imagens } : p);
+                this.uploadingImagem = false;
+            })
+            .catch(() => {
+                this.uploadingImagem = false;
+                Swal.fire({ title: 'Erro', text: 'Não foi possível enviar a imagem.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            });
+        },
+
+        deleteImagem(img) {
+            Swal.fire({
+                title: 'Remover foto?',
+                text: 'Esta ação não pode ser desfeita.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Remover',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ef4444',
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                fetch(`/produtos/imagens/${img.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } })
+                    .then(() => {
+                        this.form.imagens = this.form.imagens.filter(i => i.id !== img.id);
+                        // If deleted was capa, set first as capa
+                        if (img.is_capa && this.form.imagens.length > 0) {
+                            this.form.imagens[0].is_capa = true;
+                        }
+                        this.prods = this.prods.map(p => p.id === this.editing.id ? { ...p, imagens: this.form.imagens } : p);
+                    })
+                    .catch(() => Swal.fire({ title: 'Erro', text: 'Não foi possível remover a imagem.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' }));
+            });
+        },
+
+        setCapaImagem(img) {
+            if (!this.editing) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(`/produtos/imagens/${img.id}/capa`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': csrf } })
+                .then(r => r.ok ? r.json() : Promise.reject(r))
+                .then(() => {
+                    this.form.imagens = this.form.imagens.map(i => ({ ...i, is_capa: i.id === img.id }));
+                    this.prods = this.prods.map(p => p.id === this.editing.id ? { ...p, imagens: this.form.imagens } : p);
+                })
+                .catch(() => Swal.fire({ title: 'Erro', text: 'Não foi possível definir a capa.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' }));
         },
     };
 }

@@ -54,6 +54,9 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::put('produtos/{produto}', [ProdutoController::class, 'update'])->name('produtos.update');
     Route::delete('produtos/{produto}', [ProdutoController::class, 'destroy'])->name('produtos.destroy');
     Route::patch('produtos/{produto}/toggle', [ProdutoController::class, 'toggle'])->name('produtos.toggle');
+    Route::post('produtos/{produto}/imagens', [ProdutoController::class, 'storeImagem'])->name('produtos.imagens.store');
+    Route::delete('produtos/imagens/{imagem}', [ProdutoController::class, 'destroyImagem'])->name('produtos.imagens.destroy');
+    Route::patch('produtos/imagens/{imagem}/capa', [ProdutoController::class, 'setCapa'])->name('produtos.imagens.capa');
 
     Route::get('pdv', [PdvController::class, 'index'])->name('pdv');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
@@ -74,11 +77,16 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::delete('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'destroyLancamento'])->name('financeiro.lancamentos.destroy');
     Route::get('site', [SitePublicoController::class, 'index'])->name('site.index');
     Route::put('site/save', [SitePublicoController::class, 'save'])->name('site.save');
+    Route::post('site/upload-banner', [SitePublicoController::class, 'uploadBanner'])->name('site.upload.banner');
+    Route::delete('site/remover-banner', [SitePublicoController::class, 'removeBanner'])->name('site.remove.banner');
+    Route::post('site/upload-og', [SitePublicoController::class, 'uploadOg'])->name('site.upload.og');
 
     Route::post('portfolio/fotos', [PortfolioController::class, 'store'])->name('portfolio.fotos.store');
     Route::delete('portfolio/fotos/{portfolioItem}', [PortfolioController::class, 'destroy'])->name('portfolio.fotos.destroy');
     Route::patch('portfolio/fotos/{portfolioItem}/toggle', [PortfolioController::class, 'toggleFeatured'])->name('portfolio.fotos.toggle');
     Route::resource('clientes', ClienteController::class);
+    Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
+    Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::get('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'show'])->name('profissionais.horarios');

@@ -3,14 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Agendamento') — suaAgenda</title>
     @php
         use App\Support\SaPalettes;
         $pubSettings = isset($company) ? $company->resolvedSettings() : [];
-        $pubHeading = $pubSettings['heading_font'] ?? 'poppins';
-        $pubBody = $pubSettings['body_font'] ?? 'inter';
-        $pubFonts = SaPalettes::resolveFonts($pubHeading, $pubBody);
+        $pubSite     = $siteCfg ?? ($pubSettings['site'] ?? []);
+        $pubHeading  = $pubSettings['heading_font'] ?? 'poppins';
+        $pubBody     = $pubSettings['body_font'] ?? 'inter';
+        $pubFonts    = SaPalettes::resolveFonts($pubHeading, $pubBody);
+        $pubMetaTitle = !empty($pubSite['meta_title']) ? $pubSite['meta_title'] : null;
+        $pubMetaDesc  = !empty($pubSite['meta_desc'])  ? $pubSite['meta_desc']  : null;
+        $pubKeywords  = !empty($pubSite['keywords'])   ? $pubSite['keywords']   : null;
+        $pubOgImage   = !empty($pubSite['og_image'])   ? \Illuminate\Support\Facades\Storage::url($pubSite['og_image']) : null;
+        $pubGa        = !empty($pubSite['google_analytics']) ? $pubSite['google_analytics'] : null;
     @endphp
+    <title>{{ $pubMetaTitle ?? (isset($company) ? $company->name.' — Agendamento Online' : 'Agendamento') }}</title>
+    @if($pubMetaDesc)
+    <meta name="description" content="{{ $pubMetaDesc }}">
+    @endif
+    @if($pubKeywords)
+    <meta name="keywords" content="{{ $pubKeywords }}">
+    @endif
+    @if($pubMetaTitle)
+    <meta property="og:title" content="{{ $pubMetaTitle }}">
+    @endif
+    @if($pubMetaDesc)
+    <meta property="og:description" content="{{ $pubMetaDesc }}">
+    @endif
+    @if($pubOgImage)
+    <meta property="og:image" content="{{ $pubOgImage }}">
+    @endif
+    @if($pubGa)
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $pubGa }}"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ $pubGa }}');</script>
+    @endif
+    @stack('meta')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="{{ $pubFonts['google_url'] }}" rel="stylesheet">
