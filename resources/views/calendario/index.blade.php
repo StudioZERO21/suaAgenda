@@ -107,6 +107,14 @@
 
     $nomesDia = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
     $nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    $statusCfg = [
+        'pendente'       => ['color' => '#f59e0b', 'label' => 'Aguardando',     'svg' => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'],
+        'confirmado'     => ['color' => '#6366f1', 'label' => 'Confirmado',     'svg' => '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
+        'em_atendimento' => ['color' => '#0ea5e9', 'label' => 'Em atendimento', 'svg' => '<polygon points="5 3 19 12 5 21 5 3"/>'],
+        'finalizado'     => ['color' => '#10b981', 'label' => 'Concluído',      'svg' => '<circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>'],
+        'cancelado'      => ['color' => '#ef4444', 'label' => 'Cancelado',      'svg' => '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'],
+    ];
 @endphp
 
 <div class="sa-cal-shell">
@@ -211,6 +219,40 @@
                 $chave = $dia->format('Y-m-d');
                 $agsDia = $agPorDia[$chave] ?? collect();
                 $isHoje = $dia->isSameDay($hoje);
+
+                // Calcular lanes para agendamentos simultâneos
+                // Cada profissional só pode ter 1 por horário, mas profissionais
+                // diferentes podem ter agendamentos no mesmo slot — separar lado a lado.
+                $sorted = $agsDia->sortBy(fn($a) => $a->data_hora)->values();
+                $lanes  = [];   // lane => Carbon end_time
+                $apptLane = []; // ag_id => lane index
+
+                foreach ($sorted as $_ag) {
+                    $_inicio = $_ag->data_hora;
+                    $_fim    = $_ag->data_hora->copy()->addMinutes($_ag->duracao);
+                    $_lane   = count($lanes); // default: nova lane
+                    foreach ($lanes as $_l => $_laneEnd) {
+                        if ($_inicio->gte($_laneEnd)) { $_lane = $_l; break; }
+                    }
+                    $lanes[$_lane]       = $_fim;
+                    $apptLane[$_ag->id]  = $_lane;
+                }
+
+                // Para cada agendamento, descobrir quantas lanes total no seu grupo
+                $apptTotalLanes = [];
+                foreach ($sorted as $_ag) {
+                    $_inicio = $_ag->data_hora;
+                    $_fim    = $_ag->data_hora->copy()->addMinutes($_ag->duracao);
+                    $_max    = $apptLane[$_ag->id];
+                    foreach ($sorted as $_other) {
+                        if ($_other->id === $_ag->id) continue;
+                        $_oFim = $_other->data_hora->copy()->addMinutes($_other->duracao);
+                        if ($_inicio->lt($_oFim) && $_fim->gt($_other->data_hora)) {
+                            $_max = max($_max, $apptLane[$_other->id]);
+                        }
+                    }
+                    $apptTotalLanes[$_ag->id] = $_max + 1;
+                }
             @endphp
             <div class="sa-cal-day-col">
                 <div class="sa-cal-slots" data-day="{{ $chave }}" style="height:{{ $gridH }}px;{{ $isHoje ? 'background:color-mix(in srgb,var(--sa-secondary) 3%,transparent)' : '' }}">
@@ -235,13 +277,25 @@
                         $isPending = $ag->status === 'pendente';
                         $borderStyle = $isPending ? 'dashed' : 'solid';
                         $opacity = $isPending ? 0.85 : 1;
+
+                        // Posicionamento horizontal por lanes
+                        $agLane  = $apptLane[$ag->id] ?? 0;
+                        $agTotal = $apptTotalLanes[$ag->id] ?? 1;
+                        $colW    = round(100 / $agTotal, 4);
+                        $leftPct = round($agLane * $colW, 4);
+                        $colStyle = $agTotal > 1
+                            ? "left:calc({$leftPct}% + 2px);right:auto;width:calc({$colW}% - 4px);"
+                            : '';
                     @endphp
                     @php
-                        $apptStyle = "top:{$topPx}px;height:{$altPx}px;background:{$cor}22;border-left:3px solid {$cor};
+                        $apptStyle = "{$colStyle}top:{$topPx}px;height:{$altPx}px;background:{$cor}22;border-left:3px solid {$cor};
                               border-top:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               border-right:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               border-bottom:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               opacity:{$opacity}";
+
+                        $stCfg = $statusCfg[$ag->status] ?? ['color' => '#999999', 'label' => ucfirst($ag->status), 'svg' => '<circle cx="12" cy="12" r="3"/>'];
+                        $statusIconHtml = '<span title="'.$stCfg['label'].'" style="flex-shrink:0;display:inline-flex;align-items:center;opacity:.9"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'.$stCfg['color'].'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'.$stCfg['svg'].'</svg></span>';
                     @endphp
                     @can('update', $ag)
                     <div class="sa-cal-appt sa-cal-appt--draggable"
@@ -255,8 +309,9 @@
                          data-color="{{ $cor }}"
                          title="{{ $ag->cliente?->name }} — {{ $ag->servico?->nome }}"
                          style="{{ $apptStyle }}">
-                        <div style="font-size:11px;font-weight:700;color:{{ $cor }};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                            {{ $ag->servico?->nome ?? '—' }}
+                        <div style="display:flex;align-items:center;gap:3px;line-height:1.2;overflow:hidden">
+                            <span style="font-size:11px;font-weight:700;color:{{ $cor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">{{ $ag->servico?->nome ?? '—' }}</span>
+                            {!! $statusIconHtml !!}
                         </div>
                         @if($altPx > 28)
                         <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
@@ -280,8 +335,9 @@
                        class="sa-cal-appt"
                        title="{{ $ag->cliente?->name }} — {{ $ag->servico?->nome }}"
                        style="{{ $apptStyle }}">
-                        <div style="font-size:11px;font-weight:700;color:{{ $cor }};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                            {{ $ag->servico?->nome ?? '—' }}
+                        <div style="display:flex;align-items:center;gap:3px;line-height:1.2;overflow:hidden">
+                            <span style="font-size:11px;font-weight:700;color:{{ $cor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">{{ $ag->servico?->nome ?? '—' }}</span>
+                            {!! $statusIconHtml !!}
                         </div>
                         @if($altPx > 28)
                         <div style="display:flex;align-items:center;gap:4px;margin-top:1px">

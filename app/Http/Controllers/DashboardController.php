@@ -94,7 +94,10 @@ class DashboardController extends Controller
             ])
             ->sum('valor');
 
-        $proximosAgendamentos = Agendamento::where('company_id', $empresa)
+        $meuProfissionalId = auth()->user()->profissional_id;
+        $isAdminEmpresa = auth()->user()->hasRole('admin_empresa');
+
+        $proximosQuery = Agendamento::where('company_id', $empresa)
             ->where('data_hora', '>=', now())
             ->whereIn('status', [
                 Agendamento::STATUS_PENDENTE,
@@ -102,20 +105,13 @@ class DashboardController extends Controller
             ])
             ->with(['cliente', 'profissional', 'servico'])
             ->orderBy('data_hora')
-            ->limit(9)
-            ->get();
+            ->limit(9);
 
-        $kanbanAgendamentos = Agendamento::where('company_id', $empresa)
-            ->whereBetween('data_hora', [$mesInicio, $mesFim])
-            ->whereIn('status', [
-                Agendamento::STATUS_PENDENTE,
-                Agendamento::STATUS_CONFIRMADO,
-                Agendamento::STATUS_FINALIZADO,
-                Agendamento::STATUS_CANCELADO,
-            ])
-            ->with(['cliente', 'profissional', 'servico'])
-            ->orderBy('data_hora')
-            ->get();
+        if (! $isAdminEmpresa) {
+            $proximosQuery->where('profissional_id', $meuProfissionalId);
+        }
+
+        $proximosAgendamentos = $proximosQuery->get();
 
         $pctConfirmados = $totalMes > 0
             ? (int) round($confirmadosMes / $totalMes * 100)
@@ -167,6 +163,34 @@ class DashboardController extends Controller
 
         $maxProfCount = max($profissionais->max('agendamentos_mes_count') ?? 0, 1);
 
+        $profCores = $profissionais->pluck('cor', 'id')->toArray();
+
+        $kanbanQuery = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje)
+            ->with(['cliente', 'profissional', 'servico'])
+            ->orderBy('data_hora');
+
+        if (! $isAdminEmpresa) {
+            // profissional_id null → WHERE profissional_id IS NULL → 0 rows (funcionário sem vínculo não vê nada)
+            $kanbanQuery->where('profissional_id', $meuProfissionalId);
+        }
+
+        $kanbanCards = $kanbanQuery->get()->map(fn (Agendamento $ag) => [
+            'id' => $ag->id,
+            'status' => $ag->status,
+            'hora' => $ag->data_hora->format('H:i'),
+            'cliente' => $ag->cliente?->name ?? 'Cliente avulso',
+            'servico' => $ag->servico?->nome ?? '—',
+            'profissional' => explode(' ', $ag->profissional?->name ?? '—')[0],
+            'profissional_id' => $ag->profissional_id,
+            'cor' => $profCores[$ag->profissional_id] ?? '#1a1a1a',
+            'duracao' => $ag->duracao,
+            'valor' => (float) $ag->valor,
+            'canEdit' => $isAdminEmpresa
+                || ($meuProfissionalId !== null && $meuProfissionalId === $ag->profissional_id),
+            'statusUrl' => route('agendamentos.updateStatus', $ag->id),
+        ])->values();
+
         $stats = [
             'cards' => [
                 [
@@ -199,7 +223,7 @@ class DashboardController extends Controller
             'pendentesHoje' => $pendentesHoje,
             'receitaPrevistaHoje' => $receitaPrevistaHoje,
             'proximosAgendamentos' => $proximosAgendamentos,
-            'kanbanAgendamentos' => $kanbanAgendamentos,
+            'kanbanCards' => $kanbanCards,
             'donut' => $donut,
             'profissionais' => $profissionais,
             'maxProfCount' => $maxProfCount,
