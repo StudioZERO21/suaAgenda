@@ -66,9 +66,27 @@
         font-size:12px; font-weight:600; color:var(--sa-text2); text-decoration:none; transition:all 150ms;
     }
     .sa-cal-public-btn:hover { border-color:var(--sa-primary); color:var(--sa-text1); }
+    /* Kanban */
+    .sa-kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:0 32px 24px; flex:1; min-height:0; overflow-y:auto; }
+    .sa-kanban-col { display:flex; flex-direction:column; background:var(--sa-surface2); border-radius:12px; border:1px solid var(--sa-border); overflow:hidden; min-height:200px; }
+    .sa-kanban-col-head { padding:14px 16px 10px; border-bottom:1px solid var(--sa-border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .sa-kanban-col-head__title { font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; display:flex; align-items:center; gap:7px; }
+    .sa-kanban-col-head__count { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+    .sa-kanban-body { flex:1; padding:10px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+    .sa-kanban-card { background:var(--sa-surface); border:1px solid var(--sa-border); border-radius:10px; padding:12px 14px; transition:box-shadow 150ms,border-color 150ms; position:relative; }
+    .sa-kanban-card--draggable { cursor:grab; }
+    .sa-kanban-card--draggable:hover { box-shadow:0 2px 10px rgba(0,0,0,.08); border-color:var(--sa-border2); }
+    .sa-kanban-card--draggable:active { cursor:grabbing; }
+    .sa-kanban-card--locked { opacity:.65; }
+    .sa-kanban-drop-zone { border:2px dashed var(--sa-border2); background:color-mix(in srgb,var(--sa-secondary) 4%,transparent) !important; }
+    .sa-kanban-empty { text-align:center; padding:32px 16px; color:var(--sa-text3); font-size:13px; }
     @media (max-width:1080px) {
-        .sa-cal-top, .sa-cal-head-row, .sa-cal-scroll { padding-left:20px; padding-right:20px; }
+        .sa-cal-top, .sa-cal-head-row, .sa-cal-scroll, .sa-kanban { padding-left:20px; padding-right:20px; }
         .sa-cal-public-btn { margin-left:20px; }
+        .sa-kanban { grid-template-columns:1fr; }
+    }
+    @media (min-width:1081px) and (max-width:1340px) {
+        .sa-kanban { grid-template-columns:1fr 1fr; }
     }
 </style>
 @endpush
@@ -98,9 +116,9 @@
             <h1 class="sa-cal-title">{{ $headerTitle }}</h1>
 
             <div class="sa-cal-controls">
-                {{-- Dia / Semana / Mês --}}
+                {{-- Dia / Semana / Mês / Kanban --}}
                 <div class="sa-cal-view-tabs">
-                    @foreach(['day' => 'Dia', 'week' => 'Semana', 'month' => 'Mês'] as $mode => $label)
+                    @foreach(['day' => 'Dia', 'week' => 'Semana', 'month' => 'Mês', 'kanban' => 'Kanban'] as $mode => $label)
                     <a href="{{ route('calendario', $calParams(['view' => $mode])) }}"
                        class="{{ $viewMode === $mode ? 'active' : '' }}">{{ $label }}</a>
                     @endforeach
@@ -146,10 +164,12 @@
                 <span style="font-size:12px;color:var(--sa-text3);font-weight:500">{{ $prof->name }}</span>
             </div>
             @endforeach
-            @if($viewMode !== 'month')
-            <span class="sa-cal-legend-hint">Arraste para mover · Clique para detalhes</span>
-            @else
+            @if($viewMode === 'kanban')
+            <span class="sa-cal-legend-hint">Arraste entre colunas para mudar o status · Clique para detalhes</span>
+            @elseif($viewMode === 'month')
             <span class="sa-cal-legend-hint">Clique num dia para ver detalhes · Clique num evento para editar</span>
+            @else
+            <span class="sa-cal-legend-hint">Arraste para mover · Clique para detalhes</span>
             @endif
         </div>
     </div>
@@ -338,6 +358,179 @@
             @endforeach
         </div>
     </div>
+    @elseif($viewMode === 'kanban')
+    {{-- ── KANBAN ─────────────────────────────────────────────────── --}}
+    <div class="sa-kanban" x-data="kanbanApp()" id="kanban-board">
+        @php
+            $kanbanCols = [
+                ['status' => 'pendente',   'label' => 'Pendente',   'dot' => '#d97706', 'bg' => 'rgba(245,158,11,.1)',  'color' => '#d97706'],
+                ['status' => 'confirmado', 'label' => 'Confirmado', 'dot' => '#059669', 'bg' => 'rgba(16,185,129,.1)', 'color' => '#059669'],
+                ['status' => 'finalizado', 'label' => 'Finalizado', 'dot' => '#6b7280', 'bg' => 'rgba(107,114,128,.1)','color' => '#6b7280'],
+            ];
+        @endphp
+        @foreach($kanbanCols as $col)
+        <div class="sa-kanban-col"
+             @dragover.prevent="dragOverCol = '{{ $col['status'] }}'"
+             @dragleave.prevent="dragOverCol = null"
+             @drop.prevent="drop('{{ $col['status'] }}')"
+             :class="{ 'sa-kanban-drop-zone': dragOverCol === '{{ $col['status'] }}' && dragging !== null }">
+
+            {{-- Cabeçalho da coluna --}}
+            <div class="sa-kanban-col-head">
+                <div class="sa-kanban-col-head__title" style="color:{{ $col['color'] }}">
+                    <span style="width:8px;height:8px;border-radius:50%;background:{{ $col['dot'] }};display:inline-block;flex-shrink:0"></span>
+                    {{ $col['label'] }}
+                </div>
+                <span class="sa-kanban-col-head__count"
+                      style="background:{{ $col['bg'] }};color:{{ $col['color'] }}"
+                      x-text="cardsFor('{{ $col['status'] }}').length"></span>
+            </div>
+
+            {{-- Cards --}}
+            <div class="sa-kanban-body">
+                <template x-for="card in cardsFor('{{ $col['status'] }}')" :key="card.id">
+                    <div class="sa-kanban-card"
+                         :class="card.canEdit ? 'sa-kanban-card--draggable' : 'sa-kanban-card--locked'"
+                         :draggable="card.canEdit"
+                         @dragstart="startDrag(card)"
+                         @dragend="dragging = null; dragOverCol = null"
+                         @click="openCard(card)"
+                         :style="'border-left:3px solid ' + card.cor">
+
+                        {{-- Hora + Badge status --}}
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                            <span style="font-size:15px;font-weight:800;color:var(--sa-text1);font-family:var(--sa-font-heading)"
+                                  x-text="card.hora"></span>
+                            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px"
+                                  :style="'background:' + statusBg(card.status) + ';color:' + statusColor(card.status)"
+                                  x-text="statusLabel(card.status)"></span>
+                        </div>
+
+                        {{-- Serviço --}}
+                        <div style="font-size:13px;font-weight:700;color:var(--sa-text1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                             x-text="card.servico"></div>
+
+                        {{-- Cliente --}}
+                        <div style="font-size:12px;color:var(--sa-text2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                             x-text="card.cliente"></div>
+
+                        {{-- Profissional + duração --}}
+                        <div style="display:flex;align-items:center;justify-content:space-between">
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <div :style="'width:20px;height:20px;border-radius:50%;background:' + card.cor + ';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0'"
+                                     x-text="card.profissional.charAt(0).toUpperCase()"></div>
+                                <span style="font-size:11px;font-weight:600;color:var(--sa-text3)"
+                                      x-text="card.profissional"></span>
+                            </div>
+                            <span style="font-size:10px;color:var(--sa-text3)" x-text="card.duracao + 'min'"></span>
+                        </div>
+
+                        {{-- Ícone de cadeado se não pode editar --}}
+                        <template x-if="!card.canEdit">
+                            <div style="position:absolute;top:10px;right:10px;opacity:.3">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                {{-- Estado vazio --}}
+                <template x-if="cardsFor('{{ $col['status'] }}').length === 0">
+                    <div class="sa-kanban-empty">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" style="margin:0 auto 8px;display:block;opacity:.3"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                        Nenhum atendimento
+                    </div>
+                </template>
+            </div>
+        </div>
+        @endforeach
+
+        {{-- Modal de detalhes do card --}}
+        <div x-show="selCard !== null" x-cloak
+             @click.self="selCard = null"
+             style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px">
+            <template x-if="selCard">
+                <div style="background:var(--sa-surface);border-radius:16px;border:1px solid var(--sa-border);width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+                    {{-- Header do modal --}}
+                    <div style="padding:20px 24px 16px;border-bottom:1px solid var(--sa-border);display:flex;align-items:flex-start;justify-content:space-between">
+                        <div>
+                            <div style="font-size:18px;font-weight:700;color:var(--sa-text1);font-family:var(--sa-font-heading)" x-text="selCard.servico"></div>
+                            <div style="font-size:13px;color:var(--sa-text3);margin-top:3px" x-text="selCard.hora + ' · ' + selCard.duracao + 'min'"></div>
+                        </div>
+                        <button @click="selCard = null"
+                                style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);flex-shrink:0"
+                                onmouseover="this.style.borderColor='var(--sa-border2)'"
+                                onmouseout="this.style.borderColor='var(--sa-border)'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    {{-- Corpo --}}
+                    <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <div style="background:var(--sa-surface2);border-radius:8px;padding:10px 14px">
+                            <div style="font-size:10px;color:var(--sa-text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Cliente</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-top:3px" x-text="selCard.cliente"></div>
+                        </div>
+                        <div style="background:var(--sa-surface2);border-radius:8px;padding:10px 14px">
+                            <div style="font-size:10px;color:var(--sa-text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Profissional</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-top:3px" x-text="selCard.profissional"></div>
+                        </div>
+                        <div style="background:var(--sa-surface2);border-radius:8px;padding:10px 14px">
+                            <div style="font-size:10px;color:var(--sa-text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Status</div>
+                            <div style="margin-top:5px">
+                                <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px"
+                                      :style="'background:' + statusBg(selCard.status) + ';color:' + statusColor(selCard.status)"
+                                      x-text="statusLabel(selCard.status)"></span>
+                            </div>
+                        </div>
+                        <div style="background:var(--sa-surface2);border-radius:8px;padding:10px 14px">
+                            <div style="font-size:10px;color:var(--sa-text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Valor</div>
+                            <div style="font-size:13px;font-weight:700;color:var(--sa-secondary);margin-top:3px"
+                                 x-text="'R$ ' + selCard.valor.toFixed(2).replace('.',',')"></div>
+                        </div>
+                    </div>
+
+                    {{-- Ações de status (só se pode editar) --}}
+                    <template x-if="selCard.canEdit">
+                        <div style="padding:0 24px 16px;display:flex;gap:8px;flex-wrap:wrap">
+                            <template x-if="selCard.status !== 'pendente'">
+                                <button @click="changeStatus(selCard, 'pendente')"
+                                        style="padding:7px 14px;border-radius:8px;border:1.5px solid rgba(245,158,11,.4);background:rgba(245,158,11,.1);color:#d97706;font-size:12px;font-weight:700;cursor:pointer;transition:all 150ms"
+                                        onmouseover="this.style.borderColor='#d97706'"
+                                        onmouseout="this.style.borderColor='rgba(245,158,11,.4)'">Pendente</button>
+                            </template>
+                            <template x-if="selCard.status !== 'confirmado'">
+                                <button @click="changeStatus(selCard, 'confirmado')"
+                                        style="padding:7px 14px;border-radius:8px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:#059669;font-size:12px;font-weight:700;cursor:pointer;transition:all 150ms"
+                                        onmouseover="this.style.borderColor='#059669'"
+                                        onmouseout="this.style.borderColor='rgba(16,185,129,.4)'">Confirmar</button>
+                            </template>
+                            <template x-if="selCard.status !== 'finalizado'">
+                                <button @click="changeStatus(selCard, 'finalizado')"
+                                        style="padding:7px 14px;border-radius:8px;border:1.5px solid rgba(107,114,128,.4);background:rgba(107,114,128,.1);color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;transition:all 150ms"
+                                        onmouseover="this.style.borderColor='#6b7280'"
+                                        onmouseout="this.style.borderColor='rgba(107,114,128,.4)'">Finalizar</button>
+                            </template>
+                        </div>
+                    </template>
+
+                    {{-- Rodapé --}}
+                    <div style="padding:14px 24px;border-top:1px solid var(--sa-border);display:flex;gap:8px;justify-content:flex-end">
+                        <a :href="selCard.showUrl"
+                           style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:all 160ms"
+                           onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                           onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                            Ver detalhes
+                        </a>
+                        <button @click="selCard = null"
+                                style="padding:9px 20px;border-radius:8px;border:none;cursor:pointer;background:var(--sa-primary);color:#fff;font-size:13px;font-weight:600;transition:filter 200ms"
+                                onmouseover="this.style.filter='brightness(1.1)'"
+                                onmouseout="this.style.filter='none'">Fechar</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
     @endif
 
     @if($companySlug)
@@ -350,6 +543,99 @@
 
 @push('scripts')
 <script>
+// ── Kanban App (Alpine) ───────────────────────────────────────
+function kanbanApp() {
+    return {
+        cards: @json($agendamentosKanban ?? []),
+        dragging: null,
+        dragOverCol: null,
+        selCard: null,
+
+        cardsFor(status) {
+            return this.cards.filter(c => c.status === status);
+        },
+
+        startDrag(card) {
+            if (!card.canEdit) return;
+            this.dragging = card;
+        },
+
+        async drop(status) {
+            if (!this.dragging) return;
+            const card = this.dragging;
+            this.dragging = null;
+            this.dragOverCol = null;
+            if (card.status === status) return;
+
+            const oldStatus = card.status;
+            card.status = status; // optimistic
+
+            try {
+                const res = await fetch(card.statusUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    },
+                    body: JSON.stringify({ status }),
+                });
+                if (!res.ok) {
+                    card.status = oldStatus;
+                    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'Não foi possível atualizar o status.', showConfirmButton:false, timer:2800 });
+                    return;
+                }
+                Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Status atualizado!', showConfirmButton:false, timer:1800, timerProgressBar:true });
+            } catch {
+                card.status = oldStatus;
+                Swal.fire({ toast:true, position:'top-end', icon:'error', title:'Erro de conexão.', showConfirmButton:false, timer:2800 });
+            }
+        },
+
+        async changeStatus(card, status) {
+            if (card.status === status) return;
+            const oldStatus = card.status;
+            card.status = status;
+
+            try {
+                const res = await fetch(card.statusUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    },
+                    body: JSON.stringify({ status }),
+                });
+                if (!res.ok) {
+                    card.status = oldStatus;
+                    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'Erro ao atualizar status.', showConfirmButton:false, timer:2800 });
+                    return;
+                }
+                Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Status atualizado!', showConfirmButton:false, timer:1800, timerProgressBar:true });
+            } catch {
+                card.status = oldStatus;
+                Swal.fire({ toast:true, position:'top-end', icon:'error', title:'Erro de conexão.', showConfirmButton:false, timer:2800 });
+            }
+        },
+
+        openCard(card) {
+            this.selCard = card;
+        },
+
+        statusLabel(s) {
+            return { pendente:'Pendente', confirmado:'Confirmado', finalizado:'Finalizado', cancelado:'Cancelado' }[s] || s;
+        },
+        statusBg(s) {
+            return { pendente:'rgba(245,158,11,.12)', confirmado:'rgba(16,185,129,.12)', finalizado:'rgba(107,114,128,.12)', cancelado:'rgba(239,68,68,.1)' }[s] || 'rgba(0,0,0,.06)';
+        },
+        statusColor(s) {
+            return { pendente:'#d97706', confirmado:'#059669', finalizado:'#6b7280', cancelado:'#dc2626' }[s] || 'var(--sa-text2)';
+        },
+    };
+}
+
+// ── Calendário (drag-and-drop de horário) ────────────────────
 (() => {
     const HOUR_H = {{ $hourH }};
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;

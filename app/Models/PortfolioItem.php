@@ -13,7 +13,7 @@ class PortfolioItem extends Model
 {
     use HasUuids, SoftDeletes;
 
-    protected $fillable = ['company_id', 'profissional_id', 'titulo', 'categoria', 'destaque', 'tags'];
+    protected $fillable = ['company_id', 'profissional_id', 'titulo', 'categoria', 'destaque', 'tags', 'imagem_path'];
 
     protected function casts(): array
     {
