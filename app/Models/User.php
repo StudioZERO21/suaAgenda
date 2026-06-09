@@ -17,7 +17,7 @@ class User extends Authenticatable
 {
     use HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password', 'empresa_id', 'ativo'];
+    protected $fillable = ['name', 'email', 'password', 'empresa_id', 'profissional_id', 'ativo'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -33,6 +33,11 @@ class User extends Authenticatable
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'empresa_id');
+    }
+
+    public function profissional(): BelongsTo
+    {
+        return $this->belongsTo(Profissional::class, 'profissional_id');
     }
 
     public function scopeAtivo(Builder $query): Builder

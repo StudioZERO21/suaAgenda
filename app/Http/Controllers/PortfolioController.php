@@ -10,6 +10,7 @@ use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -51,31 +52,65 @@ class PortfolioController extends Controller
     {
         $companyId = auth()->user()->empresa_id;
 
-        $data = $request->validate([
-            'titulo' => ['required', 'string', 'max:255'],
-            'categoria' => ['required', 'string', 'max:100'],
-            'profissional_id' => ['nullable', 'uuid', Rule::exists('profissionais', 'id')->where('company_id', $companyId)],
-            'tags' => ['nullable', 'array'],
-            'tags.*' => ['string', 'max:50'],
-        ]);
+        if ($request->hasFile('arquivo')) {
+            $data = $request->validate([
+                'arquivo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+                'titulo' => ['nullable', 'string', 'max:255'],
+                'categoria' => ['required', 'string', 'max:100'],
+                'profissional_id' => ['nullable', 'uuid', Rule::exists('profissionais', 'id')->where('company_id', $companyId)],
+                'tags' => ['nullable', 'array'],
+                'tags.*' => ['string', 'max:50'],
+            ]);
 
-        $item = PortfolioItem::create([
-            'company_id' => $companyId,
-            'profissional_id' => $data['profissional_id'] ?? null,
-            'titulo' => $data['titulo'],
-            'categoria' => $data['categoria'],
-            'destaque' => false,
-            'tags' => $data['tags'] ?? [],
-        ]);
+            $path = $request->file('arquivo')->store("portfolio/{$companyId}", 'public');
+
+            $item = PortfolioItem::create([
+                'company_id' => $companyId,
+                'profissional_id' => $data['profissional_id'] ?? null,
+                'titulo' => $data['titulo'] ?? 'Sem título',
+                'categoria' => $data['categoria'],
+                'destaque' => false,
+                'tags' => $data['tags'] ?? [],
+                'imagem_path' => $path,
+            ]);
+        } else {
+            $data = $request->validate([
+                'titulo' => ['required', 'string', 'max:255'],
+                'categoria' => ['required', 'string', 'max:100'],
+                'profissional_id' => ['nullable', 'uuid', Rule::exists('profissionais', 'id')->where('company_id', $companyId)],
+                'tags' => ['nullable', 'array'],
+                'tags.*' => ['string', 'max:50'],
+            ]);
+
+            $item = PortfolioItem::create([
+                'company_id' => $companyId,
+                'profissional_id' => $data['profissional_id'] ?? null,
+                'titulo' => $data['titulo'],
+                'categoria' => $data['categoria'],
+                'destaque' => false,
+                'tags' => $data['tags'] ?? [],
+            ]);
+        }
 
         $item->load('profissional');
 
-        return response()->json($this->itemToJson($item), 201);
+        $profissionais = Profissional::where('company_id', $companyId)
+            ->ativo()->orderBy('name')->get()->values();
+        $colorMap = $profissionais
+            ->mapWithKeys(fn ($p, int $i) => [$p->id => self::COLORS[$i % count(self::COLORS)]])
+            ->all();
+
+        return response()->json($this->itemToJson($item, $colorMap), 201);
     }
 
     public function destroy(PortfolioItem $portfolioItem): Response
     {
         abort_if($portfolioItem->company_id !== auth()->user()->empresa_id, 403);
+
+        if ($portfolioItem->imagem_path) {
+            Storage::disk('public')->delete($portfolioItem->imagem_path);
+        }
+
         $portfolioItem->delete();
 
         return response()->noContent();
@@ -102,6 +137,9 @@ class PortfolioController extends Controller
             'destaque' => $item->destaque,
             'cor' => $colorMap[$item->profissional_id] ?? '#888',
             'tags' => $item->tags ?? [],
+            'imagem_url' => $item->imagem_path
+                ? Storage::disk('public')->url($item->imagem_path)
+                : null,
         ];
     }
 }

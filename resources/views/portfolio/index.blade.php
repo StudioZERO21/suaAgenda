@@ -49,14 +49,17 @@
                     <div
                         @dragover.prevent="drag = true"
                         @dragleave.prevent="drag = false"
-                        @drop.prevent="handleDrop($event)"
+                        @drop.prevent="handleFileDrop($event)"
+                        @click="$refs.fileInput.click()"
                         :style="'border:2px dashed ' + (drag ? 'var(--sa-primary)' : 'var(--sa-border)') + ';border-radius:12px;padding:32px 20px;text-align:center;background:' + (drag ? 'color-mix(in srgb,var(--sa-primary) 5%,transparent)' : 'var(--sa-surface2)') + ';transition:all 200ms;cursor:pointer'">
                         <div style="width:48px;height:48px;border-radius:50%;background:color-mix(in srgb,var(--sa-primary) 10%,transparent);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sa-primary)" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                         </div>
                         <p style="font-size:14px;font-weight:600;color:var(--sa-text1);margin:0 0 4px">Arraste fotos aqui</p>
                         <p style="font-size:12px;color:var(--sa-text3);margin:0 0 12px">ou clique para selecionar</p>
-                        <x-sa.btn variant="muted" size="sm" @click="toast('Seletor de arquivo em breve!', 'info')"
+                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple x-ref="fileInput"
+                               @change="uploadFiles($event.target.files)" style="display:none">
+                        <x-sa.btn variant="muted" size="sm" @click.stop="$refs.fileInput.click()"
                                   :icon="'<svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><line x1=\'12\' y1=\'19\' x2=\'12\' y2=\'5\'/><polyline points=\'5 12 12 5 19 12\'/></svg>'">
                             Selecionar arquivos
                         </x-sa.btn>
@@ -131,21 +134,31 @@
                      @click="openPhoto(photo)"
                      @mouseenter="$el.querySelector('.photo-overlay').style.opacity = '1'"
                      @mouseleave="$el.querySelector('.photo-overlay').style.opacity = '0'">
-                    <svg width="100%" height="100%" style="position:absolute;inset:0">
-                        <defs>
-                            <pattern :id="'ph-' + photo.id" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)">
-                                <rect width="20" height="20" fill="var(--sa-surface2)"/>
-                                <rect width="10" height="20" :fill="profColor(photo) + '08'"/>
-                            </pattern>
-                        </defs>
-                        <rect width="100%" height="100%" :fill="'url(#ph-' + photo.id + ')'"/>
-                    </svg>
-                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.25">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" :stroke="profColor(photo)" stroke-width="1.3">
-                            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
-                        </svg>
-                        <span style="font-family:monospace;font-size:9px;margin-top:4px" :style="'color:' + profColor(photo)" x-text="'foto-' + photo.id + '.jpg'"></span>
-                    </div>
+                    {{-- Imagem real quando disponível --}}
+                    <template x-if="photo.imagem_url">
+                        <img :src="photo.imagem_url" :alt="photo.titulo"
+                             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+                    </template>
+                    {{-- Placeholder quando sem imagem --}}
+                    <template x-if="!photo.imagem_url">
+                        <div style="position:absolute;inset:0">
+                            <svg width="100%" height="100%" style="position:absolute;inset:0">
+                                <defs>
+                                    <pattern :id="'ph-' + photo.id" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)">
+                                        <rect width="20" height="20" fill="var(--sa-surface2)"/>
+                                        <rect width="10" height="20" :fill="profColor(photo) + '08'"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" :fill="'url(#ph-' + photo.id + ')'"/>
+                            </svg>
+                            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.25">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" :stroke="profColor(photo)" stroke-width="1.3">
+                                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                                </svg>
+                                <span style="font-family:monospace;font-size:9px;margin-top:4px" :style="'color:' + profColor(photo)" x-text="'foto-' + photo.id + '.jpg'"></span>
+                            </div>
+                        </div>
+                    </template>
                     <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%);pointer-events:none"></div>
                     <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 10px">
                         <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)" x-text="photo.titulo"></div>
@@ -178,21 +191,29 @@
         <template x-if="selPhoto">
             <div>
                 <div style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:16px;aspect-ratio:16/10;position:relative;background:var(--sa-surface2);border:1px solid var(--sa-border)">
-                    <svg width="100%" height="100%" style="position:absolute;inset:0">
-                        <defs>
-                            <pattern :id="'phm-' + selPhoto.id" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)">
-                                <rect width="20" height="20" fill="var(--sa-surface2)"/>
-                                <rect width="10" height="20" :fill="profColor(selPhoto) + '10'"/>
-                            </pattern>
-                        </defs>
-                        <rect width="100%" height="100%" :fill="'url(#phm-' + selPhoto.id + ')'"/>
-                    </svg>
-                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.2">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" :stroke="profColor(selPhoto)" stroke-width="1">
-                            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
-                        </svg>
-                        <div style="font-family:monospace;font-size:12px;margin-top:8px" :style="'color:' + profColor(selPhoto)" x-text="'foto-' + selPhoto.id + '.jpg'"></div>
-                    </div>
+                    <template x-if="selPhoto.imagem_url">
+                        <img :src="selPhoto.imagem_url" :alt="selPhoto.titulo"
+                             style="width:100%;height:100%;object-fit:cover">
+                    </template>
+                    <template x-if="!selPhoto.imagem_url">
+                        <div style="position:absolute;inset:0">
+                            <svg width="100%" height="100%">
+                                <defs>
+                                    <pattern :id="'phm-' + selPhoto.id" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)">
+                                        <rect width="20" height="20" fill="var(--sa-surface2)"/>
+                                        <rect width="10" height="20" :fill="profColor(selPhoto) + '10'"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" :fill="'url(#phm-' + selPhoto.id + ')'"/>
+                            </svg>
+                            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.2">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" :stroke="profColor(selPhoto)" stroke-width="1">
+                                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+                                </svg>
+                                <div style="font-family:monospace;font-size:12px;margin-top:8px" :style="'color:' + profColor(selPhoto)" x-text="'foto-' + selPhoto.id + '.jpg'"></div>
+                            </div>
+                        </div>
+                    </template>
                     <div x-show="selPhoto.destaque" style="position:absolute;top:12px;left:12px;background:var(--sa-secondary);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:#fff">★ Destaque</div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -279,9 +300,44 @@ function portfolioApp() {
             this.selPhoto = null;
         },
 
-        handleDrop() {
+        handleFileDrop(e) {
             this.drag = false;
-            this.toast('Foto recebida! Processando…', 'info');
+            const files = e.dataTransfer?.files;
+            if (files?.length) this.uploadFiles(files);
+        },
+
+        async uploadFiles(files) {
+            if (!files?.length) return;
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            let uploaded = 0;
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                if (file.size > 10 * 1024 * 1024) {
+                    this.toast(`${file.name}: arquivo maior que 10MB`, 'error');
+                    continue;
+                }
+                const fd = new FormData();
+                fd.append('arquivo', file);
+                fd.append('titulo', file.name.replace(/\.[^.]+$/, ''));
+                fd.append('categoria', this.uploadCategory);
+                if (this.uploadProfId) fd.append('profissional_id', this.uploadProfId);
+
+                const res = await fetch('{{ route('portfolio.fotos.store') }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf },
+                    body: fd,
+                });
+                if (!res.ok) {
+                    this.toast(`Erro ao enviar ${file.name}`, 'error');
+                    continue;
+                }
+                const data = await res.json();
+                this.photos.unshift(data);
+                uploaded++;
+            }
+            if (uploaded > 0) {
+                this.toast(`${uploaded} foto${uploaded > 1 ? 's' : ''} adicionada${uploaded > 1 ? 's' : ''}!`, 'success');
+            }
         },
 
         async addPhoto() {
@@ -301,8 +357,6 @@ function portfolioApp() {
                 return this.toast('Erro ao adicionar foto', 'error');
             }
             const data = await res.json();
-            const prof = this.profissionais.find(p => String(p.id) === this.uploadProfId);
-            data.cor = prof?.cor || '#888';
             this.photos.unshift(data);
             this.uploadTitle = '';
             this.toast('Foto adicionada ao portfólio!', 'success');

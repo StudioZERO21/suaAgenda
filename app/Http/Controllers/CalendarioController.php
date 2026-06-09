@@ -17,14 +17,11 @@ class CalendarioController extends Controller
         '#1a1a1a', '#d4a574', '#6366f1', '#10b981', '#f59e0b', '#ec4899',
     ];
 
-    /**
-     * Exibe a agenda em visão dia, semana ou mês.
-     */
     public function index(Request $request): View
     {
         $empresaId = auth()->user()->empresa_id;
 
-        $viewMode = in_array($request->input('view'), ['day', 'week', 'month'], true)
+        $viewMode = in_array($request->input('view'), ['day', 'week', 'month', 'kanban'], true)
             ? $request->input('view')
             : 'week';
 
@@ -33,8 +30,9 @@ class CalendarioController extends Controller
             ? Carbon::parse($refInput)
             : Carbon::now();
 
+        // UUID — sem cast para int
         $profissionalId = $request->filled('profissional_id')
-            ? (int) $request->input('profissional_id')
+            ? $request->input('profissional_id')
             : null;
 
         $monthWeeks = [];
@@ -57,6 +55,13 @@ class CalendarioController extends Controller
             $headerTitle = $ref->translatedFormat('F Y');
             $navPrev = $ref->copy()->subMonth()->format('Y-m-d');
             $navNext = $ref->copy()->addMonth()->format('Y-m-d');
+        } elseif ($viewMode === 'kanban') {
+            $dias = collect([$ref->copy()]);
+            $inicio = $ref->copy()->startOfDay();
+            $fim = $ref->copy()->endOfDay();
+            $headerTitle = $ref->translatedFormat('l, d \d\e F');
+            $navPrev = $ref->copy()->subDay()->format('Y-m-d');
+            $navNext = $ref->copy()->addDay()->format('Y-m-d');
         } else {
             $semana = $ref->copy()->startOfWeek(Carbon::MONDAY);
             $ref = $semana;
@@ -101,6 +106,33 @@ class CalendarioController extends Controller
 
         $companySlug = auth()->user()->company?->slug;
 
+        // ACL para o kanban
+        $meuProfissionalId = auth()->user()->profissional_id;
+        $isAdmin = auth()->user()->hasAnyRole(['admin_empresa', 'gestor']);
+
+        // Dados JSON para o kanban
+        $agendamentosKanban = null;
+        if ($viewMode === 'kanban') {
+            $agendamentosKanban = $agendamentos
+                ->map(fn (Agendamento $ag) => [
+                    'id' => $ag->id,
+                    'status' => $ag->status,
+                    'hora' => $ag->data_hora->format('H:i'),
+                    'cliente' => $ag->cliente?->name ?? 'Cliente avulso',
+                    'servico' => $ag->servico?->nome ?? '—',
+                    'profissional' => explode(' ', $ag->profissional?->name ?? '—')[0],
+                    'profissional_id' => $ag->profissional_id,
+                    'cor' => $profCores[$ag->profissional_id] ?? '#1a1a1a',
+                    'duracao' => $ag->duracao,
+                    'valor' => (float) $ag->valor,
+                    'canEdit' => $isAdmin
+                        || ($meuProfissionalId !== null && $meuProfissionalId === $ag->profissional_id),
+                    'showUrl' => route('agendamentos.show', $ag->id),
+                    'statusUrl' => route('agendamentos.updateStatus', $ag->id),
+                ])
+                ->values();
+        }
+
         return view('calendario.index', compact(
             'agendamentos',
             'agPorDia',
@@ -115,14 +147,13 @@ class CalendarioController extends Controller
             'navNext',
             'monthWeeks',
             'companySlug',
+            'meuProfissionalId',
+            'isAdmin',
+            'agendamentosKanban',
         ));
     }
 
-    /**
-     * Monta as semanas do grid mensal (segunda a domingo).
-     *
-     * @return array<int, array<int, int|null>>
-     */
+    /** @return array<int, array<int, int|null>> */
     private function buildMonthWeeks(Carbon $ref): array
     {
         $start = $ref->copy()->startOfMonth();

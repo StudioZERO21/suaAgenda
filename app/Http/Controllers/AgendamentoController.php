@@ -230,7 +230,7 @@ class AgendamentoController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Agendamento $agendamento): RedirectResponse
+    public function updateStatus(Request $request, Agendamento $agendamento): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $agendamento);
 
@@ -239,6 +239,14 @@ class AgendamentoController extends Controller
         ]);
 
         $agendamento->update(['status' => $request->status]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $agendamento->status,
+                'message' => 'Status atualizado para "'.ucfirst($request->status).'".',
+            ]);
+        }
 
         return back()->with('success', 'Status atualizado para "'.ucfirst($request->status).'".');
     }
