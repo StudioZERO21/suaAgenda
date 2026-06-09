@@ -35,7 +35,13 @@ class Agendamento extends Model
         'valor',
         'status',
         'observacao',
+        'cancel_token',
     ];
+
+    public static function generateCancelToken(): string
+    {
+        return bin2hex(random_bytes(32));
+    }
 
     protected function casts(): array
     {

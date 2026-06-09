@@ -208,6 +208,7 @@ class AgendamentoPublicoController extends Controller
             'valor' => $servico?->preco,
             'status' => Agendamento::STATUS_PENDENTE,
             'observacao' => $request->observacao,
+            'cancel_token' => Agendamento::generateCancelToken(),
         ]);
 
         return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $agendamento->id]);
@@ -221,5 +222,44 @@ class AgendamentoPublicoController extends Controller
             ->findOrFail($agendamento);
 
         return view('public.agendado', compact('company', 'ag'));
+    }
+
+    /**
+     * Página pública de status do agendamento (acesso via cancel_token).
+     * GET /meu-agendamento/{token}
+     */
+    public function meuAgendamento(string $token): View
+    {
+        $ag = Agendamento::with(['servico', 'profissional', 'cliente', 'company'])
+            ->where('cancel_token', $token)
+            ->firstOrFail();
+
+        $company = $ag->company;
+        $cancelavel = in_array($ag->status, [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
+            && $ag->data_hora->isFuture();
+
+        return view('public.meu-agendamento', compact('ag', 'company', 'cancelavel', 'token'));
+    }
+
+    /**
+     * Cancela agendamento via token público (sem autenticação).
+     * POST /meu-agendamento/{token}/cancelar
+     */
+    public function cancelarMeuAgendamento(string $token): RedirectResponse
+    {
+        $ag = Agendamento::where('cancel_token', $token)->firstOrFail();
+
+        $cancelavel = in_array($ag->status, [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
+            && $ag->data_hora->isFuture();
+
+        if (! $cancelavel) {
+            return redirect()->route('agendamento.meu', $token)
+                ->with('erro', 'Este agendamento não pode ser cancelado.');
+        }
+
+        $ag->update(['status' => Agendamento::STATUS_CANCELADO]);
+
+        return redirect()->route('agendamento.meu', $token)
+            ->with('cancelado', true);
     }
 }
