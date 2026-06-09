@@ -8,6 +8,7 @@ use App\Http\Requests\StoreProfissionalRequest;
 use App\Http\Requests\UpdateProfissionalRequest;
 use App\Models\Profissional;
 use App\Models\Servico;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,12 +24,11 @@ class ProfissionalController extends Controller
         $profissionais = Profissional::where('company_id', $empresa)
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->withCount('agendamentos')
+            ->with('servicos:id')
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
 
-        // Estatísticas agregadas (toda a empresa, não apenas a página atual)
-        // mantidas separadas da paginação para alimentar os stat cards do topo.
         $base = Profissional::where('company_id', $empresa);
         $stats = [
             'total' => (clone $base)->count(),
@@ -37,7 +37,9 @@ class ProfissionalController extends Controller
             'comissao_media' => (float) (clone $base)->where('ativo', true)->avg('comissao_pct'),
         ];
 
-        return view('profissionais.index', compact('profissionais', 'stats'));
+        $servicos = Servico::where('company_id', $empresa)->ativo()->orderBy('nome')->get(['id', 'nome', 'cor', 'duracao_minutos', 'preco']);
+
+        return view('profissionais.index', compact('profissionais', 'stats', 'servicos'));
     }
 
     public function create(): View
@@ -93,7 +95,7 @@ class ProfissionalController extends Controller
         return view('profissionais.edit', compact('profissional', 'servicos'));
     }
 
-    public function update(UpdateProfissionalRequest $request, Profissional $profissional): RedirectResponse
+    public function update(UpdateProfissionalRequest $request, Profissional $profissional): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $profissional);
 
@@ -107,6 +109,16 @@ class ProfissionalController extends Controller
         ]);
 
         $profissional->servicos()->sync($servicoIds);
+
+        if ($request->wantsJson()) {
+            $profissional->loadCount('agendamentos');
+
+            return response()->json([
+                'success' => true,
+                'profissional' => $profissional->only(['id', 'name', 'especialidade', 'comissao_pct', 'ativo', 'cor', 'phone', 'admissao', 'instagram', 'tiktok', 'facebook']),
+                'agendamentos_count' => $profissional->agendamentos_count,
+            ]);
+        }
 
         return redirect()->route('profissionais.show', $profissional)
             ->with('success', 'Profissional atualizado com sucesso.');

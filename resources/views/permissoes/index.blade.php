@@ -251,6 +251,18 @@
                                     <option value="gestor">Gestor</option>
                                     <option value="analista">Analista</option>
                                 </select>
+                                <div style="display:flex;flex-direction:column;gap:3px;min-width:180px">
+                                    <label style="font-size:10px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.4px">Profissional vinculado</label>
+                                    <select x-model="u.profissional_id"
+                                            @change="changeUserProfissional(u)"
+                                            style="font-size:13px;padding:8px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;width:100%;appearance:none"
+                                            onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                                        <option value="">— Nenhum —</option>
+                                        <template x-for="p in profissionais" :key="p.id">
+                                            <option :value="p.id" x-text="p.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
                             </div>
                         </template>
                         <template x-if="users.length === 0">
@@ -413,6 +425,7 @@ function permissionsApp() {
         cargos: @json($cargosJson),
         roleGroups: @json($roleGroupsJson),
         users: @json($usersJson),
+        profissionais: @json($profissionaisJson),
         expandedCat: {},
         groupModalOpen: false,
         assignModalOpen: false,
@@ -590,6 +603,24 @@ function permissionsApp() {
                 });
                 if (!r.ok) throw new Error('Sem permissão para alterar esta função.');
                 Swal.fire({ title: 'Função atualizada!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            }
+        },
+
+        async changeUserProfissional(user) {
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                const r = await fetch('/permissoes/usuarios/' + user.id + '/profissional', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ profissional_id: user.profissional_id || null }),
+                });
+                if (!r.ok) throw new Error('Erro ao vincular profissional.');
+                const label = user.profissional_id
+                    ? (this.profissionais.find(p => p.id === user.profissional_id)?.name || 'Profissional')
+                    : 'nenhum';
+                Swal.fire({ title: 'Vínculo atualizado!', text: user.name + ' → ' + label, icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
             } catch (e) {
                 Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
             }
