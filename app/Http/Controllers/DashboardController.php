@@ -105,17 +105,8 @@ class DashboardController extends Controller
             ->limit(9)
             ->get();
 
-        $kanbanAgendamentos = Agendamento::where('company_id', $empresa)
-            ->whereBetween('data_hora', [$mesInicio, $mesFim])
-            ->whereIn('status', [
-                Agendamento::STATUS_PENDENTE,
-                Agendamento::STATUS_CONFIRMADO,
-                Agendamento::STATUS_FINALIZADO,
-                Agendamento::STATUS_CANCELADO,
-            ])
-            ->with(['cliente', 'profissional', 'servico'])
-            ->orderBy('data_hora')
-            ->get();
+        $meuProfissionalId = auth()->user()->profissional_id;
+        $isAdminEmpresa = auth()->user()->hasRole('admin_empresa');
 
         $pctConfirmados = $totalMes > 0
             ? (int) round($confirmadosMes / $totalMes * 100)
@@ -167,6 +158,34 @@ class DashboardController extends Controller
 
         $maxProfCount = max($profissionais->max('agendamentos_mes_count') ?? 0, 1);
 
+        $profCores = $profissionais->pluck('cor', 'id')->toArray();
+
+        $kanbanQuery = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje)
+            ->with(['cliente', 'profissional', 'servico'])
+            ->orderBy('data_hora');
+
+        if (! $isAdminEmpresa && $meuProfissionalId !== null) {
+            $kanbanQuery->where('profissional_id', $meuProfissionalId);
+        }
+
+        $kanbanCards = $kanbanQuery->get()->map(fn (Agendamento $ag) => [
+            'id' => $ag->id,
+            'status' => $ag->status,
+            'hora' => $ag->data_hora->format('H:i'),
+            'cliente' => $ag->cliente?->name ?? 'Cliente avulso',
+            'servico' => $ag->servico?->nome ?? '—',
+            'profissional' => explode(' ', $ag->profissional?->name ?? '—')[0],
+            'profissional_id' => $ag->profissional_id,
+            'cor' => $profCores[$ag->profissional_id] ?? '#1a1a1a',
+            'duracao' => $ag->duracao,
+            'valor' => (float) $ag->valor,
+            'canEdit' => $isAdminEmpresa
+                || ($meuProfissionalId === null)
+                || ($meuProfissionalId !== null && $meuProfissionalId === $ag->profissional_id),
+            'statusUrl' => route('agendamentos.updateStatus', $ag->id),
+        ])->values();
+
         $stats = [
             'cards' => [
                 [
@@ -199,7 +218,7 @@ class DashboardController extends Controller
             'pendentesHoje' => $pendentesHoje,
             'receitaPrevistaHoje' => $receitaPrevistaHoje,
             'proximosAgendamentos' => $proximosAgendamentos,
-            'kanbanAgendamentos' => $kanbanAgendamentos,
+            'kanbanCards' => $kanbanCards,
             'donut' => $donut,
             'profissionais' => $profissionais,
             'maxProfCount' => $maxProfCount,

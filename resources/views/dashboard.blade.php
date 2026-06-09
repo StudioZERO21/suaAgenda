@@ -106,50 +106,53 @@
 
         {{-- KANBAN --}}
         <div x-show="view === 'kanban'" x-cloak>
-            <div class="sa-kanban-grid">
-                @foreach($kanbanCols as $col)
-                @php
-                    $cards = $col['id'] === 'em_atendimento'
-                        ? collect()
-                        : $stats['kanbanAgendamentos']->where('status', $col['id']);
-                @endphp
-                <div class="sa-kanban-col">
-                    <div class="sa-kanban-head" style="background:{{ $col['color'] }}10;border:1px solid {{ $col['color'] }}25">
-                        <div style="width:8px;height:8px;border-radius:50%;background:{{ $col['color'] }}"></div>
-                        <span style="font-size:12px;font-weight:700;color:{{ $col['color'] }}">{{ $col['label'] }}</span>
-                        <span style="font-size:11px;font-weight:700;color:{{ $col['color'] }};margin-left:auto;background:{{ $col['color'] }}15;border-radius:20px;padding:1px 7px">{{ $cards->count() }}</span>
-                    </div>
-                    <div class="sa-kanban-zone" style="background:{{ $col['color'] }}04;border:1px dashed {{ $col['color'] }}20">
-                        @forelse($cards as $ag)
-                        <div class="sa-kanban-card" style="--col:{{ $col['color'] }}">
-                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-                                <div style="font-size:13px;font-weight:700;color:var(--sa-text1)">{{ $ag->cliente?->name ?? '—' }}</div>
-                                <span style="font-size:10px;font-weight:700;color:{{ $col['color'] }};background:{{ $col['color'] }}12;padding:2px 7px;border-radius:20px">{{ $ag->data_hora->format('H:i') }}</span>
+            <div x-data="dashboardKanbanApp()">
+                <div class="sa-kanban-grid">
+                    <template x-for="col in cols" :key="col.id">
+                        <div class="sa-kanban-col"
+                             @dragover.prevent="dragOverCol = col.id"
+                             @dragleave.prevent="dragOverCol = null"
+                             @drop.prevent="drop(col.id)">
+                            <div class="sa-kanban-head"
+                                 :style="'background:' + col.color + '18;border:1px solid ' + col.color + '30'">
+                                <div :style="'width:8px;height:8px;border-radius:50%;background:' + col.color"></div>
+                                <span :style="'font-size:12px;font-weight:700;color:' + col.color" x-text="col.label"></span>
+                                <span :style="'font-size:11px;font-weight:700;color:' + col.color + ';margin-left:auto;background:' + col.color + '20;border-radius:20px;padding:1px 7px'"
+                                      x-text="cardsFor(col.id).length"></span>
                             </div>
-                            <div style="font-size:12px;color:var(--sa-text3);margin-bottom:8px">{{ $ag->servico?->nome ?? '—' }}</div>
-                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                <div style="display:flex;align-items:center;gap:6px">
-                                    @php $kanbanProfCor = $stats['profissionais']->firstWhere('id', $ag->profissional_id)?->cor ?? '#888'; @endphp
-                                    <x-sa.avatar :name="$ag->profissional?->name ?? '?'" :size="20" :color="$kanbanProfCor" />
-                                    <span style="font-size:11px;color:var(--sa-text3)">{{ explode(' ', $ag->profissional?->name ?? '—')[0] }}</span>
-                                </div>
-                                <div style="display:flex;gap:4px">
-                                    @foreach($kanbanCols as $c)
-                                    @if($c['id'] !== $ag->status && $c['id'] !== 'em_atendimento')
-                                    <span title="{{ $c['label'] }}" style="width:18px;height:18px;border-radius:4px;border:1px solid {{ $c['color'] }}40;background:{{ $c['color'] }}10;display:flex;align-items:center;justify-content:center">
-                                        <span style="width:6px;height:6px;border-radius:50%;background:{{ $c['color'] }}"></span>
-                                    </span>
-                                    @endif
-                                    @endforeach
-                                </div>
+                            <div class="sa-kanban-zone"
+                                 :style="'background:' + col.color + '06;border:1px dashed ' + (dragOverCol === col.id ? col.color : col.color + '25') + ';transition:border-color 150ms'">
+                                <template x-if="cardsFor(col.id).length === 0">
+                                    <div :style="'padding:16px 8px;text-align:center;font-size:11px;color:' + col.color + '99'">Nenhum aqui</div>
+                                </template>
+                                <template x-for="card in cardsFor(col.id)" :key="card.id">
+                                    <div class="sa-kanban-card"
+                                         :style="'--col:' + col.color + ';cursor:' + (card.canEdit ? 'grab' : 'default')"
+                                         :draggable="card.canEdit"
+                                         @dragstart="startDrag(card)"
+                                         @dragend="dragging = null">
+                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+                                            <div style="font-size:13px;font-weight:700;color:var(--sa-text1)" x-text="card.cliente"></div>
+                                            <span :style="'font-size:10px;font-weight:700;color:' + col.color + ';background:' + col.color + '18;padding:2px 7px;border-radius:20px'"
+                                                  x-text="card.hora"></span>
+                                        </div>
+                                        <div style="font-size:12px;color:var(--sa-text3);margin-bottom:8px" x-text="card.servico"></div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center">
+                                            <div style="display:flex;align-items:center;gap:5px">
+                                                <div :style="'width:20px;height:20px;border-radius:50%;background:' + card.cor + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0'"
+                                                     x-text="card.profissional.charAt(0).toUpperCase()"></div>
+                                                <span style="font-size:11px;color:var(--sa-text3)" x-text="card.profissional"></span>
+                                            </div>
+                                            <template x-if="!card.canEdit">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
-                        @empty
-                        <div style="padding:16px 8px;text-align:center;font-size:11px;color:{{ $col['color'] }}99">Nenhum aqui</div>
-                        @endforelse
-                    </div>
+                    </template>
                 </div>
-                @endforeach
             </div>
         </div>
 
@@ -319,3 +322,73 @@
 
 @endif
 @endsection
+
+@push('scripts')
+@if($stats)
+<script>
+function dashboardKanbanApp() {
+    return {
+        cards: @json($stats['kanbanCards']),
+        cols: [
+            { id: 'pendente',       label: 'Aguardando',     color: '#f59e0b' },
+            { id: 'confirmado',     label: 'Confirmado',     color: '#6366f1' },
+            { id: 'em_atendimento', label: 'Em atendimento', color: '#0ea5e9' },
+            { id: 'finalizado',     label: 'Concluído',      color: '#10b981' },
+            { id: 'cancelado',      label: 'Cancelado',      color: '#ef4444' },
+        ],
+        dragging: null,
+        dragOverCol: null,
+        cardsFor(status) {
+            return this.cards.filter(c => c.status === status);
+        },
+        startDrag(card) {
+            if (!card.canEdit) return;
+            this.dragging = card;
+        },
+        async drop(status) {
+            if (!this.dragging) return;
+            const card = this.dragging;
+            this.dragging = null;
+            this.dragOverCol = null;
+            if (card.status === status) return;
+            const colLabel = this.cols.find(c => c.id === status)?.label || status;
+            const result = await Swal.fire({
+                title: 'Mover atendimento?',
+                text: `Confirma mover "${card.cliente}" para "${colLabel}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, mover',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#1a1a1a',
+                cancelButtonColor: 'transparent',
+                customClass: { cancelButton: 'swal-cancel-muted' },
+            });
+            if (!result.isConfirmed) return;
+            const oldStatus = card.status;
+            card.status = status;
+            try {
+                const res = await fetch(card.statusUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    },
+                    body: JSON.stringify({ status }),
+                });
+                if (!res.ok) {
+                    card.status = oldStatus;
+                    Swal.fire({ title: 'Erro', text: 'Não foi possível atualizar o status.', icon: 'error' });
+                    return;
+                }
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `Movido para "${colLabel}"`, timer: 2000, showConfirmButton: false });
+            } catch {
+                card.status = oldStatus;
+                Swal.fire({ title: 'Erro', text: 'Falha de conexão.', icon: 'error' });
+            }
+        },
+    };
+}
+</script>
+@endif
+@endpush

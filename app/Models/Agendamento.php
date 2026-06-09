@@ -23,6 +23,8 @@ class Agendamento extends Model
 
     const STATUS_CANCELADO = 'cancelado';
 
+    const STATUS_EM_ATENDIMENTO = 'em_atendimento';
+
     protected $fillable = [
         'company_id',
         'profissional_id',

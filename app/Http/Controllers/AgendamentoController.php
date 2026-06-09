@@ -235,7 +235,7 @@ class AgendamentoController extends Controller
         $this->authorize('update', $agendamento);
 
         $request->validate([
-            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado'],
+            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento'],
         ]);
 
         $agendamento->update(['status' => $request->status]);
