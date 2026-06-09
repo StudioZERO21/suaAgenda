@@ -219,7 +219,40 @@ function agendadorPublico() {
         slots: [],
         carregandoSlots: false,
 
-        init() {},
+        async init() {
+            const p = new URLSearchParams(window.location.search);
+            const qServico = p.get('servico_id');
+            const qProf    = p.get('profissional_id');
+            const qData    = p.get('data');
+            const qHora    = p.get('hora');
+
+            if (qServico && SERVICOS_MAP[qServico]) {
+                const s = SERVICOS_MAP[qServico];
+                this.servicoId = qServico;
+                this.servicoNome = s.nome;
+                this.profissionaisDoServico = s.profissionais;
+            }
+            if (qProf) {
+                this.profissionalId = qProf;
+                const pr = PROFISSIONAIS.find(x => x.id === qProf);
+                this.profissionalNome = pr ? pr.name : '';
+            }
+            if (qData) this.data = qData;
+
+            if (qServico && qProf && qData) {
+                await this.buscarSlots();
+                if (qHora && this.slots.find(s => s.hora === qHora && s.disponivel)) {
+                    this.horario = qHora;
+                    this.step = 4;
+                } else {
+                    this.step = 3;
+                }
+            } else if (qServico && qProf) {
+                this.step = 3;
+            } else if (qServico) {
+                this.step = 2;
+            }
+        },
 
         selecionarServico(id) {
             this.servicoId = id;

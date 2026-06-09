@@ -108,6 +108,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
 // Agendamento público — sem autenticação
 Route::get('/vitrine/{slug}', [AgendamentoPublicoController::class, 'landing'])->name('vitrine.show');
+Route::get('/vitrine/{slug}/disponibilidade', [AgendamentoPublicoController::class, 'disponibilidade'])->name('vitrine.disponibilidade');
 Route::get('/agendar/{slug}', [AgendamentoPublicoController::class, 'show'])->name('agendar.show');
 Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->name('agendar.store');
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');

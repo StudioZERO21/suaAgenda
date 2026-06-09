@@ -20,6 +20,9 @@
     $showTeam     = ($cfg['show_team']         ?? true)  !== false;
     $showTestimon = ($cfg['show_testimonials'] ?? true)  !== false;
     $showBookCta  = ($cfg['show_booking_cta']  ?? true)  !== false;
+    $showAvail    = ($cfg['show_booking_cta']  ?? true)  !== false && $servicos->isNotEmpty();
+    $dispUrl      = route('vitrine.disponibilidade', $company->slug);
+    $bookBase     = route('agendar.show', $company->slug);
 
     $descricoesServico = [
         'Corte personalizado com técnicas modernas e acabamento impecável.',
@@ -207,6 +210,123 @@
                 @endforeach
             </div>
         </div>
+        @endif
+
+        {{-- ── HORÁRIOS DISPONÍVEIS ──────────────────────────── --}}
+        @if($showAvail)
+        <div id="horarios" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px"
+             x-data="horarioApp()"
+             x-init="init()">
+            <div style="text-align:center;margin-bottom:40px">
+                <p class="vit-kicker">Reserve agora</p>
+                <h2 class="vit-h2" style="margin:0 0 14px">Horários Disponíveis</h2>
+                <p style="font-size:15px;color:var(--sa-text3)">Escolha o dia e o serviço para ver os horários em tempo real.</p>
+            </div>
+
+            {{-- Seletor de serviço --}}
+            @if($servicos->count() > 1)
+            <div style="display:flex;justify-content:center;margin-bottom:28px">
+                <select x-model="selServico" @change="buscar()"
+                        style="padding:10px 16px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;font-family:var(--sa-font-body);color:var(--sa-text1);background:var(--sa-surface);outline:none;min-width:240px;cursor:pointer"
+                        onfocus="this.style.borderColor='var(--sa-primary)'"
+                        onblur="this.style.borderColor='var(--sa-border)'">
+                    @foreach($servicos as $svc)
+                    <option value="{{ $svc->id }}">{{ $svc->nome }} — {{ $svc->precoFormatado() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+
+            {{-- Tabs de dias --}}
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:28px;scrollbar-width:none">
+                <template x-for="(d, i) in days" :key="i">
+                    <button @click="selDay = i; buscar()"
+                            :style="selDay === i
+                                ? 'background:var(--sa-primary);color:#fff;border-color:var(--sa-primary)'
+                                : 'background:var(--sa-surface);color:var(--sa-text2);border-color:var(--sa-border)'"
+                            style="flex-shrink:0;padding:9px 18px;border-radius:8px;border:1.5px solid;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 160ms;font-family:var(--sa-font-body)"
+                            x-text="d.label"></button>
+                </template>
+            </div>
+
+            {{-- Loading --}}
+            <div x-show="loading" style="display:flex;justify-content:center;padding:40px 0">
+                <div style="width:36px;height:36px;border:3px solid var(--sa-border);border-top-color:var(--sa-primary);border-radius:50%;animation:spin 700ms linear infinite"></div>
+            </div>
+
+            {{-- Sem resultados --}}
+            <div x-show="!loading && profDisp.length === 0" style="text-align:center;padding:40px 0">
+                <p style="font-size:15px;color:var(--sa-text3)">Nenhum profissional disponível neste dia.</p>
+            </div>
+
+            {{-- Grade de profissionais e slots --}}
+            <div x-show="!loading && profDisp.length > 0" style="display:flex;flex-direction:column;gap:20px">
+                <template x-for="row in profDisp" :key="row.profissional.id">
+                    <div style="background:var(--sa-surface);border:1px solid var(--sa-border);border-radius:12px;padding:20px">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                            <div :style="`width:38px;height:38px;border-radius:50%;background:${row.profissional.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-body)`"
+                                 x-text="row.profissional.name.charAt(0).toUpperCase()"></div>
+                            <span style="font-weight:600;font-size:15px;color:var(--sa-text1)" x-text="row.profissional.name"></span>
+                            <span x-show="row.slots.length === 0" style="font-size:12px;color:var(--sa-text3);margin-left:4px">Folga neste dia</span>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px" x-show="row.slots.length > 0">
+                            <template x-for="slot in row.slots" :key="slot.hora">
+                                <button @click="slot.disponivel && ir(row.profissional.id, slot.hora)"
+                                        :disabled="!slot.disponivel"
+                                        :style="slot.disponivel
+                                            ? `background:color-mix(in srgb,${row.profissional.cor} 10%,transparent);color:${row.profissional.cor};border:1.5px solid color-mix(in srgb,${row.profissional.cor} 35%,transparent);cursor:pointer`
+                                            : 'background:var(--sa-surface2);color:var(--sa-text3);border:1.5px solid var(--sa-border);cursor:not-allowed;opacity:.5;text-decoration:line-through'"
+                                        style="padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;font-family:var(--sa-font-body);transition:filter 150ms"
+                                        x-text="slot.hora"
+                                        @mouseenter="if(slot.disponivel) $el.style.filter='brightness(1.12)'"
+                                        @mouseleave="$el.style.filter='none'"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <script>
+        function horarioApp() {
+            return {
+                selDay: 0,
+                selServico: '{{ optional($servicos->first())->id ?? '' }}',
+                profDisp: [],
+                loading: false,
+                days: [],
+                init() {
+                    const today = new Date();
+                    const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+                    const monthNames = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+                    for (let i = 0; i < 7; i++) {
+                        const d = new Date(today);
+                        d.setDate(today.getDate() + i);
+                        const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                        this.days.push({
+                            label: i === 0 ? 'Hoje' : `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`,
+                            value: iso,
+                        });
+                    }
+                    if (this.selServico) this.buscar();
+                },
+                dayDate() { return this.days[this.selDay]?.value ?? ''; },
+                async buscar() {
+                    if (!this.selServico || !this.days.length) return;
+                    this.loading = true;
+                    this.profDisp = [];
+                    try {
+                        const r = await fetch(`{{ $dispUrl }}?servico_id=${this.selServico}&data=${this.dayDate()}`);
+                        if (r.ok) this.profDisp = await r.json();
+                    } catch(e) {}
+                    this.loading = false;
+                },
+                ir(profId, hora) {
+                    window.location = `{{ $bookBase }}?servico_id=${this.selServico}&profissional_id=${profId}&data=${this.dayDate()}&hora=${hora}`;
+                },
+            };
+        }
+        </script>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
         @endif
 
         {{-- ── DEPOIMENTOS ──────────────────────────────────── --}}
