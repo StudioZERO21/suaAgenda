@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BloqueioController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\ClienteController;
@@ -92,6 +93,9 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::get('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'show'])->name('profissionais.horarios');
     Route::put('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'update'])->name('profissionais.horarios.update');
+    Route::get('profissionais/{profissional}/bloqueios', [BloqueioController::class, 'index'])->name('profissionais.bloqueios.index');
+    Route::post('profissionais/{profissional}/bloqueios', [BloqueioController::class, 'store'])->name('profissionais.bloqueios.store');
+    Route::delete('bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
 
     Route::get('perfil', [PerfilController::class, 'show'])->name('perfil');
     Route::put('perfil', [PerfilController::class, 'update'])->name('perfil.update');
