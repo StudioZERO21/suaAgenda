@@ -158,7 +158,10 @@
                         <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0">Transações</h3>
                         <span style="font-size:12px;color:var(--sa-text3)" x-text="filtered.length + ' resultado(s)'"></span>
                     </div>
-                    <x-sa.btn variant="ghost" size="sm" onclick="Swal.fire({toast:true,position:'top-end',icon:'info',title:'Exportação CSV será habilitada na próxima etapa.',showConfirmButton:false,timer:2500})">Exportar</x-sa.btn>
+                    <x-sa.btn variant="ghost" size="sm" :href="route('financeiro.exportar', ['periodo' => $periodo])">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Exportar CSV
+                    </x-sa.btn>
                 </div>
                 <div style="overflow-x:auto">
                     <table style="width:100%;border-collapse:collapse">

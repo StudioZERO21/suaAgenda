@@ -18,7 +18,14 @@
 <x-sa.page x-data="{ tab: 'overview' }">
     <x-sa.app-header
         title="Relatórios"
-        subtitle="Análise completa do desempenho — {{ $inicio->format('d/m/Y') }} a {{ $fim->format('d/m/Y') }}" />
+        subtitle="Análise completa do desempenho — {{ $inicio->format('d/m/Y') }} a {{ $fim->format('d/m/Y') }}">
+        <x-slot:actions>
+            <x-sa.btn variant="secondary" :href="route('relatorios.exportar', array_filter(['preset' => $request->input('preset'), 'de' => $request->input('de'), 'ate' => $request->input('ate')]))" size="sm"
+                :icon="'<svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\'><path d=\'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4\'/><polyline points=\'7 10 12 15 17 10\'/><line x1=\'12\' y1=\'15\' x2=\'12\' y2=\'3\'/></svg>'">
+                Exportar CSV
+            </x-sa.btn>
+        </x-slot:actions>
+    </x-sa.app-header>
     <x-sa.body padding="16px 32px 0">
 
     {{-- Date range filter --}}
@@ -48,6 +55,7 @@
             ['overview',       'Visão Geral',   '<path d=\'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z\'/>'],
             ['receita',        'Receita',        '<line x1=\'12\' y1=\'1\' x2=\'12\' y2=\'23\'/><path d=\'M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6\'/>'],
             ['profissionais',  'Profissionais',  '<path d=\'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/>'],
+            ['horarios',       'Horários de Pico', '<circle cx=\'12\' cy=\'12\' r=\'10\'/><polyline points=\'12 6 12 12 16 14\'/>'],
         ] as [$id, $label, $path])
         <button type="button" @click="tab = '{{ $id }}'"
             :style="tab === '{{ $id }}'
@@ -264,6 +272,85 @@
             @empty
             <p style="font-size:14px;color:var(--sa-text3);text-align:center;padding:24px 0">Nenhum agendamento no período.</p>
             @endforelse
+        </x-sa.card>
+    </div>
+
+    {{-- ── HORÁRIOS DE PICO ───────────────────────────────────── --}}
+    <div x-show="tab === 'horarios'" x-cloak>
+        <x-sa.card style="padding:24px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+                <div>
+                    <h2 style="font-family:var(--sa-font-heading);font-size:14px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">Horários de Pico</h2>
+                    <p style="font-size:12px;color:var(--sa-text3);margin:0">Concentração de agendamentos por dia da semana e hora</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11px;color:var(--sa-text3)">Menos</span>
+                    @for($i = 0; $i <= 4; $i++)
+                    <div style="width:14px;height:14px;border-radius:3px;background:{{ $i === 0 ? 'var(--sa-surface2)' : 'color-mix(in srgb, var(--sa-primary) ' . ($i * 22) . '%, transparent)' }};border:1px solid var(--sa-border)"></div>
+                    @endfor
+                    <span style="font-size:11px;color:var(--sa-text3)">Mais</span>
+                </div>
+            </div>
+            @php
+                $dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+                $horasVisiveis = range(6, 22); // 6h às 22h
+            @endphp
+            <div style="overflow-x:auto">
+                <table style="border-collapse:separate;border-spacing:2px;min-width:700px">
+                    <thead>
+                        <tr>
+                            <th style="width:36px;min-width:36px"></th>
+                            @foreach($horasVisiveis as $h)
+                            <th style="font-size:10px;font-weight:600;color:var(--sa-text3);text-align:center;padding-bottom:6px;min-width:30px">{{ str_pad($h, 2, '0', STR_PAD_LEFT) }}h</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($dias as $d => $dLabel)
+                        <tr>
+                            <td style="font-size:11px;font-weight:600;color:var(--sa-text2);padding-right:8px;white-space:nowrap;vertical-align:middle">{{ $dLabel }}</td>
+                            @foreach($horasVisiveis as $h)
+                            @php
+                                $val = $heatmap[$d][$h] ?? 0;
+                                $intensity = $maxHeatmap > 0 ? round($val / $maxHeatmap * 100) : 0;
+                                $bg = $val === 0
+                                    ? 'var(--sa-surface2)'
+                                    : 'color-mix(in srgb, var(--sa-primary) ' . max(12, $intensity) . '%, transparent)';
+                                $textColor = $intensity > 55 ? '#fff' : 'var(--sa-text1)';
+                            @endphp
+                            <td title="{{ $val }} agendamento{{ $val !== 1 ? 's' : '' }} às {{ str_pad($h, 2, '0', STR_PAD_LEFT) }}h {{ $dLabel }}"
+                                style="width:30px;height:28px;border-radius:4px;background:{{ $bg }};text-align:center;vertical-align:middle;cursor:default;transition:opacity 120ms"
+                                onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+                                @if($val > 0)
+                                <span style="font-size:9px;font-weight:700;color:{{ $textColor }};line-height:1">{{ $val }}</span>
+                                @endif
+                            </td>
+                            @endforeach
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if($totalAgendamentos === 0)
+            <p style="font-size:13px;color:var(--sa-text3);text-align:center;padding:32px 0">Nenhum agendamento no período selecionado.</p>
+            @else
+            @php
+                $pico = ['val' => 0, 'dia' => '', 'hora' => ''];
+                foreach ($heatmap as $d => $horas) {
+                    foreach ($horas as $h => $cnt) {
+                        if ($cnt > $pico['val']) {
+                            $pico = ['val' => $cnt, 'dia' => $dias[$d], 'hora' => str_pad($h, 2, '0', STR_PAD_LEFT) . 'h'];
+                        }
+                    }
+                }
+            @endphp
+            <div style="margin-top:16px;padding:12px 16px;background:color-mix(in srgb,var(--sa-primary) 6%,transparent);border-radius:8px;border:1px solid color-mix(in srgb,var(--sa-primary) 12%,transparent)">
+                <span style="font-size:12px;color:var(--sa-text2)">
+                    Horário de maior movimento: <strong style="color:var(--sa-text1)">{{ $pico['dia'] }} às {{ $pico['hora'] }}</strong>
+                    com <strong style="color:var(--sa-text1)">{{ $pico['val'] }} agendamento{{ $pico['val'] !== 1 ? 's' : '' }}</strong>
+                </span>
+            </div>
+            @endif
         </x-sa.card>
     </div>
 

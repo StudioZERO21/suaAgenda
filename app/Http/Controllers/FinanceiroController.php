@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinanceiroController extends Controller
 {
@@ -120,6 +121,68 @@ class FinanceiroController extends Controller
             'inicio',
             'fim',
         ));
+    }
+
+    public function exportarCsv(Request $request): StreamedResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        $periodo = $request->input('periodo', 'month');
+        [$inicio, $fim] = $this->resolverPeriodo($periodo);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->with(['cliente', 'servico', 'profissional'])
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->orderByDesc('data_hora')
+            ->get();
+
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->orderByDesc('data')
+            ->get();
+
+        $filename = 'financeiro-'.$inicio->format('Y-m-d').'-ao-'.$fim->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($agendamentos, $lancamentos): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
+            fputcsv($out, ['Data', 'Descrição', 'Categoria', 'Profissional', 'Tipo', 'Método', 'Valor (R$)', 'Status'], ';');
+
+            foreach ($agendamentos as $a) {
+                fputcsv($out, [
+                    $a->data_hora->format('d/m/Y'),
+                    $a->cliente?->name ?? 'Cliente avulso',
+                    $a->servico?->nome ?? '—',
+                    $a->profissional?->name ?? '—',
+                    'receita',
+                    '—',
+                    number_format((float) $a->valor, 2, ',', '.'),
+                    match ($a->status) {
+                        Agendamento::STATUS_FINALIZADO => 'Pago',
+                        Agendamento::STATUS_CANCELADO => 'Cancelado',
+                        default => 'Pendente',
+                    },
+                ], ';');
+            }
+
+            foreach ($lancamentos as $l) {
+                fputcsv($out, [
+                    $l->data->format('d/m/Y'),
+                    $l->descricao,
+                    $l->categoria ?? '—',
+                    '—',
+                    $l->tipo,
+                    $l->metodo_pagamento ?? '—',
+                    number_format((float) $l->valor, 2, ',', '.'),
+                    match ($l->status) {
+                        'pago' => 'Pago',
+                        'cancelado' => 'Cancelado',
+                        default => 'Pendente',
+                    },
+                ], ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function storeLancamento(StoreLancamentoRequest $request): JsonResponse
