@@ -100,12 +100,11 @@ class AgendamentoController extends Controller
         }
 
         try {
-            $overlap = Agendamento::ativo()
-                ->where('profissional_id', $request->profissional_id)
-                ->where('data_hora', $request->data_hora)
-                ->exists();
-
-            if ($overlap) {
+            if ($this->temConflitoHorario(
+                $request->profissional_id,
+                Carbon::parse($request->data_hora),
+                (int) $request->duracao
+            )) {
                 return back()->withErrors(['data_hora' => 'Horário já ocupado para este profissional.'])->withInput();
             }
 
@@ -180,6 +179,16 @@ class AgendamentoController extends Controller
 
     public function update(UpdateAgendamentoRequest $request, Agendamento $agendamento): RedirectResponse
     {
+        if ($request->hasAny(['data_hora', 'duracao', 'profissional_id'])) {
+            $inicio = Carbon::parse($request->data_hora ?? $agendamento->data_hora);
+            $duracao = (int) ($request->duracao ?? $agendamento->duracao);
+            $profissionalId = $request->profissional_id ?? $agendamento->profissional_id;
+
+            if ($this->temConflitoHorario($profissionalId, $inicio, $duracao, $agendamento->id)) {
+                return back()->withErrors(['data_hora' => 'Horário já ocupado para este profissional.'])->withInput();
+            }
+        }
+
         $agendamento->update($request->validated());
 
         return redirect()->route('agendamentos.show', $agendamento)
@@ -199,7 +208,7 @@ class AgendamentoController extends Controller
 
         $novaData = $request->dataHora();
 
-        if ($this->temConflitoHorario($agendamento, $novaData)) {
+        if ($this->temConflitoHorario($agendamento->profissional_id, $novaData, $agendamento->duracao, $agendamento->id)) {
             return response()->json([
                 'message' => 'Horário já ocupado para este profissional.',
             ], 422);
@@ -264,20 +273,27 @@ class AgendamentoController extends Controller
 
     /**
      * Verifica sobreposição de horários para o mesmo profissional.
+     * Cada profissional pode ter apenas 1 agendamento por slot; profissionais diferentes
+     * podem ser agendados simultaneamente sem conflito.
      */
-    private function temConflitoHorario(Agendamento $agendamento, Carbon $inicio): bool
-    {
-        $fim = $inicio->copy()->addMinutes($agendamento->duracao);
+    private function temConflitoHorario(
+        string $profissionalId,
+        Carbon $inicio,
+        int $duracao,
+        ?string $excluirId = null
+    ): bool {
+        $fim = $inicio->copy()->addMinutes($duracao);
 
-        return Agendamento::ativo()
-            ->where('profissional_id', $agendamento->profissional_id)
-            ->where('id', '!=', $agendamento->id)
-            ->get()
-            ->contains(function (Agendamento $outro) use ($inicio, $fim) {
-                $outroInicio = $outro->data_hora;
-                $outroFim = $outroInicio->copy()->addMinutes($outro->duracao);
+        $query = Agendamento::ativo()->where('profissional_id', $profissionalId);
 
-                return $inicio->lt($outroFim) && $fim->gt($outroInicio);
-            });
+        if ($excluirId !== null) {
+            $query->where('id', '!=', $excluirId);
+        }
+
+        return $query->get()->contains(function (Agendamento $outro) use ($inicio, $fim) {
+            $outroFim = $outro->data_hora->copy()->addMinutes($outro->duracao);
+
+            return $inicio->lt($outroFim) && $fim->gt($outro->data_hora);
+        });
     }
 }

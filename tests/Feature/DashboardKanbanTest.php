@@ -133,6 +133,47 @@ describe('dashboard kanban cards', function () {
     });
 });
 
+describe('dashboard timeline (próximos agendamentos)', function () {
+    it('admin vê próximos de todos os profissionais', function () {
+        criarAgendamentoDash(['profissional_id' => test()->prof1->id, 'data_hora' => now()->addHour()]);
+        criarAgendamentoDash(['profissional_id' => test()->prof2->id, 'data_hora' => now()->addHour()]);
+
+        $response = $this->actingAs($this->admin)->get(route('dashboard'));
+        $proximos = $response->viewData('stats')['proximosAgendamentos'];
+
+        expect($proximos)->toHaveCount(2);
+    });
+
+    it('profissional vinculado vê apenas seus próximos', function () {
+        $userProf = User::factory()->create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->prof1->id,
+        ]);
+        $userProf->assignRole('gestor');
+
+        criarAgendamentoDash(['profissional_id' => $this->prof1->id, 'data_hora' => now()->addHour()]);
+        criarAgendamentoDash(['profissional_id' => $this->prof2->id, 'data_hora' => now()->addHour()]);
+
+        $response = $this->actingAs($userProf)->get(route('dashboard'));
+        $proximos = $response->viewData('stats')['proximosAgendamentos'];
+
+        expect($proximos)->toHaveCount(1)
+            ->and($proximos->first()->profissional_id)->toBe($this->prof1->id);
+    });
+
+    it('profissional sem vínculo não vê próximos agendamentos', function () {
+        $userSemVinculo = User::factory()->create(['empresa_id' => $this->company->id]);
+        $userSemVinculo->assignRole('gestor');
+
+        criarAgendamentoDash(['data_hora' => now()->addHour()]);
+
+        $response = $this->actingAs($userSemVinculo)->get(route('dashboard'));
+        $proximos = $response->viewData('stats')['proximosAgendamentos'];
+
+        expect($proximos)->toHaveCount(0);
+    });
+});
+
 describe('status em_atendimento', function () {
     it('aceita em_atendimento no updateStatus', function () {
         $ag = criarAgendamentoDash();

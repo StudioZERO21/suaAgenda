@@ -94,7 +94,10 @@ class DashboardController extends Controller
             ])
             ->sum('valor');
 
-        $proximosAgendamentos = Agendamento::where('company_id', $empresa)
+        $meuProfissionalId = auth()->user()->profissional_id;
+        $isAdminEmpresa = auth()->user()->hasRole('admin_empresa');
+
+        $proximosQuery = Agendamento::where('company_id', $empresa)
             ->where('data_hora', '>=', now())
             ->whereIn('status', [
                 Agendamento::STATUS_PENDENTE,
@@ -102,11 +105,13 @@ class DashboardController extends Controller
             ])
             ->with(['cliente', 'profissional', 'servico'])
             ->orderBy('data_hora')
-            ->limit(9)
-            ->get();
+            ->limit(9);
 
-        $meuProfissionalId = auth()->user()->profissional_id;
-        $isAdminEmpresa = auth()->user()->hasRole('admin_empresa');
+        if (! $isAdminEmpresa) {
+            $proximosQuery->where('profissional_id', $meuProfissionalId);
+        }
+
+        $proximosAgendamentos = $proximosQuery->get();
 
         $pctConfirmados = $totalMes > 0
             ? (int) round($confirmadosMes / $totalMes * 100)
