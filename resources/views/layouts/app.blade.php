@@ -627,6 +627,17 @@
             .sa-topbar-date { display: none; }
             .sa-topbar-hamburger { display: flex !important; }
         }
+
+        /* SweetAlert2 — botão cancelar muted (fundo transparente + borda) */
+        .swal2-cancel.swal-cancel-muted {
+            border: 1.5px solid #e2e2e2 !important;
+            color: #5a5a5a !important;
+            font-weight: 600 !important;
+        }
+        .swal2-cancel.swal-cancel-muted:hover {
+            border-color: #1a1a1a !important;
+            color: #1a1a1a !important;
+        }
     </style>
 
     @stack('styles')

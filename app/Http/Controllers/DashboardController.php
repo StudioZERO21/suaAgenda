@@ -165,7 +165,8 @@ class DashboardController extends Controller
             ->with(['cliente', 'profissional', 'servico'])
             ->orderBy('data_hora');
 
-        if (! $isAdminEmpresa && $meuProfissionalId !== null) {
+        if (! $isAdminEmpresa) {
+            // profissional_id null → WHERE profissional_id IS NULL → 0 rows (funcionário sem vínculo não vê nada)
             $kanbanQuery->where('profissional_id', $meuProfissionalId);
         }
 
@@ -181,7 +182,6 @@ class DashboardController extends Controller
             'duracao' => $ag->duracao,
             'valor' => (float) $ag->valor,
             'canEdit' => $isAdminEmpresa
-                || ($meuProfissionalId === null)
                 || ($meuProfissionalId !== null && $meuProfissionalId === $ag->profissional_id),
             'statusUrl' => route('agendamentos.updateStatus', $ag->id),
         ])->values();
