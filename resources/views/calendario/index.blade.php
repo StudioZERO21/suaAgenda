@@ -211,6 +211,40 @@
                 $chave = $dia->format('Y-m-d');
                 $agsDia = $agPorDia[$chave] ?? collect();
                 $isHoje = $dia->isSameDay($hoje);
+
+                // Calcular lanes para agendamentos simultâneos
+                // Cada profissional só pode ter 1 por horário, mas profissionais
+                // diferentes podem ter agendamentos no mesmo slot — separar lado a lado.
+                $sorted = $agsDia->sortBy(fn($a) => $a->data_hora)->values();
+                $lanes  = [];   // lane => Carbon end_time
+                $apptLane = []; // ag_id => lane index
+
+                foreach ($sorted as $_ag) {
+                    $_inicio = $_ag->data_hora;
+                    $_fim    = $_ag->data_hora->copy()->addMinutes($_ag->duracao);
+                    $_lane   = count($lanes); // default: nova lane
+                    foreach ($lanes as $_l => $_laneEnd) {
+                        if ($_inicio->gte($_laneEnd)) { $_lane = $_l; break; }
+                    }
+                    $lanes[$_lane]       = $_fim;
+                    $apptLane[$_ag->id]  = $_lane;
+                }
+
+                // Para cada agendamento, descobrir quantas lanes total no seu grupo
+                $apptTotalLanes = [];
+                foreach ($sorted as $_ag) {
+                    $_inicio = $_ag->data_hora;
+                    $_fim    = $_ag->data_hora->copy()->addMinutes($_ag->duracao);
+                    $_max    = $apptLane[$_ag->id];
+                    foreach ($sorted as $_other) {
+                        if ($_other->id === $_ag->id) continue;
+                        $_oFim = $_other->data_hora->copy()->addMinutes($_other->duracao);
+                        if ($_inicio->lt($_oFim) && $_fim->gt($_other->data_hora)) {
+                            $_max = max($_max, $apptLane[$_other->id]);
+                        }
+                    }
+                    $apptTotalLanes[$_ag->id] = $_max + 1;
+                }
             @endphp
             <div class="sa-cal-day-col">
                 <div class="sa-cal-slots" data-day="{{ $chave }}" style="height:{{ $gridH }}px;{{ $isHoje ? 'background:color-mix(in srgb,var(--sa-secondary) 3%,transparent)' : '' }}">
@@ -235,9 +269,18 @@
                         $isPending = $ag->status === 'pendente';
                         $borderStyle = $isPending ? 'dashed' : 'solid';
                         $opacity = $isPending ? 0.85 : 1;
+
+                        // Posicionamento horizontal por lanes
+                        $agLane  = $apptLane[$ag->id] ?? 0;
+                        $agTotal = $apptTotalLanes[$ag->id] ?? 1;
+                        $colW    = round(100 / $agTotal, 4);
+                        $leftPct = round($agLane * $colW, 4);
+                        $colStyle = $agTotal > 1
+                            ? "left:calc({$leftPct}% + 2px);right:auto;width:calc({$colW}% - 4px);"
+                            : '';
                     @endphp
                     @php
-                        $apptStyle = "top:{$topPx}px;height:{$altPx}px;background:{$cor}22;border-left:3px solid {$cor};
+                        $apptStyle = "{$colStyle}top:{$topPx}px;height:{$altPx}px;background:{$cor}22;border-left:3px solid {$cor};
                               border-top:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               border-right:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
                               border-bottom:1px {$borderStyle} {$cor}".($isPending ? '' : '40').";
