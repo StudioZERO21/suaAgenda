@@ -136,7 +136,7 @@
                 <div x-show="method === 'cash'" style="margin-top:10px;display:flex;align-items:center;gap:8px">
                     <span style="font-size:12px;color:var(--sa-text3);white-space:nowrap">Valor recebido:</span>
                     <input type="number" x-model="cashGiven" placeholder="0,00" style="flex:1;padding:6px 10px;font-size:13px;border:1px solid var(--sa-border);border-radius:7px;outline:none">
-                    <span x-show="parseFloat(cashGiven) >= total && total > 0" style="font-size:12px;font-weight:700;color:#10b981;white-space:nowrap" x-text="'Troco: ' + formatCurrency(change)"></span>
+                    <span x-show="parseFloat(cashGiven) >= total && total > 0" style="font-size:12px;font-weight:700;color:#10b981;white-space:nowrap" x-text="'Troco: ' + formatCurrency(cashChange)"></span>
                 </div>
             </div>
 
@@ -176,6 +176,7 @@ function pdvApp() {
         method: 'pix',
         cashGiven: '',
         paid: false,
+        change: 0,
         methods: [
             { id: 'pix', label: 'Pix', color: '#10b981' },
             { id: 'credit', label: 'Crédito', color: '#6366f1' },
@@ -190,7 +191,7 @@ function pdvApp() {
         get subtotal() { return this.cart.reduce((s, c) => s + c.price * c.qty, 0); },
         get discountAmt() { return Math.round(this.subtotal * this.discount / 100 * 100) / 100; },
         get total() { return Math.max(this.subtotal - this.discountAmt, 0); },
-        get change() { return Math.max((parseFloat(this.cashGiven) || 0) - this.total, 0); },
+        get cashChange() { return Math.max((parseFloat(this.cashGiven) || 0) - this.total, 0); },
         get cartCount() { return this.cart.reduce((s, c) => s + c.qty, 0); },
         cartQty(key) { const i = this.cart.find(c => c.key === key); return i ? i.qty : 0; },
         formatCurrency(v) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); },
@@ -204,7 +205,7 @@ function pdvApp() {
             this.cart = this.cart.map(c => c.key === key ? { ...c, qty: Math.max(0, c.qty + delta) } : c).filter(c => c.qty > 0);
         },
         removeItem(key) { this.cart = this.cart.filter(c => c.key !== key); },
-        clearCart() { this.cart = []; this.discount = 0; this.clientId = ''; this.cashGiven = ''; this.paid = false; },
+        clearCart() { this.cart = []; this.discount = 0; this.clientId = ''; this.cashGiven = ''; this.paid = false; this.change = 0; },
         finalize() {
             if (this.cart.length === 0) return Swal.fire({ title: 'Atenção', text: 'Adicione itens ao carrinho.', icon: 'warning', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             const csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -222,8 +223,8 @@ function pdvApp() {
             })
             .then(r => r.ok ? r.json() : Promise.reject(r))
             .then(() => {
+                if (this.method === 'cash') this.change = this.cashChange;
                 this.paid = true;
-                Swal.fire({ title: 'Venda finalizada!', text: 'Total: ' + this.formatCurrency(this.total), icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             })
             .catch(() => {
                 Swal.fire({ title: 'Erro', text: 'Não foi possível registrar a venda.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });

@@ -7,6 +7,19 @@
     $palette = ['#1a1a1a', '#d4a574', '#6366f1', '#10b981', '#f59e0b', '#ec4899'];
     $colorFor = fn (string $key) => $palette[crc32($key) % count($palette)];
     $bookUrl = route('agendar.show', $company->slug);
+    $cfg = $siteCfg ?? [];
+
+    $vitHeadline  = $cfg['headline']    ?? 'Arte em cada detalhe.';
+    $vitSub       = $cfg['subheadline'] ?? ($company->description ?? 'Atendimento premium com os melhores profissionais. Uma experiência única para você.');
+    $vitCtaText   = $cfg['cta_text']    ?? 'Agendar Horário';
+    $vitCtaSec    = $cfg['cta_secondary'] ?? ($company->phone ?? $company->whatsapp ?? null);
+    $vitBanner    = !empty($cfg['banner_path']) ? \Illuminate\Support\Facades\Storage::url($cfg['banner_path']) : null;
+    $vitFooter    = $cfg['footer_text'] ?? null;
+    $showStats    = ($cfg['show_stats']        ?? true)  !== false;
+    $showServices = ($cfg['show_services']     ?? true)  !== false;
+    $showTeam     = ($cfg['show_team']         ?? true)  !== false;
+    $showTestimon = ($cfg['show_testimonials'] ?? true)  !== false;
+    $showBookCta  = ($cfg['show_booking_cta']  ?? true)  !== false;
 
     $descricoesServico = [
         'Corte personalizado com técnicas modernas e acabamento impecável.',
@@ -17,12 +30,13 @@
         'Atendimento modelado com precisão e atenção aos detalhes.',
     ];
 
-    $stats = [
+    $defaultStats = [
         ['n' => '8+', 'l' => 'Anos de experiência'],
         ['n' => number_format($company->clientes()->count() ?: 2400, 0, ',', '.'), 'l' => 'Clientes atendidos'],
         ['n' => '4.9★', 'l' => 'Avaliação média'],
         ['n' => '98%', 'l' => 'Satisfação'],
     ];
+    $stats = !empty($cfg['stats_items']) ? $cfg['stats_items'] : $defaultStats;
 
     $depoimentos = [
         ['name' => 'Miguel Santos', 'svc' => 'Corte + Barba', 'text' => 'Melhor atendimento da cidade, sem dúvidas. Saí completamente transformado.'],
@@ -74,43 +88,54 @@
 
     {{-- ── HERO ─────────────────────────────────────────────── --}}
     <div style="position:relative;min-height:560px;overflow:hidden;background:#111">
+        @if($vitBanner)
+        <div style="position:absolute;inset:0;background-image:url('{{ $vitBanner }}');background-size:cover;background-position:center;background-repeat:no-repeat"></div>
+        @else
         <div style="position:absolute;inset:0;opacity:.4;background-image:repeating-linear-gradient(115deg,#1a1a1a 0 20px,rgba(255,255,255,.03) 20px 40px)"></div>
+        @endif
         <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.85) 40%,rgba(0,0,0,.3) 100%)"></div>
         <div style="position:relative;min-height:560px;display:flex;flex-direction:column;justify-content:center;padding:0 clamp(24px,7vw,80px);max-width:720px">
             <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:20px;padding:5px 14px;margin-bottom:24px;width:fit-content;border:1px solid rgba(255,255,255,.1)">
                 <span style="font-size:11px;font-weight:600;color:var(--sa-secondary);letter-spacing:1.5px;text-transform:uppercase">{{ $company->address ?? 'Atendimento com hora marcada' }}</span>
             </div>
             <h1 style="font-family:var(--sa-font-heading);font-size:clamp(38px,6vw,56px);font-weight:800;color:#fff;line-height:1.05;margin:0 0 20px;letter-spacing:-1px">
-                Arte em cada<br><span style="color:var(--sa-secondary)">detalhe.</span>
+                {{ $vitHeadline }}
             </h1>
             <p style="font-size:17px;color:rgba(255,255,255,.65);margin:0 0 36px;line-height:1.7;max-width:440px">
-                {{ $company->description ?? 'Atendimento premium com os melhores profissionais. Uma experiência única para você.' }}
+                {{ $vitSub }}
             </p>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--lg">Agendar Horário</a>
-                <a href="tel:{{ preg_replace('/\D/', '', $telefone) }}" style="display:flex;align-items:center;gap:8px;background:transparent;border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:12px 24px;color:#fff;font-size:15px;font-weight:600;text-decoration:none">
+                <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--lg">{{ $vitCtaText }}</a>
+                @if($vitCtaSec)
+                <a href="{{ preg_match('/^\(?\d/', $vitCtaSec) ? 'tel:'.preg_replace('/\D/', '', $vitCtaSec) : $vitCtaSec }}"
+                   style="display:flex;align-items:center;gap:8px;background:transparent;border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:12px 24px;color:#fff;font-size:15px;font-weight:600;text-decoration:none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    {{ $telefone }}
+                    {{ $vitCtaSec }}
                 </a>
+                @endif
             </div>
         </div>
     </div>
 
     {{-- ── STATS BAR ────────────────────────────────────────── --}}
+    @if($showStats && count($stats) > 0)
     <div style="background:var(--sa-primary);padding:0 clamp(24px,7vw,80px)">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);max-width:960px;margin:0 auto">
+        @php $statCount = count($stats); @endphp
+        <div style="display:grid;grid-template-columns:repeat({{ $statCount }},1fr);max-width:960px;margin:0 auto">
             @foreach($stats as $i => $s)
-            <div style="padding:28px 0;text-align:center;{{ $i < 3 ? 'border-right:1px solid rgba(255,255,255,.1)' : '' }}">
+            <div style="padding:28px 0;text-align:center;{{ $i < $statCount - 1 ? 'border-right:1px solid rgba(255,255,255,.1)' : '' }}">
                 <div style="font-family:var(--sa-font-heading);font-size:clamp(24px,3vw,32px);font-weight:800;color:var(--sa-secondary);line-height:1">{{ $s['n'] }}</div>
                 <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px;font-weight:500;letter-spacing:.3px">{{ $s['l'] }}</div>
             </div>
             @endforeach
         </div>
     </div>
+    @endif
 
     <div style="padding:72px 0">
 
         {{-- ── SERVIÇOS ─────────────────────────────────────── --}}
+        @if($showServices)
         <div id="servicos" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px">
             <div style="text-align:center;margin-bottom:48px">
                 <p class="vit-kicker">O que oferecemos</p>
@@ -140,9 +165,10 @@
             </div>
             @endif
         </div>
+        @endif
 
         {{-- ── EQUIPE ───────────────────────────────────────── --}}
-        @if($profissionais->isNotEmpty())
+        @if($showTeam && $profissionais->isNotEmpty())
         <div id="equipe" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px">
             <div style="text-align:center;margin-bottom:48px">
                 <p class="vit-kicker">Quem faz acontecer</p>
@@ -184,6 +210,7 @@
         @endif
 
         {{-- ── DEPOIMENTOS ──────────────────────────────────── --}}
+        @if($showTestimon)
         <div class="vit-section" style="margin-bottom:20px">
             <div style="text-align:center;margin-bottom:40px">
                 <p class="vit-kicker">Depoimentos</p>
@@ -210,9 +237,11 @@
                 @endforeach
             </div>
         </div>
+        @endif
     </div>
 
     {{-- ── CTA ──────────────────────────────────────────────── --}}
+    @if($showBookCta)
     <div style="background:var(--sa-primary);position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,transparent 0 16px,rgba(255,255,255,.02) 16px 32px);pointer-events:none"></div>
         <div style="position:relative;max-width:700px;margin:0 auto;padding:80px 48px;text-align:center">
@@ -228,6 +257,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- ── FOOTER ───────────────────────────────────────────── --}}
     <footer id="contato" style="background:#0a0a0a;padding:48px clamp(24px,7vw,80px) 28px;scroll-margin-top:80px">
@@ -274,7 +304,7 @@
         </div>
         <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;max-width:1140px;margin:0 auto">
             <span style="font-size:12px;color:rgba(255,255,255,.2)">&copy; {{ date('Y') }} {{ $company->name }}. Todos os direitos reservados.</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.15)">Powered by suaAgenda.pro</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.15)">{{ $vitFooter ?? 'Powered by suaAgenda.pro' }}</span>
         </div>
     </footer>
 </div>

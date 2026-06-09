@@ -23,6 +23,7 @@ class Cliente extends Model
         'data_nasc',
         'lgpd_consent',
         'observacao',
+        'ativo',
     ];
 
     protected function casts(): array
@@ -30,6 +31,7 @@ class Cliente extends Model
         return [
             'data_nasc' => 'date',
             'lgpd_consent' => 'boolean',
+            'ativo' => 'boolean',
         ];
     }
 
@@ -41,5 +43,10 @@ class Cliente extends Model
     public function agendamentos(): HasMany
     {
         return $this->hasMany(Agendamento::class);
+    }
+
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(ClienteFoto::class);
     }
 }

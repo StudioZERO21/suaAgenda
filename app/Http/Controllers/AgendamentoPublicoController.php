@@ -68,7 +68,9 @@ class AgendamentoPublicoController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('public.vitrine', compact('company', 'servicos', 'profissionais'));
+        $siteCfg = $company->resolvedSettings()['site'] ?? [];
+
+        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg'));
     }
 
     public function slots(string $slug, Request $request): JsonResponse

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateSiteRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class SitePublicoController extends Controller
@@ -24,11 +26,13 @@ class SitePublicoController extends Controller
             'cta_secondary' => $company?->phone ?? '(11) 99999-0000',
             'show_stats' => true,
             'stats_items' => [
-                ['n' => '8+', 'l' => 'Anos de experiência'],
+                ['n' => '8+',    'l' => 'Anos de experiência'],
                 ['n' => '2.400', 'l' => 'Clientes atendidos'],
-                ['n' => '4.9★', 'l' => 'Avaliação média'],
-                ['n' => '98%', 'l' => 'Satisfação'],
+                ['n' => '4.9★',  'l' => 'Avaliação média'],
+                ['n' => '98%',   'l' => 'Satisfação'],
             ],
+            'banner_path' => null,
+            'og_image' => null,
             'show_services' => true,
             'show_portfolio' => true,
             'show_team' => true,
@@ -50,49 +54,103 @@ class SitePublicoController extends Controller
 
         $site = array_replace_recursive($defaults, $site);
 
+        // Compute public URL for the banner thumbnail if a path is stored
+        $bannerUrl = $site['banner_path']
+            ? Storage::url($site['banner_path'])
+            : null;
+
+        $ogUrl = $site['og_image']
+            ? Storage::url($site['og_image'])
+            : null;
+
         $publicUrl = $company?->slug
             ? route('vitrine.show', $company->slug)
             : null;
 
-        return view('site.index', compact('company', 'site', 'publicUrl'));
+        return view('site.index', compact('company', 'site', 'publicUrl', 'bannerUrl', 'ogUrl'));
     }
 
-    public function save(Request $request): JsonResponse
+    public function save(UpdateSiteRequest $request): JsonResponse
     {
-        $company = auth()->user()->company;
+        $company = $request->user()->company;
 
-        $data = $request->validate([
-            'headline' => ['nullable', 'string', 'max:255'],
-            'subheadline' => ['nullable', 'string', 'max:500'],
-            'cta_text' => ['nullable', 'string', 'max:100'],
-            'cta_secondary' => ['nullable', 'string', 'max:100'],
-            'show_stats' => ['nullable', 'boolean'],
-            'stats_items' => ['nullable', 'array', 'max:6'],
-            'stats_items.*.n' => ['string', 'max:20'],
-            'stats_items.*.l' => ['string', 'max:60'],
-            'show_services' => ['nullable', 'boolean'],
-            'show_portfolio' => ['nullable', 'boolean'],
-            'show_team' => ['nullable', 'boolean'],
-            'show_testimonials' => ['nullable', 'boolean'],
-            'show_store' => ['nullable', 'boolean'],
-            'show_booking_cta' => ['nullable', 'boolean'],
-            'show_map' => ['nullable', 'boolean'],
-            'confirmation_msg' => ['nullable', 'string', 'max:500'],
-            'reminder_msg' => ['nullable', 'string', 'max:500'],
-            'cancellation_msg' => ['nullable', 'string', 'max:500'],
-            'lgpd_msg' => ['nullable', 'string', 'max:500'],
-            'welcome_popup' => ['nullable', 'string', 'max:1000'],
-            'footer_text' => ['nullable', 'string', 'max:200'],
-            'meta_title' => ['nullable', 'string', 'max:60'],
-            'meta_desc' => ['nullable', 'string', 'max:160'],
-            'keywords' => ['nullable', 'string', 'max:255'],
-            'google_analytics' => ['nullable', 'string', 'max:50'],
-        ]);
+        $data = $request->validated();
 
         $settings = $company->settings ?? [];
+        // Preserve existing banner/og paths — they are managed by the upload endpoints
+        $existing = $settings['site'] ?? [];
+        $data['banner_path'] = $existing['banner_path'] ?? null;
+        $data['og_image'] = $existing['og_image'] ?? null;
+
         $settings['site'] = $data;
         $company->update(['settings' => $settings]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function uploadBanner(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $company = $request->user()->company;
+        $companyId = $company->id;
+
+        // Remove old banner if present
+        $existing = $company->settings['site']['banner_path'] ?? null;
+        if ($existing && Storage::disk('public')->exists($existing)) {
+            Storage::disk('public')->delete($existing);
+        }
+
+        $path = $request->file('image')
+            ->store("site_banners/{$companyId}", 'public');
+
+        $settings = $company->settings ?? [];
+        $settings['site']['banner_path'] = $path;
+        $company->update(['settings' => $settings]);
+
+        return response()->json(['url' => Storage::url($path)]);
+    }
+
+    public function removeBanner(Request $request): JsonResponse
+    {
+        $company = $request->user()->company;
+
+        $path = $company->settings['site']['banner_path'] ?? null;
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $settings = $company->settings ?? [];
+        $settings['site']['banner_path'] = null;
+        $company->update(['settings' => $settings]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function uploadOg(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $company = $request->user()->company;
+        $companyId = $company->id;
+
+        // Remove old OG image if present
+        $existing = $company->settings['site']['og_image'] ?? null;
+        if ($existing && Storage::disk('public')->exists($existing)) {
+            Storage::disk('public')->delete($existing);
+        }
+
+        $path = $request->file('image')
+            ->store("site_og/{$companyId}", 'public');
+
+        $settings = $company->settings ?? [];
+        $settings['site']['og_image'] = $path;
+        $company->update(['settings' => $settings]);
+
+        return response()->json(['url' => Storage::url($path)]);
     }
 }

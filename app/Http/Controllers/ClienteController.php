@@ -7,8 +7,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
+use App\Models\ClienteFoto;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ClienteController extends Controller
@@ -20,18 +24,28 @@ class ClienteController extends Controller
         $empresa = auth()->user()->empresa_id;
 
         $clientes = Cliente::where('company_id', $empresa)
-            ->when($request->search, function ($q) use ($request) {
-                $q->where(function ($q) use ($request) {
-                    $q->where('name', 'like', "%{$request->search}%")
-                        ->orWhere('email', 'like', "%{$request->search}%")
-                        ->orWhere('phone', 'like', "%{$request->search}%");
-                });
-            })
+            ->with('fotos')
+            ->withCount('agendamentos')
             ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
-        return view('clientes.index', compact('clientes'));
+        $clientesJson = $clientes->map(fn (Cliente $c) => [
+            'id' => $c->id,
+            'name' => $c->name,
+            'email' => $c->email ?? '',
+            'phone' => $c->phone ?? '',
+            'status' => $c->ativo ? 'active' : 'inactive',
+            'last_date' => $c->agendamentos()->latest('data_hora')->value('data_hora'),
+            'total' => $c->agendamentos_count,
+            'fotos' => $c->fotos->map(fn (ClienteFoto $f) => [
+                'id' => $f->id,
+                'url' => Storage::url($f->imagem_path),
+                'tipo' => $f->tipo,
+                'legenda' => $f->legenda,
+            ]),
+        ]);
+
+        return view('clientes.index', compact('clientes', 'clientesJson'));
     }
 
     public function create(): View
@@ -92,5 +106,49 @@ class ClienteController extends Controller
 
         return redirect()->route('clientes.index')
             ->with('success', "Cliente {$cliente->name} removido.");
+    }
+
+    public function storeFoto(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate([
+            'imagem' => ['required', 'image', 'max:5120'],
+            'legenda' => ['nullable', 'string', 'max:100'],
+            'tipo' => ['nullable', 'in:antes,depois,outro'],
+        ]);
+
+        $companyId = auth()->user()->empresa_id;
+        $path = $request->file('imagem')->store(
+            "cliente_fotos/{$companyId}",
+            'public'
+        );
+
+        $foto = $cliente->fotos()->create([
+            'imagem_path' => $path,
+            'legenda' => $request->input('legenda'),
+            'tipo' => $request->input('tipo', 'outro'),
+        ]);
+
+        return response()->json([
+            'id' => $foto->id,
+            'url' => Storage::url($foto->imagem_path),
+            'tipo' => $foto->tipo,
+            'legenda' => $foto->legenda,
+        ], 201);
+    }
+
+    public function destroyFoto(ClienteFoto $foto): Response
+    {
+        $this->authorize('update', $foto->cliente);
+
+        if ($foto->cliente->company_id !== auth()->user()->empresa_id) {
+            abort(403);
+        }
+
+        Storage::disk('public')->delete($foto->imagem_path);
+        $foto->delete();
+
+        return response()->noContent();
     }
 }
