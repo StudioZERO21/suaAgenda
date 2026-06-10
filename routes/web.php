@@ -131,8 +131,10 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
 
     Route::get('notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');
+    Route::get('notificacoes/unread-count', [NotificacaoController::class, 'unreadCount'])->name('notificacoes.unread-count');
     Route::patch('notificacoes/todas-lidas', [NotificacaoController::class, 'markAllRead'])->name('notificacoes.todas-lidas');
     Route::patch('notificacoes/{notificacao}/lida', [NotificacaoController::class, 'markRead'])->name('notificacoes.lida');
+    Route::delete('notificacoes/{notificacao}', [NotificacaoController::class, 'destroy'])->name('notificacoes.destroy');
 });
 
 // Agendamento público — sem autenticação
