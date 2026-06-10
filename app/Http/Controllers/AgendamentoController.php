@@ -369,6 +369,36 @@ class AgendamentoController extends Controller
         return response()->json(['updated' => $updated]);
     }
 
+    public function hoje(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $status = $request->input('status');
+
+        $query = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', today())
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor', 'profissional:id,name'])
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->orderBy('data_hora');
+
+        $items = $query->get()->map(fn (Agendamento $ag) => [
+            'id' => $ag->id,
+            'data_hora' => $ag->data_hora->toIso8601String(),
+            'cliente_nome' => $ag->cliente?->name ?? '',
+            'cliente_phone' => $ag->cliente?->phone ?? '',
+            'servico_nome' => $ag->servico?->nome ?? '',
+            'servico_cor' => $ag->servico?->cor ?? '#999999',
+            'profissional_nome' => $ag->profissional?->name ?? '',
+            'profissional_id' => $ag->profissional_id,
+            'status' => $ag->status,
+            'valor' => (float) $ag->valor,
+            'duracao' => (int) $ag->duracao,
+        ]);
+
+        return response()->json(['total' => $items->count(), 'items' => $items]);
+    }
+
     public function buscar(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
