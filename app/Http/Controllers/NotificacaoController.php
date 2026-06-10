@@ -35,6 +35,26 @@ class NotificacaoController extends Controller
         return response()->json($notifs);
     }
 
+    public function unreadCount(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $count = $companyId
+            ? Notificacao::where('company_id', $companyId)->whereNull('read_at')->count()
+            : 0;
+
+        return response()->json(['count' => $count]);
+    }
+
+    public function destroy(Notificacao $notificacao): JsonResponse
+    {
+        $this->ensureOwnership($notificacao);
+
+        $notificacao->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function markRead(Notificacao $notificacao): JsonResponse
     {
         $this->ensureOwnership($notificacao);
