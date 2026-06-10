@@ -140,6 +140,32 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function buscar(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $q = trim((string) $request->input('q', ''));
+        $empresa = auth()->user()->empresa_id;
+
+        $query = Servico::where('company_id', $empresa)->ativo()->orderBy('nome');
+
+        if ($q !== '') {
+            $query->where('nome', 'like', "%{$q}%");
+        }
+
+        $servicos = $query->limit(15)
+            ->get(['id', 'nome', 'cor', 'duracao_minutos', 'preco'])
+            ->map(fn (Servico $s) => [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'preco' => (float) $s->preco,
+            ]);
+
+        return response()->json($servicos);
+    }
+
     public function toggle(Servico $servico): JsonResponse
     {
         $this->authorize('update', $servico);
