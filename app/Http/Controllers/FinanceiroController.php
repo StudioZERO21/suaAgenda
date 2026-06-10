@@ -185,6 +185,41 @@ class FinanceiroController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function resumo(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        $periodo = $request->input('periodo', 'month');
+        [$inicio, $fim] = $this->resolverPeriodo($periodo);
+
+        $agFinalizados = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()]);
+
+        $receitaAgendamentos = (float) (clone $agFinalizados)->sum('valor');
+        $totalFinalizados = (clone $agFinalizados)->count();
+
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->get();
+
+        $receitaLancamentos = (float) $lancamentos->where('tipo', 'receita')->where('status', 'pago')->sum('valor');
+        $despesas = (float) $lancamentos->where('tipo', 'despesa')->where('status', 'pago')->sum('valor');
+        $receitaBruta = $receitaAgendamentos + $receitaLancamentos;
+        $lucroLiquido = $receitaBruta - $despesas;
+        $ticketMedio = $totalFinalizados > 0 ? round($receitaAgendamentos / $totalFinalizados, 2) : 0.0;
+
+        return response()->json([
+            'periodo' => $periodo,
+            'receita_agendamentos' => $receitaAgendamentos,
+            'receita_lancamentos' => $receitaLancamentos,
+            'receita_bruta' => $receitaBruta,
+            'despesas' => $despesas,
+            'lucro_liquido' => $lucroLiquido,
+            'total_finalizados' => $totalFinalizados,
+            'ticket_medio' => $ticketMedio,
+        ]);
+    }
+
     public function storeLancamento(StoreLancamentoRequest $request): JsonResponse
     {
         $lancamento = Lancamento::create([
