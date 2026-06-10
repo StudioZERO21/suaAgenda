@@ -46,4 +46,10 @@ class AgendamentoPolicy
         return $user->empresa_id === $agendamento->company_id
             && $user->hasAnyRole(['admin_empresa', 'gestor']);
     }
+
+    public function updateAnyStatus(User $user): bool
+    {
+        return $user->empresa_id !== null
+            && $user->hasAnyRole(['admin_empresa', 'gestor']);
+    }
 }

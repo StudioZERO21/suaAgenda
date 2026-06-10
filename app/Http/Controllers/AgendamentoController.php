@@ -318,6 +318,23 @@ class AgendamentoController extends Controller
         return back()->with('success', 'Status atualizado para "'.ucfirst($request->status).'".');
     }
 
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $this->authorize('updateAnyStatus', Agendamento::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['uuid'],
+            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento'],
+        ]);
+
+        $updated = Agendamento::where('company_id', auth()->user()->empresa_id)
+            ->whereIn('id', $data['ids'])
+            ->update(['status' => $data['status']]);
+
+        return response()->json(['updated' => $updated]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
