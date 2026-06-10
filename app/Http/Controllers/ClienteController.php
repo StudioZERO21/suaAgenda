@@ -368,6 +368,24 @@ class ClienteController extends Controller
         return response()->json(['importados' => $importados, 'erros' => $erros]);
     }
 
+    public function fotos(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $fotos = $cliente->fotos()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn (ClienteFoto $f) => [
+                'id' => $f->id,
+                'url' => Storage::url($f->imagem_path),
+                'tipo' => $f->tipo,
+                'legenda' => $f->legenda,
+                'criado_em' => $f->created_at->toIso8601String(),
+            ]);
+
+        return response()->json($fotos);
+    }
+
     public function storeFoto(Request $request, Cliente $cliente): JsonResponse
     {
         $this->authorize('update', $cliente);
