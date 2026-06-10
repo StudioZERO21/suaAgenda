@@ -256,6 +256,35 @@ class ProfissionalController extends Controller
         return response()->json(['ativo' => $profissional->ativo]);
     }
 
+    public function agendamentos(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $perPage = min((int) $request->input('per_page', 10), 50);
+
+        $paginado = $profissional->agendamentos()
+            ->with(['servico:id,nome,cor', 'cliente:id,name,phone'])
+            ->orderByDesc('data_hora')
+            ->paginate($perPage);
+
+        return response()->json([
+            'total' => $paginado->total(),
+            'per_page' => $paginado->perPage(),
+            'page' => $paginado->currentPage(),
+            'data' => $paginado->map(fn ($ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'cliente_nome' => $ag->cliente?->name ?? '',
+                'cliente_phone' => $ag->cliente?->phone ?? '',
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'duracao' => (int) $ag->duracao,
+            ])->values(),
+        ]);
+    }
+
     public function stats(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
