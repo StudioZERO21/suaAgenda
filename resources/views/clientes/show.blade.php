@@ -4,7 +4,7 @@
 
 @section('content')
 
-    {{-- Cabeçalho --}}
+    {{-- Cabeï¿½alho --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <div style="display:flex;align-items:center;gap:14px">
             <a href="{{ route('clientes.index') }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:8px;text-decoration:none;color:var(--sa-text3);flex-shrink:0;transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
@@ -45,12 +45,41 @@
         </div>
     </div>
 
+    {{-- Stats row --}}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Agendamentos</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-text1);line-height:1">{{ $totalAgendamentos }}</div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Receita Total</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-secondary);line-height:1">R$&nbsp;{{ number_format($receitaTotal, 0, ',', '.') }}</div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Ticket MÃ©dio</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-text1);line-height:1">
+                R$&nbsp;{{ $totalAgendamentos > 0 ? number_format($receitaTotal / $totalAgendamentos, 0, ',', '.') : '0' }}
+            </div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Nota MÃ©dia</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-secondary);line-height:1;display:flex;align-items:center;gap:5px">
+                @if($notaMedia !== null)
+                {{ number_format((float) $notaMedia, 1, ',', '') }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none" style="margin-bottom:2px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                @else
+                <span style="font-size:16px;color:var(--sa-text3);font-weight:400">â€”</span>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
 
-        {{-- Informações --}}
+        {{-- Informaï¿½ï¿½es --}}
         <div style="display:flex;flex-direction:column;gap:16px">
             <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 16px">Informações</h2>
+                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 16px">Informaï¿½ï¿½es</h2>
                 <div style="display:flex;flex-direction:column;gap:12px">
                     @if($cliente->phone)
                     <div style="display:flex;gap:10px;align-items:flex-start">
@@ -76,7 +105,7 @@
                     <div style="display:flex;gap:10px;align-items:flex-start">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         <div>
-                            <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Aniversário</div>
+                            <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Aniversï¿½rio</div>
                             <div style="font-size:14px;color:var(--sa-text1);font-weight:500">{{ $cliente->data_nasc->format('d/m/Y') }}</div>
                         </div>
                     </div>
@@ -86,7 +115,7 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         <div>
                             <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Cadastrado em</div>
-                            <div style="font-size:14px;color:var(--sa-text1);font-weight:500">{{ $cliente->created_at->format('d/m/Y \à\s H:i') }}</div>
+                            <div style="font-size:14px;color:var(--sa-text1);font-weight:500">{{ $cliente->created_at->format('d/m/Y \ï¿½\s H:i') }}</div>
                         </div>
                     </div>
 
@@ -108,7 +137,7 @@
 
             @if($cliente->observacao)
             <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
-                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px">Observações</h2>
+                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px">Observaï¿½ï¿½es</h2>
                 <p style="font-size:14px;color:var(--sa-text2);line-height:1.6;margin:0;white-space:pre-wrap">{{ $cliente->observacao }}</p>
             </div>
             @endif
@@ -117,8 +146,8 @@
         {{-- Agendamentos recentes --}}
         <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
             <div style="padding:16px 20px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between">
-                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Histórico de Agendamentos</h2>
-                <span style="font-size:12px;color:var(--sa-text3)">Últimos {{ $cliente->agendamentos->count() }}</span>
+                <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Histï¿½rico de Agendamentos</h2>
+                <span style="font-size:12px;color:var(--sa-text3)">ï¿½ltimos {{ $cliente->agendamentos->count() }}</span>
             </div>
 
             @forelse($cliente->agendamentos as $ag)
@@ -135,10 +164,16 @@
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
                         <span style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $ag->data_hora->format('d/m/Y H:i') }}</span>
                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($ag->status) }}</span>
+                        @if($ag->avaliacao)
+                        <span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--sa-secondary)" title="AvaliaÃ§Ã£o dada: {{ $ag->avaliacao->nota }}/5">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            {{ $ag->avaliacao->nota }}/5
+                        </span>
+                        @endif
                     </div>
                     <div style="font-size:12px;color:var(--sa-text3)">
-                        {{ $ag->servico?->nome ?? '—' }} • {{ $ag->profissional?->name ?? '—' }}
-                        @if($ag->valor) • R$ {{ number_format((float)$ag->valor, 2, ',', '.') }} @endif
+                        {{ $ag->servico?->nome ?? 'ï¿½' }} ï¿½ {{ $ag->profissional?->name ?? 'ï¿½' }}
+                        @if($ag->valor) ï¿½ R$ {{ number_format((float)$ag->valor, 2, ',', '.') }} @endif
                     </div>
                 </div>
                 <a href="{{ route('agendamentos.show', $ag) }}" style="flex-shrink:0;width:28px;height:28px;border-radius:7px;border:1px solid var(--sa-border);display:flex;align-items:center;justify-content:center;color:var(--sa-text3);text-decoration:none;transition:all 150ms" onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'" onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
@@ -163,7 +198,7 @@ function confirmDelete(e, nome) {
     const form = e.target;
     Swal.fire({
         title: 'Excluir cliente?',
-        text: `"${nome}" será removido permanentemente.`,
+        text: `"${nome}" serï¿½ removido permanentemente.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, excluir',
