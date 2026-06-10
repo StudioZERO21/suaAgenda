@@ -61,6 +61,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');
     Route::get('relatorios/fidelidade/exportar', [RelatorioController::class, 'exportarFidelidadeCsv'])->name('relatorios.fidelidade.exportar');
     Route::get('relatorios/comissoes/exportar', [RelatorioController::class, 'exportarComissoesCsv'])->name('relatorios.comissoes.exportar');
+    Route::get('relatorios/clientes', [RelatorioController::class, 'clientesJson'])->name('relatorios.clientes');
     Route::get('relatorios/servicos', [RelatorioController::class, 'servicosJson'])->name('relatorios.servicos');
     Route::get('relatorios/avaliacoes/exportar', [RelatorioController::class, 'exportarAvaliacoesCsv'])->name('relatorios.avaliacoes.exportar');
     Route::get('relatorios/profissionais', [RelatorioController::class, 'profissionaisJson'])->name('relatorios.profissionais');
