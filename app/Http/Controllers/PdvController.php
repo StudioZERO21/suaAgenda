@@ -10,6 +10,7 @@ use App\Models\Produto;
 use App\Models\Servico;
 use App\Models\Venda;
 use App\Models\VendaItem;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,40 @@ class PdvController extends Controller
             ->get(['id', 'name']);
 
         return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes'));
+    }
+
+    public function resumo(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+        $periodo = $request->input('periodo', 'hoje');
+
+        $hoje = Carbon::today();
+
+        [$inicio, $fim] = match ($periodo) {
+            'semana' => [$hoje->copy()->startOfWeek(), $hoje->copy()->endOfWeek()],
+            'mes' => [$hoje->copy()->startOfMonth(), $hoje->copy()->endOfMonth()],
+            default => [$hoje->copy()->startOfDay(), $hoje->copy()->endOfDay()],
+        };
+
+        $vendas = Venda::where('company_id', $companyId)
+            ->whereBetween('created_at', [$inicio, $fim])
+            ->withCount('itens')
+            ->get();
+
+        $totalVendas = $vendas->count();
+        $receita = (float) $vendas->sum('total');
+        $desconto = (float) $vendas->sum('desconto');
+        $totalItens = (int) $vendas->sum('itens_count');
+        $ticketMedio = $totalVendas > 0 ? round($receita / $totalVendas, 2) : 0.0;
+
+        return response()->json([
+            'periodo' => $periodo,
+            'total_vendas' => $totalVendas,
+            'receita_total' => $receita,
+            'desconto_total' => $desconto,
+            'total_itens' => $totalItens,
+            'ticket_medio' => $ticketMedio,
+        ]);
     }
 
     public function exportarCsv(): StreamedResponse
