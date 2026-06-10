@@ -216,6 +216,37 @@ class ProfissionalController extends Controller
         return response()->noContent();
     }
 
+    public function buscar(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $q = trim((string) $request->input('q', ''));
+        $empresa = auth()->user()->empresa_id;
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where(function ($query) use ($q): void {
+                $query->where('name', 'like', "%{$q}%")
+                    ->orWhere('especialidade', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%");
+            })
+            ->orderBy('name')
+            ->limit(15)
+            ->get(['id', 'name', 'especialidade', 'phone', 'ativo'])
+            ->map(fn (Profissional $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'especialidade' => $p->especialidade ?? '',
+                'phone' => $p->phone ?? '',
+                'ativo' => $p->ativo,
+            ]);
+
+        return response()->json($profissionais);
+    }
+
     public function stats(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
