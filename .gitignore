@@ -28,5 +28,8 @@ Thumbs.db
 
 # Backups locais — ignora conteúdo mas mantém o diretório via .gitkeep
 BACKUPS/*.gz
+
+# Claude Code internal files
+/.claude/worktrees/
 BACKUPS/*.sql
 
