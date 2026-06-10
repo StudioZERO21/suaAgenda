@@ -120,6 +120,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
+    Route::get('profissionais/{profissional}/agendamentos', [ProfissionalController::class, 'agendamentos'])->name('profissionais.agendamentos');
     Route::get('profissionais/{profissional}/stats', [ProfissionalController::class, 'stats'])->name('profissionais.stats');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
