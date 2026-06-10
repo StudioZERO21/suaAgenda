@@ -256,6 +256,25 @@ class ProfissionalController extends Controller
         return response()->json(['ativo' => $profissional->ativo]);
     }
 
+    public function servicos(Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $servicos = $profissional->servicos()
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get(['servicos.id', 'nome', 'cor', 'duracao_minutos', 'preco'])
+            ->map(fn (Servico $s) => [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'preco' => (float) $s->preco,
+            ]);
+
+        return response()->json($servicos);
+    }
+
     public function agendamentos(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
