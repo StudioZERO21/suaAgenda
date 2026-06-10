@@ -68,6 +68,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos/buscar', [ProdutoController::class, 'buscar'])->name('produtos.buscar');
+    Route::get('produtos/exportar', [ProdutoController::class, 'exportarCsv'])->name('produtos.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
     Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');
     Route::put('produtos/{produto}', [ProdutoController::class, 'update'])->name('produtos.update');

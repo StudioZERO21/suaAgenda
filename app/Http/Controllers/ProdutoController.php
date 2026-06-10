@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProdutoController extends Controller
 {
@@ -31,6 +32,39 @@ class ProdutoController extends Controller
             'produtosJson' => $produtos,
             'categorias' => SaDemoData::categoriasProduto(),
             'unidades' => ['un.', 'ml', 'g', 'L', 'kg', 'caixa', 'par'],
+        ]);
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $produtos = Produto::where('company_id', $companyId)
+            ->orderBy('nome')
+            ->get();
+
+        return response()->streamDownload(function () use ($produtos): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Nome', 'SKU', 'Categoria', 'Preço (R$)', 'Custo (R$)', 'Estoque', 'Est. Mínimo', 'Unidade', 'Status'], ';');
+
+            foreach ($produtos as $p) {
+                fputcsv($out, [
+                    $p->nome,
+                    $p->sku ?? '',
+                    $p->categoria ?? '',
+                    number_format((float) $p->preco, 2, ',', '.'),
+                    number_format((float) ($p->custo ?? 0), 2, ',', '.'),
+                    $p->estoque,
+                    $p->estoque_min,
+                    $p->unidade ?? 'un.',
+                    $p->ativo ? 'Ativo' : 'Inativo',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'produtos-'.now()->format('Y-m-d').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
