@@ -112,6 +112,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::delete('portfolio/fotos/{portfolioItem}', [PortfolioController::class, 'destroy'])->name('portfolio.fotos.destroy');
     Route::patch('portfolio/fotos/{portfolioItem}/toggle', [PortfolioController::class, 'toggleFeatured'])->name('portfolio.fotos.toggle');
     Route::get('clientes/buscar', [ClienteController::class, 'buscar'])->name('clientes.buscar');
+    Route::get('clientes/aniversariantes', [ClienteController::class, 'aniversariantes'])->name('clientes.aniversariantes');
     Route::get('clientes/exportar', [ClienteController::class, 'exportarCsv'])->name('clientes.exportar');
     Route::get('clientes/exportar/segmento', [ClienteController::class, 'exportarSegmento'])->name('clientes.exportar.segmento');
     Route::post('clientes/importar', [ClienteController::class, 'importarCsv'])->name('clientes.importar');
