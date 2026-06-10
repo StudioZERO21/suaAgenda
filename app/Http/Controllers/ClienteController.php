@@ -165,6 +165,62 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function exportarSegmento(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $tipo = $request->input('tipo', 'top');
+        $empresa = auth()->user()->empresa_id;
+        $limite90 = now()->subDays(90);
+
+        $query = Cliente::where('company_id', $empresa)->withCount('agendamentos');
+
+        $clientes = match ($tipo) {
+            'inativos' => $query
+                ->whereDoesntHave('agendamentos', fn ($q) => $q->where('data_hora', '>=', $limite90))
+                ->orderBy('name')
+                ->get(),
+            'aniversariantes' => $query
+                ->whereNotNull('data_nasc')
+                ->get()
+                ->sortBy(fn ($c) => $c->data_nasc->format('m-d'))
+                ->values(),
+            default => $query
+                ->get()
+                ->filter(fn ($c) => $c->agendamentos_count >= 3)
+                ->sortByDesc('agendamentos_count')
+                ->values(),
+        };
+
+        $filename = "clientes-{$tipo}-".now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($clientes, $tipo): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+
+            $headers = ['Nome', 'E-mail', 'Telefone', 'Total Agendamentos'];
+            if ($tipo === 'aniversariantes') {
+                $headers[] = 'Data de Nascimento';
+            }
+            fputcsv($out, $headers, ';');
+
+            foreach ($clientes as $c) {
+                $row = [
+                    $c->name,
+                    $c->email ?? '',
+                    $c->phone ?? '',
+                    $c->agendamentos_count,
+                ];
+                if ($tipo === 'aniversariantes') {
+                    $row[] = $c->data_nasc?->format('d/m') ?? '';
+                }
+                fputcsv($out, $row, ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function importarCsv(Request $request): JsonResponse
     {
         $this->authorize('create', Cliente::class);
