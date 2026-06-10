@@ -59,6 +59,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');
     Route::get('relatorios/fidelidade/exportar', [RelatorioController::class, 'exportarFidelidadeCsv'])->name('relatorios.fidelidade.exportar');
     Route::get('relatorios/comissoes/exportar', [RelatorioController::class, 'exportarComissoesCsv'])->name('relatorios.comissoes.exportar');
+    Route::get('relatorios/servicos', [RelatorioController::class, 'servicosJson'])->name('relatorios.servicos');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
@@ -107,6 +108,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
+    Route::get('profissionais/{profissional}/stats', [ProfissionalController::class, 'stats'])->name('profissionais.stats');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
     Route::get('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'show'])->name('profissionais.horarios');
