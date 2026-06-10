@@ -20,6 +20,7 @@ class Company extends Model
     protected $fillable = [
         'name',
         'slug',
+        'logo_path',
         'plan_slug',
         'plano',
         'whatsapp',

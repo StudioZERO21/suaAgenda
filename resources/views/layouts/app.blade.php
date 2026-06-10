@@ -683,6 +683,12 @@
 
         <div class="sa-sidebar-logo">
             <div style="display:flex;align-items:center;gap:10px">
+                @php $sidebarLogo = auth()->user()?->company?->logo_path ? \Illuminate\Support\Facades\Storage::url(auth()->user()->company->logo_path) : null; @endphp
+                @if($sidebarLogo)
+                <div style="width:34px;height:34px;border-radius:9px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.1)">
+                    <img src="{{ $sidebarLogo }}" alt="Logo" style="width:100%;height:100%;object-fit:cover">
+                </div>
+                @else
                 <div style="width:34px;height:34px;border-radius:9px;background:var(--sa-side-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
@@ -691,8 +697,9 @@
                         <line x1="8.12" y1="8.12" x2="12" y2="12"/>
                     </svg>
                 </div>
+                @endif
                 <div class="nav-label" style="line-height:1">
-                    <div style="font-family:var(--sa-font-heading);font-size:15px;font-weight:700;color:var(--sa-side-text);letter-spacing:-.2px;white-space:nowrap">suaAgenda</div>
+                    <div style="font-family:var(--sa-font-heading);font-size:15px;font-weight:700;color:var(--sa-side-text);letter-spacing:-.2px;white-space:nowrap">{{ auth()->user()?->company?->name ?? 'suaAgenda' }}</div>
                     <div style="font-size:10px;color:var(--sa-side-accent);font-weight:600;letter-spacing:.5px;margin-top:-1px">.pro</div>
                 </div>
             </div>
