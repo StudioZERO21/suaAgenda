@@ -98,6 +98,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
     Route::resource('servicos', ServicoController::class)->except(['show']);
+    Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');

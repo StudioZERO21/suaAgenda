@@ -12,13 +12,17 @@
     <x-sa.app-header
         title="Funcionários"
         :subtitle="'Gerencie sua equipe e comissões · ' . $stats['total'] . ' cadastrado' . ($stats['total'] !== 1 ? 's' : '')">
-        @can('create', \App\Models\Profissional::class)
         <x-slot:actions>
+            <x-sa.btn href="{{ route('profissionais.exportar') }}" variant="secondary"
+                      :icon="'<svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4\'/><polyline points=\'7 10 12 15 17 10\'/><line x1=\'12\' y1=\'15\' x2=\'12\' y2=\'3\'/></svg>'">
+                Exportar CSV
+            </x-sa.btn>
+            @can('create', \App\Models\Profissional::class)
             <x-sa.btn href="{{ route('profissionais.create') }}" :icon="view('components.sa.icons.plus')->render()">
                 Novo Funcionário
             </x-sa.btn>
+            @endcan
         </x-slot:actions>
-        @endcan
     </x-sa.app-header>
 
     <x-sa.body>
