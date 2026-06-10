@@ -19,7 +19,7 @@ class Profissional extends Model
 
     protected $table = 'profissionais';
 
-    protected $fillable = ['company_id', 'cargo_id', 'name', 'especialidade', 'comissao_pct', 'ativo', 'cor', 'phone', 'admissao', 'instagram', 'tiktok', 'facebook'];
+    protected $fillable = ['company_id', 'cargo_id', 'name', 'especialidade', 'comissao_pct', 'ativo', 'cor', 'phone', 'admissao', 'instagram', 'tiktok', 'facebook', 'foto_path'];
 
     protected function casts(): array
     {

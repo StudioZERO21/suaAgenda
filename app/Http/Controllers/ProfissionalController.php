@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfissionalController extends Controller
@@ -138,6 +140,41 @@ class ProfissionalController extends Controller
 
         return redirect()->route('profissionais.show', $profissional)
             ->with('success', 'Profissional atualizado com sucesso.');
+    }
+
+    public function uploadFoto(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+        ]);
+
+        $companyId = auth()->user()->empresa_id;
+
+        if ($profissional->foto_path) {
+            Storage::disk('public')->delete($profissional->foto_path);
+        }
+
+        $path = $request->file('foto')->store("profissionais/{$companyId}", 'public');
+
+        $profissional->update(['foto_path' => $path]);
+
+        return response()->json([
+            'foto_url' => Storage::disk('public')->url($path),
+        ]);
+    }
+
+    public function deleteFoto(Profissional $profissional): Response
+    {
+        $this->authorize('update', $profissional);
+
+        if ($profissional->foto_path) {
+            Storage::disk('public')->delete($profissional->foto_path);
+            $profissional->update(['foto_path' => null]);
+        }
+
+        return response()->noContent();
     }
 
     public function destroy(Profissional $profissional): RedirectResponse
