@@ -165,6 +165,58 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function importarCsv(Request $request): JsonResponse
+    {
+        $this->authorize('create', Cliente::class);
+
+        $request->validate([
+            'arquivo' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+        ]);
+
+        $empresa = auth()->user()->empresa_id;
+        $handle = fopen($request->file('arquivo')->getRealPath(), 'r');
+
+        $header = null;
+        $importados = 0;
+        $erros = 0;
+
+        while (($row = fgetcsv($handle, 1000, ';')) !== false) {
+            if ($header === null) {
+                $header = array_map('trim', $row);
+
+                continue;
+            }
+
+            $data = array_combine($header, array_map('trim', $row));
+            $nome = $data['nome'] ?? $data['name'] ?? null;
+            $phone = $data['telefone'] ?? $data['phone'] ?? null;
+
+            if (! $nome || ! $phone) {
+                $erros++;
+
+                continue;
+            }
+
+            $created = Cliente::firstOrCreate(
+                ['company_id' => $empresa, 'phone' => $phone],
+                [
+                    'name' => $nome,
+                    'email' => $data['email'] ?? null,
+                    'data_nasc' => ! empty($data['data_nasc']) ? $data['data_nasc'] : null,
+                    'observacao' => $data['observacao'] ?? null,
+                    'ativo' => true,
+                ]
+            );
+            if ($created->wasRecentlyCreated) {
+                $importados++;
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json(['importados' => $importados, 'erros' => $erros]);
+    }
+
     public function storeFoto(Request $request, Cliente $cliente): JsonResponse
     {
         $this->authorize('update', $cliente);
