@@ -168,6 +168,74 @@
             </div>
         </x-sa.card>
         @endif
+
+        {{-- Evolução Mensal (últimos 6 meses) --}}
+        <x-sa.card style="padding:24px;margin-top:20px" x-data="evolucaoApp()" x-init="animate()">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+                <h2 style="font-family:var(--sa-font-heading);font-size:14px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Evolução Mensal — Últimos 6 Meses
+                </h2>
+                <div style="display:flex;align-items:center;gap:14px">
+                    <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sa-text3)">
+                        <span style="width:10px;height:4px;border-radius:2px;background:var(--sa-secondary);display:inline-block"></span>Receita
+                    </span>
+                    <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sa-text3)">
+                        <span style="width:10px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--sa-primary) 40%,transparent);display:inline-block"></span>Agendamentos
+                    </span>
+                </div>
+            </div>
+            @php $meses = $evolucaoMensal; @endphp
+            <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:24px;position:relative">
+                {{-- Y-axis ghost lines --}}
+                <div style="position:absolute;left:0;right:0;top:0;bottom:24px;pointer-events:none">
+                    @foreach([75,50,25] as $pct)
+                    <div style="position:absolute;left:0;right:0;top:{{ $pct }}%;height:1px;background:var(--sa-border);opacity:.5"></div>
+                    @endforeach
+                </div>
+                @foreach($meses as $idx => $m)
+                @php
+                    $pctRec = $maxEvolucaoRec > 0 ? round($m['receita'] / $maxEvolucaoRec * 100) : 0;
+                    $pctAg  = $maxEvolucaoAg > 0  ? round($m['agendamentos'] / $maxEvolucaoAg * 100) : 0;
+                @endphp
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;height:100%">
+                    {{-- bar group --}}
+                    <div style="flex:1;width:100%;display:flex;align-items:flex-end;gap:2px;padding:0 2px">
+                        {{-- receita bar --}}
+                        <div style="flex:1;border-radius:3px 3px 0 0;background:var(--sa-secondary);opacity:.85"
+                             x-bind:style="'flex:1;border-radius:3px 3px 0 0;background:var(--sa-secondary);opacity:.85;height:' + (ready ? {{ max($pctRec, $pctRec > 0 ? 4 : 0) }} : 0) + '%;transition:height 700ms cubic-bezier(.4,0,.2,1) {{ $idx * 80 }}ms'">
+                        </div>
+                        {{-- agendamentos bar --}}
+                        <div style="flex:1;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--sa-primary) 40%,transparent)"
+                             x-bind:style="'flex:1;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--sa-primary) 40%,transparent);height:' + (ready ? {{ max($pctAg, $pctAg > 0 ? 4 : 0) }} : 0) + '%;transition:height 700ms cubic-bezier(.4,0,.2,1) {{ $idx * 80 + 40 }}ms'">
+                        </div>
+                    </div>
+                    {{-- month label --}}
+                    <div style="margin-top:6px;font-size:10px;color:var(--sa-text3);font-weight:500;white-space:nowrap">{{ $m['mes'] }}</div>
+                </div>
+                @endforeach
+            </div>
+            {{-- Summary row --}}
+            <div style="display:flex;gap:24px;padding-top:12px;border-top:1px solid var(--sa-border);flex-wrap:wrap">
+                @php
+                    $totalAgs6 = array_sum(array_column($meses, 'agendamentos'));
+                    $totalRec6 = array_sum(array_column($meses, 'receita'));
+                    $mediaAgs  = count($meses) > 0 ? round($totalAgs6 / count($meses)) : 0;
+                @endphp
+                <div>
+                    <div style="font-size:11px;color:var(--sa-text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Total 6 meses</div>
+                    <div style="font-size:15px;font-weight:800;font-family:var(--sa-font-heading);color:var(--sa-secondary)">R$ {{ number_format($totalRec6, 2, ',', '.') }}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;color:var(--sa-text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Agendamentos</div>
+                    <div style="font-size:15px;font-weight:800;font-family:var(--sa-font-heading);color:var(--sa-text1)">{{ $totalAgs6 }}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;color:var(--sa-text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Média/mês</div>
+                    <div style="font-size:15px;font-weight:800;font-family:var(--sa-font-heading);color:var(--sa-text1)">{{ $mediaAgs }}</div>
+                </div>
+            </div>
+        </x-sa.card>
     </div>
 
     {{-- ── RECEITA & DESPESAS ──────────────────────────────────── --}}
@@ -428,3 +496,14 @@
     </x-sa.body>
 </x-sa.page>
 @endsection
+
+@push('scripts')
+<script>
+function evolucaoApp() {
+    return {
+        ready: false,
+        animate() { setTimeout(() => { this.ready = true; }, 100); },
+    };
+}
+</script>
+@endpush
