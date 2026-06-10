@@ -369,6 +369,43 @@ class AgendamentoController extends Controller
         return response()->json(['updated' => $updated]);
     }
 
+    public function buscar(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $q = trim((string) $request->input('q', ''));
+        $empresa = auth()->user()->empresa_id;
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->where(function ($query) use ($q): void {
+                $query->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%"))
+                    ->orWhereHas('servico', fn ($sq) => $sq->where('nome', 'like', "%{$q}%"))
+                    ->orWhere('status', 'like', "%{$q}%");
+            })
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor', 'profissional:id,name'])
+            ->orderByDesc('data_hora')
+            ->limit(20)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'cliente_nome' => $ag->cliente?->name ?? '',
+                'cliente_phone' => $ag->cliente?->phone ?? '',
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+            ]);
+
+        return response()->json($agendamentos);
+    }
+
     public function proximos(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
