@@ -56,6 +56,7 @@
             ['receita',        'Receita',        '<line x1=\'12\' y1=\'1\' x2=\'12\' y2=\'23\'/><path d=\'M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6\'/>'],
             ['profissionais',  'Profissionais',  '<path d=\'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/>'],
             ['horarios',       'Horários de Pico', '<circle cx=\'12\' cy=\'12\' r=\'10\'/><polyline points=\'12 6 12 12 16 14\'/>'],
+            ['fidelidade',     'Fidelidade',     '<path d=\'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z\'/>'],
         ] as [$id, $label, $path])
         <button type="button" @click="tab = '{{ $id }}'"
             :style="tab === '{{ $id }}'
@@ -350,6 +351,76 @@
                     com <strong style="color:var(--sa-text1)">{{ $pico['val'] }} agendamento{{ $pico['val'] !== 1 ? 's' : '' }}</strong>
                 </span>
             </div>
+            @endif
+        </x-sa.card>
+    </div>
+
+    {{-- TAB: FIDELIDADE --}}
+    <div x-show="tab === 'fidelidade'" x-cloak>
+        <x-sa.card :flush="true">
+            <div style="padding:20px 24px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--sa-border);flex-wrap:wrap;gap:12px">
+                <div>
+                    <h4 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;margin:0 0 3px;color:var(--sa-text1)">Clientes Mais Frequentes</h4>
+                    <p style="font-size:12px;color:var(--sa-text3);margin:0">Período: {{ $inicio->format('d/m/Y') }} a {{ $fim->format('d/m/Y') }}</p>
+                </div>
+                <a href="{{ route('relatorios.fidelidade.exportar', array_filter(['preset' => $request->input('preset'), 'de' => $request->input('de'), 'ate' => $request->input('ate')])) }}"
+                   style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    CSV
+                </a>
+            </div>
+            @if($fidelidade->isEmpty())
+            <div style="padding:40px;text-align:center;color:var(--sa-text3);font-size:14px">Nenhum dado para o período selecionado.</div>
+            @else
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="background:var(--sa-surface2);border-bottom:1px solid var(--sa-border)">
+                        <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">#</th>
+                        <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Cliente</th>
+                        <th style="padding:11px 16px;text-align:center;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Visitas</th>
+                        <th style="padding:11px 16px;text-align:right;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Total Gasto</th>
+                        <th style="padding:11px 16px;text-align:right;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Ticket Médio</th>
+                        <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Última Visita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($fidelidade as $i => $cli)
+                    <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms"
+                        onmouseover="this.style.background='var(--sa-surface2)'"
+                        onmouseout="this.style.background='transparent'">
+                        <td style="padding:14px 16px;font-size:13px;color:var(--sa-text3);font-weight:600">{{ $i + 1 }}</td>
+                        <td style="padding:14px 16px">
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div style="width:32px;height:32px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+                                    {{ strtoupper(mb_substr($cli['name'], 0, 1)) }}
+                                </div>
+                                <div>
+                                    <div style="font-size:14px;font-weight:600;color:var(--sa-text1)">{{ $cli['name'] }}</div>
+                                    @if($cli['phone'])
+                                    <div style="font-size:11px;color:var(--sa-text3)">{{ $cli['phone'] }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding:14px 16px;text-align:center">
+                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:{{ $i === 0 ? 'rgba(212,165,116,.15)' : 'rgba(26,26,26,.08)' }};color:{{ $i === 0 ? 'var(--sa-secondary)' : 'var(--sa-text1)' }}">
+                                @if($i === 0)<span>★</span>@endif
+                                {{ $cli['visitas'] }}
+                            </span>
+                        </td>
+                        <td style="padding:14px 16px;text-align:right;font-size:14px;font-weight:700;color:var(--sa-secondary)">
+                            R$ {{ number_format($cli['gasto'], 2, ',', '.') }}
+                        </td>
+                        <td style="padding:14px 16px;text-align:right;font-size:13px;color:var(--sa-text2)">
+                            R$ {{ number_format($cli['ticket'], 2, ',', '.') }}
+                        </td>
+                        <td style="padding:14px 16px;font-size:13px;color:var(--sa-text2)">{{ $cli['ultima'] }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
             @endif
         </x-sa.card>
     </div>
