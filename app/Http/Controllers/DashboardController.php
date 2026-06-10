@@ -8,6 +8,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -257,6 +258,43 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard', compact('stats'));
+    }
+
+    public function resumo(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        if (! $empresa) {
+            return response()->json(['error' => 'Empresa não configurada'], 422);
+        }
+
+        $hoje = today();
+        $amanha = $hoje->copy()->addDays(3);
+
+        $baseHoje = Agendamento::where('company_id', $empresa)->whereDate('data_hora', $hoje);
+
+        $hojeTotal = (clone $baseHoje)->count();
+        $hojeFinalizados = (clone $baseHoje)->where('status', Agendamento::STATUS_FINALIZADO)->count();
+        $hojeConfirmados = (clone $baseHoje)->where('status', Agendamento::STATUS_CONFIRMADO)->count();
+        $hoje3Receita = (float) (clone $baseHoje)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+
+        $proximos3Dias = Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$hoje->copy()->startOfDay(), $amanha->copy()->endOfDay()])
+            ->whereIn('status', [Agendamento::STATUS_CONFIRMADO, Agendamento::STATUS_PENDENTE])
+            ->count();
+
+        $clientesAtivos = Cliente::where('company_id', $empresa)->where('ativo', true)->count();
+        $profissionaisAtivos = Profissional::where('company_id', $empresa)->where('ativo', true)->count();
+
+        return response()->json([
+            'hoje_total' => $hojeTotal,
+            'hoje_finalizados' => $hojeFinalizados,
+            'hoje_confirmados' => $hojeConfirmados,
+            'hoje_receita' => $hoje3Receita,
+            'proximos_3_dias' => $proximos3Dias,
+            'clientes_ativos' => $clientesAtivos,
+            'profissionais_ativos' => $profissionaisAtivos,
+        ]);
     }
 
     /**
