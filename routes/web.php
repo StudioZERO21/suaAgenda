@@ -109,6 +109,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::delete('clientes/bulk-destroy', [ClienteController::class, 'destroyBulk'])->name('clientes.bulk-destroy');
     Route::resource('clientes', ClienteController::class);
     Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
+    Route::get('clientes/{cliente}/stats', [ClienteController::class, 'stats'])->name('clientes.stats');
     Route::get('clientes/{cliente}/agendamentos', [ClienteController::class, 'agendamentos'])->name('clientes.agendamentos');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
