@@ -198,4 +198,35 @@ describe('agendamento_publico', function () {
             'data' => now()->subDay()->format('Y-m-d'),
         ]))->assertUnprocessable();
     });
+
+    it('confirm_required=false (padrão) cria agendamento com status confirmado automaticamente', function () {
+        $this->post(route('agendar.store', $this->company->slug), [
+            'servico_id' => $this->servico->id,
+            'profissional_id' => $this->profissional->id,
+            'data_hora' => now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s'),
+            'cliente_nome' => 'Auto Confirmado',
+            'cliente_phone' => '11988888888',
+            'cliente_email' => 'auto@teste.com',
+        ]);
+
+        $ag = Agendamento::where('company_id', $this->company->id)->first();
+        expect($ag->status)->toBe(Agendamento::STATUS_CONFIRMADO);
+    });
+
+    it('confirm_required=true cria agendamento pendente', function () {
+        $settings = $this->company->settings ?? [];
+        $settings['advanced']['confirm_required'] = true;
+        $this->company->update(['settings' => $settings]);
+
+        $this->post(route('agendar.store', $this->company->slug), [
+            'servico_id' => $this->servico->id,
+            'profissional_id' => $this->profissional->id,
+            'data_hora' => now()->addDay()->setTime(11, 0)->format('Y-m-d H:i:s'),
+            'cliente_nome' => 'Pendente',
+            'cliente_phone' => '11977777777',
+        ]);
+
+        $ag = Agendamento::where('company_id', $this->company->id)->first();
+        expect($ag->status)->toBe(Agendamento::STATUS_PENDENTE);
+    });
 });
