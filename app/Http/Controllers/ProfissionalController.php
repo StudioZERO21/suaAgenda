@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfissionalController extends Controller
 {
@@ -140,6 +141,44 @@ class ProfissionalController extends Controller
 
         return redirect()->route('profissionais.show', $profissional)
             ->with('success', 'Profissional atualizado com sucesso.');
+    }
+
+    public function exportarCsv(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->with(['servicos:id,nome', 'agendamentos' => fn ($q) => $q->latest('data_hora')->limit(1)])
+            ->withCount('agendamentos')
+            ->orderBy('name')
+            ->get();
+
+        return response()->streamDownload(function () use ($profissionais): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Nome', 'Especialidade', 'Telefone', 'Comissão (%)', 'Serviços', 'Total Agendamentos', 'Último Agendamento', 'Status'], ';');
+
+            foreach ($profissionais as $p) {
+                $servicos = $p->servicos->pluck('nome')->join(', ');
+                $ultimo = $p->agendamentos->first()?->data_hora?->format('d/m/Y H:i') ?? '';
+                fputcsv($out, [
+                    $p->name,
+                    $p->especialidade ?? '',
+                    $p->phone ?? '',
+                    number_format((float) ($p->comissao_pct ?? 0), 2, '.', ''),
+                    $servicos,
+                    $p->agendamentos_count,
+                    $ultimo,
+                    $p->ativo ? 'Ativo' : 'Inativo',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'profissionais-'.now()->format('Y-m-d').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function uploadFoto(Request $request, Profissional $profissional): JsonResponse
