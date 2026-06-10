@@ -433,6 +433,42 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function clientesJson(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $limite = min((int) $request->input('limite', 20), 100);
+
+        $rows = Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->with('cliente:id,name,phone')
+            ->get(['cliente_id', 'status', 'valor'])
+            ->groupBy('cliente_id')
+            ->map(function ($items): array {
+                $cliente = $items->first()->cliente;
+                $finalizados = $items->where('status', Agendamento::STATUS_FINALIZADO);
+                $receita = (float) $finalizados->sum('valor');
+                $total = $items->count();
+
+                return [
+                    'id' => $cliente?->id,
+                    'name' => $cliente?->name ?? 'Cliente excluído',
+                    'phone' => $cliente?->phone ?? '',
+                    'total_agendamentos' => $total,
+                    'finalizados' => $finalizados->count(),
+                    'receita_total' => $receita,
+                    'ticket_medio' => $finalizados->count() > 0 ? round($receita / $finalizados->count(), 2) : 0.0,
+                ];
+            })
+            ->sortByDesc('receita_total')
+            ->take($limite)
+            ->values();
+
+        return response()->json($rows);
+    }
+
     public function servicosJson(Request $request): JsonResponse
     {
         $empresaId = auth()->user()->empresa_id;
