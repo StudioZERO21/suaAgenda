@@ -122,6 +122,7 @@ Route::get('/agendar/{slug}', [AgendamentoPublicoController::class, 'show'])->na
 Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->name('agendar.store');
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
+Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');
 Route::post('/meu-agendamento/{token}/cancelar', [AgendamentoPublicoController::class, 'cancelarMeuAgendamento'])->name('agendamento.cancelar');
 

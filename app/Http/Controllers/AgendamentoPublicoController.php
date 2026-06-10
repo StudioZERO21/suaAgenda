@@ -234,6 +234,41 @@ class AgendamentoPublicoController extends Controller
     }
 
     /**
+     * Portal público do cliente — busca agendamentos pelo telefone.
+     * GET /vitrine/{slug}/minhas-reservas?phone=XXX
+     */
+    public function minhasReservas(string $slug, Request $request): View
+    {
+        $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
+
+        $phone = $request->query('phone', '');
+        $agendamentos = collect();
+        $cliente = null;
+
+        if ($phone !== '') {
+            $phoneClean = preg_replace('/\D/', '', $phone);
+
+            $cliente = Cliente::where('company_id', $company->id)
+                ->where(function ($q) use ($phoneClean, $phone) {
+                    $q->where('phone', $phone)
+                        ->orWhere('phone', $phoneClean)
+                        ->orWhereRaw('REPLACE(REPLACE(REPLACE(REPLACE(phone," ",""),"(",""),")",""),"-","") = ?', [$phoneClean]);
+                })
+                ->first();
+
+            if ($cliente) {
+                $agendamentos = Agendamento::with(['servico', 'profissional'])
+                    ->where('cliente_id', $cliente->id)
+                    ->orderByDesc('data_hora')
+                    ->limit(20)
+                    ->get();
+            }
+        }
+
+        return view('public.minhas-reservas', compact('company', 'phone', 'cliente', 'agendamentos'));
+    }
+
+    /**
      * Página pública de status do agendamento (acesso via cancel_token).
      * GET /meu-agendamento/{token}
      */
