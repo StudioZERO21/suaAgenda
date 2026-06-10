@@ -8,6 +8,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Lancamento;
+use App\Models\Profissional;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -312,6 +313,49 @@ class RelatorioController extends Controller
                     number_format($gasto, 2, ',', '.'),
                     number_format($visitas > 0 ? $gasto / $visitas : 0.0, 2, ',', '.'),
                     Carbon::parse($row->ultima_visita)->format('d/m/Y'),
+                ], ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function exportarComissoesCsv(Request $request): StreamedResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $profissionais = Profissional::where('company_id', $empresaId)
+            ->orderBy('name')
+            ->get();
+
+        $agFinalizados = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->selectRaw('profissional_id, COUNT(*) as qtd, SUM(valor) as receita')
+            ->groupBy('profissional_id')
+            ->get()
+            ->keyBy('profissional_id');
+
+        $filename = 'comissoes-'.$inicio->format('Y-m-d').'-ao-'.$fim->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($profissionais, $agFinalizados): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Profissional', 'Finalizados', 'Receita Bruta (R$)', '% Comissão', 'Valor Comissão (R$)'], ';');
+
+            foreach ($profissionais as $prof) {
+                $row = $agFinalizados->get($prof->id);
+                $qtd = $row ? (int) $row->qtd : 0;
+                $receita = $row ? (float) $row->receita : 0.0;
+                $pct = (float) ($prof->comissao_pct ?? 0);
+                $comissao = round($receita * $pct / 100, 2);
+                fputcsv($out, [
+                    $prof->name,
+                    $qtd,
+                    number_format($receita, 2, ',', '.'),
+                    number_format($pct, 1, ',', '.'),
+                    number_format($comissao, 2, ',', '.'),
                 ], ';');
             }
 
