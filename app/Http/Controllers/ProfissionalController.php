@@ -8,6 +8,8 @@ use App\Http\Requests\StoreProfissionalRequest;
 use App\Http\Requests\UpdateProfissionalRequest;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
+use App\Models\BloqueioAgenda;
+use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Carbon\Carbon;
@@ -254,6 +256,52 @@ class ProfissionalController extends Controller
         $profissional->update(['ativo' => ! $profissional->ativo]);
 
         return response()->json(['ativo' => $profissional->ativo]);
+    }
+
+    public function disponibilidade(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $request->validate([
+            'data' => ['required', 'date'],
+            'duracao' => ['nullable', 'integer', 'min:5', 'max:480'],
+        ]);
+
+        $data = Carbon::parse($request->input('data'))->startOfDay();
+        $duracao = max(5, (int) $request->input('duracao', 30));
+        $diaSemana = (int) $data->format('w');
+
+        if (BloqueioAgenda::blockedOn($profissional->id, $data->format('Y-m-d'))) {
+            return response()->json(['slots' => [], 'bloqueado' => true]);
+        }
+
+        $horario = HorarioTrabalho::where('profissional_id', $profissional->id)
+            ->where('dia_semana', $diaSemana)
+            ->where('ativo', true)
+            ->first();
+
+        if (! $horario) {
+            return response()->json(['slots' => [], 'bloqueado' => false]);
+        }
+
+        $ocupados = Agendamento::where('profissional_id', $profissional->id)
+            ->whereDate('data_hora', $data)
+            ->whereIn('status', ['pendente', 'confirmado', 'em_atendimento'])
+            ->pluck('data_hora')
+            ->map(fn ($dt) => Carbon::parse($dt)->format('H:i'));
+
+        $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
+        $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
+
+        $slots = [];
+        $current = $inicio->copy();
+        while ($current->copy()->addMinutes($duracao)->lte($fim)) {
+            $hora = $current->format('H:i');
+            $slots[] = ['hora' => $hora, 'disponivel' => ! $ocupados->contains($hora)];
+            $current->addMinutes($duracao);
+        }
+
+        return response()->json(['slots' => $slots, 'bloqueado' => false]);
     }
 
     public function servicos(Profissional $profissional): JsonResponse
