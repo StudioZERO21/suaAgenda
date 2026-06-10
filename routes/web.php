@@ -49,6 +49,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
     Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');
+    Route::get('relatorios/fidelidade/exportar', [RelatorioController::class, 'exportarFidelidadeCsv'])->name('relatorios.fidelidade.exportar');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');

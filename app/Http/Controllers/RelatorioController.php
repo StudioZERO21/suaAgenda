@@ -101,6 +101,27 @@ class RelatorioController extends Controller
 
         $maxHeatmap = max(array_map('max', $heatmap)) ?: 1;
 
+        // Fidelidade: top clientes por agendamentos no período
+        $fidelidade = Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->with('cliente:id,name,phone,email')
+            ->selectRaw('cliente_id, COUNT(*) as total_visitas, SUM(CASE WHEN status = ? THEN valor ELSE 0 END) as total_gasto, MAX(data_hora) as ultima_visita', [Agendamento::STATUS_FINALIZADO])
+            ->groupBy('cliente_id')
+            ->orderByDesc('total_visitas')
+            ->limit(20)
+            ->get()
+            ->filter(fn ($row) => $row->cliente !== null)
+            ->map(fn ($row) => [
+                'name' => $row->cliente->name,
+                'phone' => $row->cliente->phone ?? '',
+                'visitas' => (int) $row->total_visitas,
+                'gasto' => (float) $row->total_gasto,
+                'ultima' => Carbon::parse($row->ultima_visita)->format('d/m/Y'),
+                'ticket' => $row->total_visitas > 0 ? (float) $row->total_gasto / (int) $row->total_visitas : 0.0,
+            ])
+            ->values();
+
         return view('relatorios.index', compact(
             'receitaAgendamentos',
             'receitaLancamentos',
@@ -119,6 +140,7 @@ class RelatorioController extends Controller
             'maxDespesa',
             'heatmap',
             'maxHeatmap',
+            'fidelidade',
             'inicio',
             'fim',
             'request',
@@ -178,6 +200,46 @@ class RelatorioController extends Controller
                         'cancelado' => 'Cancelado',
                         default => 'Pendente',
                     },
+                ], ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function exportarFidelidadeCsv(Request $request): StreamedResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $rows = Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->with('cliente:id,name,phone,email')
+            ->selectRaw('cliente_id, COUNT(*) as total_visitas, SUM(CASE WHEN status = ? THEN valor ELSE 0 END) as total_gasto, MAX(data_hora) as ultima_visita', [Agendamento::STATUS_FINALIZADO])
+            ->groupBy('cliente_id')
+            ->orderByDesc('total_visitas')
+            ->get()
+            ->filter(fn ($row) => $row->cliente !== null);
+
+        $filename = 'fidelidade-'.$inicio->format('Y-m-d').'-ao-'.$fim->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($rows): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Posição', 'Cliente', 'Telefone', 'Visitas', 'Total Gasto (R$)', 'Ticket Médio (R$)', 'Última Visita'], ';');
+
+            foreach ($rows->values() as $i => $row) {
+                $visitas = (int) $row->total_visitas;
+                $gasto = (float) $row->total_gasto;
+                fputcsv($out, [
+                    $i + 1,
+                    $row->cliente->name,
+                    $row->cliente->phone ?? '',
+                    $visitas,
+                    number_format($gasto, 2, ',', '.'),
+                    number_format($visitas > 0 ? $gasto / $visitas : 0.0, 2, ',', '.'),
+                    Carbon::parse($row->ultima_visita)->format('d/m/Y'),
                 ], ';');
             }
 
