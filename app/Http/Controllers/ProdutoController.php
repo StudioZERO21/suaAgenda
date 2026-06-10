@@ -35,6 +35,32 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function estoqueBaixo(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $produtos = Produto::where('company_id', $companyId)
+            ->where('ativo', true)
+            ->where(function ($q): void {
+                $q->whereColumn('estoque', '<=', 'estoque_min')
+                    ->orWhere('estoque', '<=', 0);
+            })
+            ->orderBy('estoque')
+            ->get(['id', 'nome', 'sku', 'categoria', 'estoque', 'estoque_min', 'unidade'])
+            ->map(fn (Produto $p) => [
+                'id' => $p->id,
+                'nome' => $p->nome,
+                'sku' => $p->sku ?? '',
+                'categoria' => $p->categoria ?? '',
+                'estoque' => $p->estoque,
+                'estoque_min' => $p->estoque_min,
+                'unidade' => $p->unidade ?? 'un.',
+                'status' => $p->estoqueStatus(),
+            ]);
+
+        return response()->json($produtos);
+    }
+
     public function exportarCsv(): StreamedResponse
     {
         $companyId = auth()->user()->empresa_id;

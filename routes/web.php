@@ -72,6 +72,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos/buscar', [ProdutoController::class, 'buscar'])->name('produtos.buscar');
+    Route::get('produtos/estoque-baixo', [ProdutoController::class, 'estoqueBaixo'])->name('produtos.estoque-baixo');
     Route::get('produtos/exportar', [ProdutoController::class, 'exportarCsv'])->name('produtos.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
     Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');
