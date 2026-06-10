@@ -61,6 +61,30 @@ $salePayload = fn (array $merge = []) => array_merge([
     'metodo_pagamento' => 'dinheiro',
 ], $merge);
 
+describe('pdv_export_csv', function () {
+    it('admin pode exportar vendas em CSV', function () {
+        $response = $this->actingAs($this->admin)
+            ->get(route('pdv.exportar'));
+
+        $response->assertOk();
+        expect($response->headers->get('content-type'))->toContain('text/csv');
+    });
+
+    it('CSV de vendas contém cabeçalhos corretos', function () {
+        $response = $this->actingAs($this->admin)
+            ->get(route('pdv.exportar'));
+
+        $content = $response->streamedContent();
+        expect($content)->toContain('Data')
+            ->and($content)->toContain('Cliente')
+            ->and($content)->toContain('Total');
+    });
+
+    it('unauthenticated é redirecionado', function () {
+        $this->get(route('pdv.exportar'))->assertRedirect();
+    });
+});
+
 describe('pdv_index', function () {
     it('admin acessa o PDV', function () {
         $this->actingAs($this->admin)

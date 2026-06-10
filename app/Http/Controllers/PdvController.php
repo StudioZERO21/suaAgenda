@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PdvController extends Controller
 {
@@ -57,6 +58,39 @@ class PdvController extends Controller
             ->get(['id', 'name']);
 
         return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes'));
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $vendas = Venda::where('company_id', $companyId)
+            ->with(['cliente:id,name', 'itens'])
+            ->latest()
+            ->get();
+
+        return response()->streamDownload(function () use ($vendas): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Data', 'Cliente', 'Itens', 'Subtotal', 'Desconto', 'Total', 'Método Pagamento'], ';');
+
+            foreach ($vendas as $venda) {
+                $itens = $venda->itens->map(fn ($i) => "{$i->descricao} (x{$i->qtd})")->join(', ');
+                fputcsv($out, [
+                    $venda->created_at->format('d/m/Y H:i'),
+                    $venda->cliente?->name ?? '—',
+                    $itens,
+                    number_format((float) $venda->subtotal, 2, '.', ''),
+                    number_format((float) $venda->desconto, 2, '.', ''),
+                    number_format((float) $venda->total, 2, '.', ''),
+                    $venda->metodo_pagamento ?? '—',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'vendas-'.now()->format('Y-m-d').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function store(Request $request): JsonResponse
