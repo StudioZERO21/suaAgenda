@@ -7,8 +7,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateEmpresaConfiguracaoRequest;
 use App\Http\Requests\UpdatePreferenciasConfiguracaoRequest;
 use App\Http\Requests\UpdateTipografiaConfiguracaoRequest;
+use App\Models\Agendamento;
+use App\Models\Cliente;
 use App\Models\Company;
+use App\Models\Profissional;
+use App\Models\Servico;
 use App\Support\SaPalettes;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -228,5 +233,35 @@ class ConfiguracaoController extends Controller
         }
 
         return response()->noContent();
+    }
+
+    public function empresaStats(): JsonResponse
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('view', $company);
+
+        $empresaId = $company->id;
+        $mesInicio = Carbon::today()->startOfMonth();
+        $mesFim = Carbon::today()->endOfMonth();
+
+        return response()->json([
+            'clientes_total' => Cliente::where('company_id', $empresaId)->count(),
+            'clientes_ativos' => Cliente::where('company_id', $empresaId)->where('ativo', true)->count(),
+            'profissionais_total' => Profissional::where('company_id', $empresaId)->count(),
+            'profissionais_ativos' => Profissional::where('company_id', $empresaId)->where('ativo', true)->count(),
+            'servicos_total' => Servico::where('company_id', $empresaId)->count(),
+            'servicos_ativos' => Servico::where('company_id', $empresaId)->where('ativo', true)->count(),
+            'agendamentos_mes' => Agendamento::where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$mesInicio, $mesFim])
+                ->count(),
+            'agendamentos_mes_finalizados' => Agendamento::where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$mesInicio, $mesFim])
+                ->where('status', Agendamento::STATUS_FINALIZADO)
+                ->count(),
+            'receita_mes' => (float) Agendamento::where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$mesInicio, $mesFim])
+                ->where('status', Agendamento::STATUS_FINALIZADO)
+                ->sum('valor'),
+        ]);
     }
 }

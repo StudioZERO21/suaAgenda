@@ -154,6 +154,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::put('configuracoes/preferencias', [ConfiguracaoController::class, 'updatePreferencias'])->name('configuracoes.preferencias');
     Route::post('configuracoes/tipografia', [ConfiguracaoController::class, 'updateTipografia'])->name('configuracoes.tipografia');
     Route::post('configuracoes/preferencias/restaurar-tipografia', [ConfiguracaoController::class, 'resetTipografia'])->name('configuracoes.tipografia.reset');
+    Route::get('configuracoes/empresa/stats', [ConfiguracaoController::class, 'empresaStats'])->name('configuracoes.empresa.stats');
     Route::get('configuracoes/empresa', [ConfiguracaoController::class, 'empresa'])->name('configuracoes.empresa');
     Route::get('configuracoes/empresa/qrcode', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.empresa.qrcode');
     Route::put('configuracoes/empresa', [ConfiguracaoController::class, 'updateEmpresa'])->name('configuracoes.empresa.update');
