@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAgendamentoPublicoRequest;
+use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\BloqueioAgenda;
@@ -17,6 +18,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AgendamentoPublicoController extends Controller
@@ -238,6 +240,13 @@ class AgendamentoPublicoController extends Controller
             'observacao' => $request->observacao,
             'cancel_token' => Agendamento::generateCancelToken(),
         ]);
+
+        $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+
+        if ($agendamento->cliente?->email) {
+            Mail::to($agendamento->cliente->email)
+                ->queue(new AgendamentoConfirmado($agendamento));
+        }
 
         return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $agendamento->id]);
     }
