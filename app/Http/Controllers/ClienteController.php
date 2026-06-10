@@ -221,6 +221,34 @@ class ClienteController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function agendamentos(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $perPage = min((int) $request->input('per_page', 10), 50);
+
+        $paginado = $cliente->agendamentos()
+            ->with(['servico:id,nome,cor', 'profissional:id,name'])
+            ->orderByDesc('data_hora')
+            ->paginate($perPage);
+
+        return response()->json([
+            'total' => $paginado->total(),
+            'per_page' => $paginado->perPage(),
+            'page' => $paginado->currentPage(),
+            'data' => $paginado->map(fn ($ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'duracao' => (int) $ag->duracao,
+            ])->values(),
+        ]);
+    }
+
     public function buscar(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
