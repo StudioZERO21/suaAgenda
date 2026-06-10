@@ -466,6 +466,45 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function detalhe(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('view', $agendamento);
+
+        $agendamento->load(['cliente:id,name,phone,email', 'profissional:id,name,especialidade,cor', 'servico:id,nome,cor,duracao_minutos,preco', 'avaliacao']);
+
+        return response()->json([
+            'id' => $agendamento->id,
+            'data_hora' => $agendamento->data_hora->toIso8601String(),
+            'status' => $agendamento->status,
+            'duracao' => (int) $agendamento->duracao,
+            'valor' => (float) $agendamento->valor,
+            'observacoes' => $agendamento->observacoes ?? '',
+            'cliente' => $agendamento->cliente ? [
+                'id' => $agendamento->cliente->id,
+                'name' => $agendamento->cliente->name,
+                'phone' => $agendamento->cliente->phone ?? '',
+                'email' => $agendamento->cliente->email ?? '',
+            ] : null,
+            'profissional' => $agendamento->profissional ? [
+                'id' => $agendamento->profissional->id,
+                'name' => $agendamento->profissional->name,
+                'especialidade' => $agendamento->profissional->especialidade ?? '',
+                'cor' => $agendamento->profissional->cor ?? '#999999',
+            ] : null,
+            'servico' => $agendamento->servico ? [
+                'id' => $agendamento->servico->id,
+                'nome' => $agendamento->servico->nome,
+                'cor' => $agendamento->servico->cor ?? '#999999',
+                'duracao_minutos' => (int) $agendamento->servico->duracao_minutos,
+                'preco' => (float) $agendamento->servico->preco,
+            ] : null,
+            'avaliacao' => $agendamento->avaliacao ? [
+                'nota' => $agendamento->avaliacao->nota,
+                'comentario' => $agendamento->avaliacao->comentario ?? '',
+            ] : null,
+        ]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
