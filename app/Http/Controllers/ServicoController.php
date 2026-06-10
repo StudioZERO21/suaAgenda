@@ -8,6 +8,7 @@ use App\Http\Requests\StoreServicoRequest;
 use App\Http\Requests\UpdateServicoRequest;
 use App\Models\Profissional;
 use App\Models\Servico;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -100,6 +101,15 @@ class ServicoController extends Controller
 
         return redirect()->route('servicos.index')
             ->with('success', 'Serviço atualizado com sucesso.');
+    }
+
+    public function toggle(Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $servico->update(['ativo' => ! $servico->ativo]);
+
+        return response()->json(['ativo' => $servico->ativo]);
     }
 
     public function destroy(Servico $servico): RedirectResponse
