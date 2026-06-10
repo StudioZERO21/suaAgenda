@@ -364,6 +364,41 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function exportarAvaliacoesCsv(Request $request): StreamedResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $avaliacoes = Avaliacao::where('company_id', $empresaId)
+            ->whereHas('agendamento', fn ($q) => $q->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()]))
+            ->with(['agendamento.cliente', 'agendamento.servico', 'agendamento.profissional'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $filename = 'avaliacoes-'.$inicio->format('Y-m-d').'-ao-'.$fim->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($avaliacoes): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Data Avaliação', 'Data Agendamento', 'Cliente', 'Serviço', 'Profissional', 'Nota', 'Estrelas', 'Comentário'], ';');
+
+            foreach ($avaliacoes as $av) {
+                fputcsv($out, [
+                    $av->created_at->format('d/m/Y'),
+                    $av->agendamento?->data_hora?->format('d/m/Y H:i') ?? '',
+                    $av->agendamento?->cliente?->name ?? '',
+                    $av->agendamento?->servico?->nome ?? '',
+                    $av->agendamento?->profissional?->name ?? '',
+                    $av->nota,
+                    $av->estrelas(),
+                    $av->comentario ?? '',
+                ], ';');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function servicosJson(Request $request): JsonResponse
     {
         $empresaId = auth()->user()->empresa_id;
