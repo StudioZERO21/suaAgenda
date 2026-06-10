@@ -119,6 +119,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     Route::get('clientes/{cliente}/stats', [ClienteController::class, 'stats'])->name('clientes.stats');
     Route::get('clientes/{cliente}/agendamentos', [ClienteController::class, 'agendamentos'])->name('clientes.agendamentos');
+    Route::get('clientes/{cliente}/fotos', [ClienteController::class, 'fotos'])->name('clientes.fotos.index');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
     Route::get('servicos/buscar', [ServicoController::class, 'buscar'])->name('servicos.buscar');
