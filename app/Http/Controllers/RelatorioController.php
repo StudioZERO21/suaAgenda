@@ -525,6 +525,45 @@ class RelatorioController extends Controller
         return response()->json($rows);
     }
 
+    public function ocupacaoJson(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $profissionais = Profissional::where('company_id', $empresaId)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'cor']);
+
+        $result = $profissionais->map(function (Profissional $prof) use ($inicio, $fim, $empresaId): array {
+            $base = Agendamento::where('company_id', $empresaId)
+                ->where('profissional_id', $prof->id)
+                ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()]);
+
+            $total = (clone $base)->count();
+            $finalizados = (clone $base)->where('status', Agendamento::STATUS_FINALIZADO)->count();
+            $cancelados = (clone $base)->where('status', Agendamento::STATUS_CANCELADO)->count();
+            $receita = (float) (clone $base)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+            $duracaoMedia = (int) round((float) ((clone $base)->avg('duracao') ?? 0));
+
+            return [
+                'profissional_id' => $prof->id,
+                'profissional_nome' => $prof->name,
+                'cor' => $prof->cor ?? '#999999',
+                'total_agendamentos' => $total,
+                'finalizados' => $finalizados,
+                'cancelados' => $cancelados,
+                'taxa_conclusao' => $total > 0 ? round($finalizados / $total * 100, 1) : 0.0,
+                'receita_total' => $receita,
+                'duracao_media_min' => $duracaoMedia,
+            ];
+        });
+
+        return response()->json($result);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
