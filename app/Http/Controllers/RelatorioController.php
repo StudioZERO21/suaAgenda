@@ -364,6 +364,40 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function profissionaisJson(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $profissionais = Profissional::where('company_id', $empresaId)->orderBy('name')->get();
+
+        $rows = $profissionais->map(function (Profissional $prof) use ($empresaId, $inicio, $fim): array {
+            $base = Agendamento::where('profissional_id', $prof->id)
+                ->where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()]);
+
+            $total = (clone $base)->count();
+            $finalizados = (clone $base)->where('status', Agendamento::STATUS_FINALIZADO)->count();
+            $receita = (float) (clone $base)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+            $notaMedia = round((float) Avaliacao::whereHas('agendamento', fn ($q) => $q
+                ->where('profissional_id', $prof->id)
+                ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            )->avg('nota') ?? 0.0, 1);
+
+            return [
+                'id' => $prof->id,
+                'name' => $prof->name,
+                'total' => $total,
+                'finalizados' => $finalizados,
+                'receita_total' => $receita,
+                'taxa_conclusao' => $total > 0 ? round($finalizados / $total * 100, 1) : 0.0,
+                'nota_media' => $notaMedia,
+            ];
+        })->sortByDesc('receita_total')->values();
+
+        return response()->json($rows);
+    }
+
     public function exportarAvaliacoesCsv(Request $request): StreamedResponse
     {
         $empresaId = auth()->user()->empresa_id;
