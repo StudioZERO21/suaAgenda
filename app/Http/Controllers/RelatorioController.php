@@ -101,6 +101,26 @@ class RelatorioController extends Controller
 
         $maxHeatmap = max(array_map('max', $heatmap)) ?: 1;
 
+        // Evolução mensal: últimos 6 meses completos
+        $evolucaoMensal = collect(range(5, 0))->map(function (int $i) use ($empresaId): array {
+            $mes = Carbon::today()->startOfMonth()->subMonths($i);
+            $fimMes = $mes->copy()->endOfMonth();
+
+            $agsMes = Agendamento::where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$mes, $fimMes])
+                ->selectRaw('COUNT(*) as total, SUM(CASE WHEN status = ? THEN valor ELSE 0 END) as receita', [Agendamento::STATUS_FINALIZADO])
+                ->first();
+
+            return [
+                'mes' => $mes->translatedFormat('M/y'),
+                'agendamentos' => (int) ($agsMes->total ?? 0),
+                'receita' => (float) ($agsMes->receita ?? 0),
+            ];
+        })->values()->toArray();
+
+        $maxEvolucaoAg = max(array_column($evolucaoMensal, 'agendamentos') ?: [0]) ?: 1;
+        $maxEvolucaoRec = max(array_column($evolucaoMensal, 'receita') ?: [0]) ?: 1;
+
         // Fidelidade: top clientes por agendamentos no período
         $fidelidade = Agendamento::where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
@@ -140,6 +160,9 @@ class RelatorioController extends Controller
             'maxDespesa',
             'heatmap',
             'maxHeatmap',
+            'evolucaoMensal',
+            'maxEvolucaoAg',
+            'maxEvolucaoRec',
             'fidelidade',
             'inicio',
             'fim',
