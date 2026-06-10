@@ -183,13 +183,19 @@
                             <p style="font-size:12px;color:var(--sa-text3);margin-top:6px">Este é o link que seus clientes usarão para agendar online.</p>
                         </div>
                         <div style="display:flex;gap:16px;padding:20px;background:var(--sa-surface2);border-radius:12px;border:1px solid var(--sa-border);align-items:center;margin-bottom:20px">
-                            <div style="width:80px;height:80px;background:var(--sa-border);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.4">
-                                <svg width="60" height="60" viewBox="0 0 100 100"><rect x="0" y="0" width="40" height="40" fill="var(--sa-primary)"/><rect x="60" y="0" width="40" height="40" fill="var(--sa-primary)"/><rect x="0" y="60" width="40" height="40" fill="var(--sa-primary)"/></svg>
+                            <div style="width:80px;height:80px;background:var(--sa-surface);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--sa-border);overflow:hidden">
+                                <img src="{{ route('configuracoes.empresa.qrcode') }}" alt="QR Code" style="width:72px;height:72px;object-fit:contain">
                             </div>
                             <div>
                                 <div style="font-size:14px;font-weight:600;margin-bottom:4px">QR Code do seu negócio</div>
                                 <p style="font-size:12px;color:var(--sa-text3);margin:0 0 10px;line-height:1.6">Imprima e disponibilize no balcão para facilitar o agendamento.</p>
-                                <x-sa.btn type="button" variant="muted" size="sm" onclick="Swal.fire({toast:true,position:'top-end',icon:'info',title:'Download em breve!',showConfirmButton:false,timer:2500})">Baixar QR Code</x-sa.btn>
+                                <a href="{{ route('configuracoes.empresa.qrcode') }}" download="qrcode-{{ $company->slug }}.svg"
+                                   style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+                                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    Baixar QR Code
+                                </a>
                             </div>
                         </div>
                         <div>

@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ConfiguracaoController extends Controller
 {
@@ -178,6 +179,21 @@ class ConfiguracaoController extends Controller
         return redirect()
             ->route('configuracoes.empresa', ['tab' => $request->input('tab', 'dados')])
             ->with('success', 'Configurações da empresa salvas com sucesso!');
+    }
+
+    public function qrCode(): Response
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('view', $company);
+
+        $bookingUrl = route('agendar.show', $company->slug);
+
+        $svg = QrCode::format('svg')->size(300)->margin(1)->generate($bookingUrl);
+
+        return response((string) $svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => 'attachment; filename="qrcode-'.$company->slug.'.svg"',
+        ]);
     }
 
     public function uploadLogo(Request $request): JsonResponse
