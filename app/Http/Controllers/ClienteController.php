@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
+use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
 use Illuminate\Http\JsonResponse;
@@ -74,9 +75,13 @@ class ClienteController extends Controller
     {
         $this->authorize('view', $cliente);
 
-        $cliente->load(['agendamentos' => fn ($q) => $q->with('servico', 'profissional')->latest('data_hora')->limit(10)]);
+        $cliente->load(['agendamentos' => fn ($q) => $q->with('servico', 'profissional', 'avaliacao')->latest('data_hora')->limit(20)]);
 
-        return view('clientes.show', compact('cliente'));
+        $totalAgendamentos = $cliente->agendamentos()->count();
+        $receitaTotal = (float) $cliente->agendamentos()->where('status', 'finalizado')->sum('valor');
+        $notaMedia = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('cliente_id', $cliente->id))->avg('nota');
+
+        return view('clientes.show', compact('cliente', 'totalAgendamentos', 'receitaTotal', 'notaMedia'));
     }
 
     public function edit(Cliente $cliente): View
