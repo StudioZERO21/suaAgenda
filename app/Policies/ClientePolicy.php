@@ -35,4 +35,10 @@ class ClientePolicy
         return $user->empresa_id === $cliente->company_id
             && $user->hasRole('admin_empresa');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->empresa_id !== null
+            && $user->hasRole('admin_empresa');
+    }
 }
