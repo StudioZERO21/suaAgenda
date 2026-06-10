@@ -57,6 +57,33 @@
         </div>
     </div>
 
+    {{-- Stats do mês --}}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Agend. este mês</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-text1);line-height:1">{{ $totalMes }}</div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Receita este mês</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-secondary);line-height:1">R$&nbsp;{{ number_format($receitaMes, 0, ',', '.') }}</div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Taxa Conclusão</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-text1);line-height:1">{{ $taxaConclusao }}%</div>
+        </div>
+        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Nota Média</div>
+            <div style="font-family:var(--sa-font-heading);font-size:26px;font-weight:800;color:var(--sa-secondary);line-height:1;display:flex;align-items:center;gap:5px">
+                @if($notaMedia !== null)
+                {{ number_format((float) $notaMedia, 1, ',', '') }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none" style="margin-bottom:2px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                @else
+                <span style="font-size:16px;color:var(--sa-text3);font-weight:400">—</span>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
 
         {{-- Sidebar info --}}

@@ -6,8 +6,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProfissionalRequest;
 use App\Http\Requests\UpdateProfissionalRequest;
+use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Profissional;
 use App\Models\Servico;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -80,9 +83,22 @@ class ProfissionalController extends Controller
     {
         $this->authorize('view', $profissional);
 
-        $profissional->load(['servicos', 'agendamentos' => fn ($q) => $q->with('cliente', 'servico')->latest('data_hora')->limit(10)]);
+        $profissional->load(['servicos', 'agendamentos' => fn ($q) => $q->with('cliente', 'servico')->latest('data_hora')->limit(20)]);
 
-        return view('profissionais.show', compact('profissional'));
+        $mesInicio = Carbon::today()->startOfMonth();
+        $mesFim = Carbon::today()->endOfMonth();
+
+        $agsMes = Agendamento::where('profissional_id', $profissional->id)
+            ->whereBetween('data_hora', [$mesInicio, $mesFim]);
+
+        $totalMes = (clone $agsMes)->count();
+        $finalizadosMes = (clone $agsMes)->where('status', Agendamento::STATUS_FINALIZADO)->count();
+        $receitaMes = (float) (clone $agsMes)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+        $taxaConclusao = $totalMes > 0 ? (int) round($finalizadosMes / $totalMes * 100) : 0;
+
+        $notaMedia = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('profissional_id', $profissional->id))->avg('nota');
+
+        return view('profissionais.show', compact('profissional', 'totalMes', 'receitaMes', 'taxaConclusao', 'notaMedia'));
     }
 
     public function edit(Profissional $profissional): View
