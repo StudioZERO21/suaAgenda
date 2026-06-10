@@ -236,7 +236,9 @@ class AgendamentoPublicoController extends Controller
             'data_hora' => $request->data_hora,
             'duracao' => $servico?->duracao_minutos ?? 30,
             'valor' => $servico?->preco,
-            'status' => Agendamento::STATUS_PENDENTE,
+            'status' => ($company->resolvedSettings()['advanced']['confirm_required'] ?? true)
+                ? Agendamento::STATUS_PENDENTE
+                : Agendamento::STATUS_CONFIRMADO,
             'observacao' => $request->observacao,
             'cancel_token' => Agendamento::generateCancelToken(),
         ]);
