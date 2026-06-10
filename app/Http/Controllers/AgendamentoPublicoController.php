@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAgendamentoPublicoRequest;
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
 use App\Models\Company;
@@ -71,7 +72,22 @@ class AgendamentoPublicoController extends Controller
 
         $siteCfg = $company->resolvedSettings()['site'] ?? [];
 
-        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg'));
+        $avaliacoesPublicas = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $company->id))
+            ->with(['agendamento.cliente', 'agendamento.profissional', 'agendamento.servico'])
+            ->whereNotNull('comentario')
+            ->where('nota', '>=', 4)
+            ->latest()
+            ->limit(6)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'name' => $av->agendamento?->cliente?->name ?? 'Cliente',
+                'svc' => $av->agendamento?->servico?->nome ?? '',
+                'text' => $av->comentario,
+                'nota' => $av->nota,
+                'profissional' => $av->agendamento?->profissional?->name ?? '',
+            ]);
+
+        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg', 'avaliacoesPublicas'));
     }
 
     /**
