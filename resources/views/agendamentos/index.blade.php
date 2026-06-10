@@ -19,6 +19,12 @@
         <x-sa.card padding="14px 20px" style="margin-bottom:16px">
             <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
                 <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Cliente</label>
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Buscar por nome..."
+                           class="sa-search-input" style="padding:8px 12px;min-width:180px"
+                           onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                </div>
+                <div>
                     <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Data</label>
                     <input type="date" name="data" value="{{ request('data') }}" class="sa-search-input" style="padding:8px 12px;width:auto">
                 </div>
@@ -40,9 +46,18 @@
                         @endforeach
                     </select>
                 </div>
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--sa-text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Serviço</label>
+                    <select name="servico_id" class="sa-search-input" style="padding:8px 12px;width:auto;cursor:pointer">
+                        <option value="">Todos</option>
+                        @foreach($servicos as $svc)
+                        <option value="{{ $svc->id }}" {{ request('servico_id') == $svc->id ? 'selected' : '' }}>{{ $svc->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div style="display:flex;gap:8px">
                     <x-sa.btn type="submit" size="sm">Filtrar</x-sa.btn>
-                    @if(request()->hasAny(['data','status','profissional_id']))
+                    @if(request()->hasAny(['data','status','profissional_id','servico_id','q']))
                     <x-sa.btn href="{{ route('agendamentos.index') }}" variant="secondary" size="sm">Limpar</x-sa.btn>
                     @endif
                 </div>

@@ -72,6 +72,9 @@ class AgendamentoPublicoController extends Controller
 
         $siteCfg = $company->resolvedSettings()['site'] ?? [];
 
+        $notaMediaReal = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $company->id))->avg('nota');
+        $totalAvaliacoesReal = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $company->id))->count();
+
         $avaliacoesPublicas = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $company->id))
             ->with(['agendamento.cliente', 'agendamento.profissional', 'agendamento.servico'])
             ->whereNotNull('comentario')
@@ -87,7 +90,7 @@ class AgendamentoPublicoController extends Controller
                 'profissional' => $av->agendamento?->profissional?->name ?? '',
             ]);
 
-        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg', 'avaliacoesPublicas'));
+        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal'));
     }
 
     /**
