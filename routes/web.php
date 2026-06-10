@@ -108,6 +108,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::resource('clientes', ClienteController::class);
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
+    Route::get('servicos/exportar', [ServicoController::class, 'exportarCsv'])->name('servicos.exportar');
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::patch('servicos/{servico}/toggle', [ServicoController::class, 'toggle'])->name('servicos.toggle');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
