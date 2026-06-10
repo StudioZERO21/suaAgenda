@@ -117,6 +117,19 @@ class ClienteController extends Controller
             ->with('success', "Cliente {$cliente->name} removido.");
     }
 
+    public function destroyBulk(Request $request): JsonResponse
+    {
+        $this->authorize('deleteAny', Cliente::class);
+
+        $ids = $request->validate(['ids' => ['required', 'array', 'min:1'], 'ids.*' => ['uuid']])['ids'];
+
+        $deleted = Cliente::where('company_id', auth()->user()->empresa_id)
+            ->whereIn('id', $ids)
+            ->delete();
+
+        return response()->json(['deleted' => $deleted]);
+    }
+
     public function exportarCsv(): StreamedResponse
     {
         $this->authorize('viewAny', Cliente::class);

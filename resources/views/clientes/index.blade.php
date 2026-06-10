@@ -498,9 +498,9 @@ function clientesApp() {
             }
         },
 
-        confirmRemoveSelected() {
+        async confirmRemoveSelected() {
             const count = this.selected.length;
-            Swal.fire({
+            const result = await Swal.fire({
                 title: `Remover ${count} cliente${count > 1 ? 's' : ''}?`,
                 text: 'Esta ação não pode ser desfeita.',
                 icon: 'warning',
@@ -510,13 +510,27 @@ function clientesApp() {
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: 'transparent',
                 customClass: { cancelButton: 'swal-cancel-muted' },
-            }).then(r => {
-                if (r.isConfirmed) {
-                    // Enviar deletes em sequência (simplificado: via form)
-                    Swal.fire({ title: 'Funcionalidade em breve', text: 'Exclusão em massa disponível em breve.', icon: 'info' });
-                    this.selected = [];
-                }
             });
+            if (!result.isConfirmed) return;
+
+            const resp = await fetch('{{ route('clientes.bulk-destroy') }}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ ids: this.selected }),
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                this.selected = [];
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `${data.deleted} cliente${data.deleted !== 1 ? 's' : ''} removido${data.deleted !== 1 ? 's' : ''}`, showConfirmButton: false, timer: 2500 });
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Erro ao remover clientes.' });
+            }
         },
 
         async uploadFoto(event) {
