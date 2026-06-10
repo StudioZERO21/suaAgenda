@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use Illuminate\View\View;
@@ -184,6 +185,10 @@ class DashboardController extends Controller
         })->values()->toArray();
         $maxSemana = max(array_column($semana, 'agendamentos') ?: [0]);
 
+        $notaMedia = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $empresa))
+            ->whereHas('agendamento', fn ($q) => $q->whereBetween('data_hora', [$mesInicio, $mesFim]))
+            ->avg('nota');
+
         $kanbanQuery = Agendamento::where('company_id', $empresa)
             ->whereDate('data_hora', $hoje)
             ->with(['cliente', 'profissional', 'servico'])
@@ -248,6 +253,7 @@ class DashboardController extends Controller
             'maxProfCount' => $maxProfCount,
             'semana' => $semana,
             'maxSemana' => $maxSemana,
+            'notaMedia' => $notaMedia !== null ? round((float) $notaMedia, 1) : null,
         ];
 
         return view('dashboard', compact('stats'));
