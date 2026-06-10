@@ -258,6 +258,41 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function aniversariantes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $periodo = $request->input('periodo', 'hoje');
+
+        $hoje = now();
+
+        $query = Cliente::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->whereNotNull('data_nasc');
+
+        if ($periodo === 'mes') {
+            $query->whereMonth('data_nasc', $hoje->month);
+        } else {
+            $query->whereMonth('data_nasc', $hoje->month)
+                ->whereDay('data_nasc', $hoje->day);
+        }
+
+        $clientes = $query->get(['id', 'name', 'phone', 'email', 'data_nasc'])
+            ->sortBy(fn (Cliente $c) => $c->data_nasc->format('m-d'))
+            ->values()
+            ->map(fn (Cliente $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'phone' => $c->phone ?? '',
+                'email' => $c->email ?? '',
+                'data_nasc' => $c->data_nasc?->format('Y-m-d'),
+                'idade' => $c->data_nasc ? $c->data_nasc->age : null,
+            ]);
+
+        return response()->json($clientes);
+    }
+
     public function stats(Cliente $cliente): JsonResponse
     {
         $this->authorize('view', $cliente);
