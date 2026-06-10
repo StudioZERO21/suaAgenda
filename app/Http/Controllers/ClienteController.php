@@ -75,7 +75,10 @@ class ClienteController extends Controller
     {
         $this->authorize('view', $cliente);
 
-        $cliente->load(['agendamentos' => fn ($q) => $q->with('servico', 'profissional', 'avaliacao')->latest('data_hora')->limit(20)]);
+        $cliente->load([
+            'agendamentos' => fn ($q) => $q->with('servico', 'profissional', 'avaliacao')->latest('data_hora')->limit(20),
+            'fotos' => fn ($q) => $q->orderBy('created_at'),
+        ]);
 
         $totalAgendamentos = $cliente->agendamentos()->count();
         $receitaTotal = (float) $cliente->agendamentos()->where('status', 'finalizado')->sum('valor');

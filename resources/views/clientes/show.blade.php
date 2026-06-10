@@ -191,8 +191,87 @@
         </div>
     </div>
 
+    {{-- Galeria Antes & Depois --}}
+    @can('update', $cliente)
+    <div x-data="fotoGaleria({{ json_encode($cliente->fotos->map(fn ($f) => ['id' => $f->id, 'url' => \Illuminate\Support\Facades\Storage::url($f->imagem_path), 'tipo' => $f->tipo, 'legenda' => $f->legenda])) }}, '{{ $cliente->id }}')"
+         style="margin-top:20px;background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h2 style="font-size:13px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Fotos de Atendimento (Antes &amp; Depois)</h2>
+            <button @click="$refs.fotoInput.click()" :disabled="uploading"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;transition:all 150ms"
+                    onmouseover="if(!this.disabled){this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'}"
+                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span x-text="uploading ? 'Enviando...' : 'Adicionar foto'"></span>
+            </button>
+            <input type="file" x-ref="fotoInput" accept="image/*" style="display:none" @change="upload($event)">
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+            <template x-for="foto in fotos" :key="foto.id">
+                <div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;background:var(--sa-surface2);border:1px solid var(--sa-border)">
+                    <img :src="foto.url" :alt="foto.legenda || foto.tipo" style="width:100%;height:100%;object-fit:cover;display:block">
+                    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:8px 6px 6px;display:flex;align-items:flex-end;justify-content:space-between">
+                        <span :style="`font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;background:${foto.tipo==='antes'?'rgba(239,68,68,.8)':foto.tipo==='depois'?'rgba(16,185,129,.8)':'rgba(90,90,90,.8)'}`" x-text="foto.tipo"></span>
+                        <button @click="remove(foto)"
+                                style="width:22px;height:22px;border-radius:5px;border:none;background:rgba(239,68,68,.8);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div x-show="foto.legenda" style="display:none;position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,.6);padding:4px 6px">
+                        <span style="font-size:10px;color:#fff" x-text="foto.legenda"></span>
+                    </div>
+                </div>
+            </template>
+
+            <div x-show="fotos.length === 0 && !uploading"
+                 @click="$refs.fotoInput.click()"
+                 style="border:1.5px dashed var(--sa-border);border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:border-color 150ms"
+                 onmouseover="this.style.borderColor='var(--sa-primary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="font-size:10px;color:var(--sa-text3)">Adicionar foto</div>
+            </div>
+        </div>
+
+        <p style="font-size:11px;color:var(--sa-text3);margin:12px 0 0">Fotos adicionadas aqui aparecem automaticamente no portfólio da equipe.</p>
+    </div>
+    @endcan
+
 @push('scripts')
 <script>
+function fotoGaleria(initialFotos, clienteId) {
+    return {
+        fotos: initialFotos,
+        uploading: false,
+        async upload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            this.uploading = true;
+            const fd = new FormData;
+            fd.append('imagem', file);
+            fd.append('tipo', 'outro');
+            fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+            try {
+                const r = await fetch(`/clientes/${clienteId}/fotos`, { method: 'POST', body: fd });
+                if (!r.ok) throw new Error('Upload falhou');
+                const data = await r.json();
+                this.fotos.push(data);
+            } catch {
+                Swal.fire({ toast:true, position:'top-end', icon:'error', title:'Erro ao enviar foto', showConfirmButton:false, timer:2000 });
+            } finally {
+                this.uploading = false;
+                event.target.value = '';
+            }
+        },
+        async remove(foto) {
+            const r = await Swal.fire({ title:'Excluir foto?', text:'Esta ação não pode ser desfeita.', icon:'warning', showCancelButton:true, confirmButtonText:'Excluir', cancelButtonText:'Cancelar', confirmButtonColor:'#ef4444' });
+            if (!r.isConfirmed) return;
+            const resp = await fetch(`/clientes/fotos/${foto.id}`, { method:'DELETE', headers:{ 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } });
+            if (resp.ok) this.fotos = this.fotos.filter(f => f.id !== foto.id);
+        },
+    };
+}
 function confirmDelete(e, nome) {
     e.preventDefault();
     const form = e.target;
