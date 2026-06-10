@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServicoController extends Controller
 {
@@ -101,6 +102,42 @@ class ServicoController extends Controller
 
         return redirect()->route('servicos.index')
             ->with('success', 'Serviço atualizado com sucesso.');
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->with('profissionais:id,name')
+            ->withCount('agendamentos')
+            ->orderBy('nome')
+            ->get();
+
+        return response()->streamDownload(function () use ($servicos): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Nome', 'Duração (min)', 'Preço (R$)', 'Cor', 'Profissionais', 'Total Agendamentos', 'Status'], ';');
+
+            foreach ($servicos as $s) {
+                $profissionais = $s->profissionais->pluck('name')->join(', ');
+                fputcsv($out, [
+                    $s->nome,
+                    $s->duracao_minutos,
+                    number_format((float) $s->preco, 2, ',', '.'),
+                    $s->cor ?? '',
+                    $profissionais,
+                    $s->agendamentos_count,
+                    $s->ativo ? 'Ativo' : 'Inativo',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'servicos-'.now()->format('Y-m-d').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function toggle(Servico $servico): JsonResponse
