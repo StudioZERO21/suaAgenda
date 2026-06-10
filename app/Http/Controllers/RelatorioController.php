@@ -433,6 +433,32 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function avaliacoesJson(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $limite = min((int) $request->input('limite', 20), 100);
+
+        $avaliacoes = Avaliacao::where('company_id', $empresaId)
+            ->whereHas('agendamento', fn ($q) => $q->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()]))
+            ->with(['agendamento.cliente:id,name', 'agendamento.profissional:id,name', 'agendamento.servico:id,nome'])
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'id' => $av->id,
+                'nota' => $av->nota,
+                'comentario' => $av->comentario,
+                'data' => $av->created_at->toIso8601String(),
+                'cliente_nome' => $av->agendamento?->cliente?->name ?? '',
+                'profissional_nome' => $av->agendamento?->profissional?->name ?? '',
+                'servico_nome' => $av->agendamento?->servico?->nome ?? '',
+            ]);
+
+        return response()->json($avaliacoes);
+    }
+
     public function clientesJson(Request $request): JsonResponse
     {
         $empresaId = auth()->user()->empresa_id;
