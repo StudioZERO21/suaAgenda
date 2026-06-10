@@ -116,6 +116,8 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('configuracoes/preferencias/restaurar-tipografia', [ConfiguracaoController::class, 'resetTipografia'])->name('configuracoes.tipografia.reset');
     Route::get('configuracoes/empresa', [ConfiguracaoController::class, 'empresa'])->name('configuracoes.empresa');
     Route::put('configuracoes/empresa', [ConfiguracaoController::class, 'updateEmpresa'])->name('configuracoes.empresa.update');
+    Route::post('configuracoes/empresa/logo', [ConfiguracaoController::class, 'uploadLogo'])->name('configuracoes.empresa.logo.upload');
+    Route::delete('configuracoes/empresa/logo', [ConfiguracaoController::class, 'deleteLogo'])->name('configuracoes.empresa.logo.delete');
 
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');

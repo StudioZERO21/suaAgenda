@@ -9,7 +9,11 @@ use App\Http\Requests\UpdatePreferenciasConfiguracaoRequest;
 use App\Http\Requests\UpdateTipografiaConfiguracaoRequest;
 use App\Models\Company;
 use App\Support\SaPalettes;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ConfiguracaoController extends Controller
@@ -174,5 +178,39 @@ class ConfiguracaoController extends Controller
         return redirect()
             ->route('configuracoes.empresa', ['tab' => $request->input('tab', 'dados')])
             ->with('success', 'Configurações da empresa salvas com sucesso!');
+    }
+
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        $this->authorize('update', auth()->user()->company);
+
+        $request->validate([
+            'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+
+        if ($company->logo_path) {
+            Storage::disk('public')->delete($company->logo_path);
+        }
+
+        $path = $request->file('logo')->store("logos/{$company->id}", 'public');
+        $company->update(['logo_path' => $path]);
+
+        return response()->json(['logo_url' => Storage::disk('public')->url($path)]);
+    }
+
+    public function deleteLogo(): Response
+    {
+        $this->authorize('update', auth()->user()->company);
+
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+
+        if ($company->logo_path) {
+            Storage::disk('public')->delete($company->logo_path);
+            $company->update(['logo_path' => null]);
+        }
+
+        return response()->noContent();
     }
 }

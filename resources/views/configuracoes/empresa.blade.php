@@ -75,16 +75,29 @@
                     <div x-show="tab === 'dados'" x-cloak>
                         <div class="sa-grid2">
                             <div style="display:flex;flex-direction:column;gap:14px">
-                                <div>
+                                <div x-data="logoUploader('{{ $company->logo_path ? \Illuminate\Support\Facades\Storage::url($company->logo_path) : '' }}')">
                                     <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Logo</label>
                                     <div style="display:flex;align-items:center;gap:14px">
-                                        <div style="width:64px;height:64px;border-radius:14px;background:color-mix(in srgb,var(--sa-primary) 8%,transparent);border:2px dashed var(--sa-border);display:flex;align-items:center;justify-content:center">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/></svg>
+                                        <div @click="$refs.logoInput.click()"
+                                             style="width:64px;height:64px;border-radius:14px;background:color-mix(in srgb,var(--sa-primary) 8%,transparent);border:2px dashed var(--sa-border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;transition:border-color 150ms"
+                                             onmouseover="this.style.borderColor='var(--sa-primary)'" onmouseout="this.style.borderColor='var(--sa-border)'">
+                                            <img x-show="logoUrl" :src="logoUrl" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
+                                            <svg x-show="!logoUrl" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/></svg>
                                         </div>
                                         <div>
-                                            <x-sa.btn type="button" variant="muted" size="sm" onclick="Swal.fire({toast:true,position:'top-end',icon:'info',title:'Upload em breve!',showConfirmButton:false,timer:2500})">Upload</x-sa.btn>
-                                            <p style="font-size:11px;color:var(--sa-text3);margin:5px 0 0">PNG/JPG · máx 2MB · 400×400px</p>
+                                            <div style="display:flex;gap:6px;align-items:center">
+                                                <button type="button" @click="$refs.logoInput.click()" :disabled="uploading"
+                                                        style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:12px;font-weight:600;cursor:pointer;transition:all 150ms"
+                                                        onmouseover="if(!this.disabled){this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'}"
+                                                        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'"
+                                                        x-text="uploading ? 'Enviando...' : (logoUrl ? 'Trocar' : 'Upload')">
+                                                </button>
+                                                <button x-show="logoUrl" type="button" @click="removeLogo()"
+                                                        style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;text-decoration:underline">Remover</button>
+                                            </div>
+                                            <p style="font-size:11px;color:var(--sa-text3);margin:5px 0 0">PNG/JPG/WebP · máx 2MB · 400×400px</p>
                                         </div>
+                                        <input type="file" x-ref="logoInput" accept="image/*" style="display:none" @change="upload($event)">
                                     </div>
                                 </div>
                                 <div class="sa-field">
@@ -260,4 +273,41 @@
         </div>
     </x-sa.body>
 </x-sa.page>
+
+@push('scripts')
+<script>
+function logoUploader(initialUrl) {
+    return {
+        logoUrl: initialUrl || null,
+        uploading: false,
+        async upload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            this.uploading = true;
+            const fd = new FormData;
+            fd.append('logo', file);
+            fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+            try {
+                const r = await fetch('{{ route('configuracoes.empresa.logo.upload') }}', { method: 'POST', body: fd });
+                if (!r.ok) throw new Error('Upload falhou');
+                const data = await r.json();
+                this.logoUrl = data.logo_url;
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Logo atualizado!', showConfirmButton: false, timer: 2000 });
+            } catch {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Erro ao enviar logo', showConfirmButton: false, timer: 2000 });
+            } finally {
+                this.uploading = false;
+                event.target.value = '';
+            }
+        },
+        async removeLogo() {
+            const r = await Swal.fire({ title: 'Remover logo?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Remover', cancelButtonText: 'Cancelar', confirmButtonColor: '#ef4444' });
+            if (!r.isConfirmed) return;
+            await fetch('{{ route('configuracoes.empresa.logo.delete') }}', { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } });
+            this.logoUrl = null;
+        },
+    };
+}
+</script>
+@endpush
 @endsection
