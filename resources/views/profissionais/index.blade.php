@@ -88,7 +88,13 @@
                         <div style="padding:20px 20px 0">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
                                 <div style="display:flex;gap:12px;align-items:center">
+                                    @if($prof->foto_path)
+                                    <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--sa-border)">
+                                        <img src="{{ \Illuminate\Support\Facades\Storage::url($prof->foto_path) }}" alt="{{ $prof->name }}" style="width:100%;height:100%;object-fit:cover">
+                                    </div>
+                                    @else
                                     <x-sa.avatar :name="$prof->name" :size="52" :color="$cor" />
+                                    @endif
                                     <div>
                                         <a href="{{ route('profissionais.show', $prof) }}" style="font-family:var(--sa-font-heading,'Poppins',sans-serif);font-size:16px;font-weight:700;color:var(--sa-text1);text-decoration:none">{{ $prof->name }}</a>
                                         <div style="font-size:12px;color:var(--sa-text3);margin-top:2px">{{ $prof->especialidade ?? 'Funcionário' }}</div>
@@ -117,7 +123,7 @@
                         </div>
 
                         @php
-                        $profData = ['id'=>$prof->id,'name'=>$prof->name,'especialidade'=>$prof->especialidade,'comissao_pct'=>(float)($prof->comissao_pct??0),'ativo'=>(bool)$prof->ativo,'cor'=>$prof->cor??'#1a1a1a','phone'=>$prof->phone??'','admissao'=>$prof->admissao?$prof->admissao->format('Y-m-d'):'','instagram'=>$prof->instagram??'','tiktok'=>$prof->tiktok??'','facebook'=>$prof->facebook??'','agendamentos_count'=>$prof->agendamentos_count,'servicos'=>$prof->servicos->pluck('id')->values()->all()];
+                        $profData = ['id'=>$prof->id,'name'=>$prof->name,'especialidade'=>$prof->especialidade,'comissao_pct'=>(float)($prof->comissao_pct??0),'ativo'=>(bool)$prof->ativo,'cor'=>$prof->cor??'#1a1a1a','phone'=>$prof->phone??'','admissao'=>$prof->admissao?$prof->admissao->format('Y-m-d'):'','instagram'=>$prof->instagram??'','tiktok'=>$prof->tiktok??'','facebook'=>$prof->facebook??'','agendamentos_count'=>$prof->agendamentos_count,'servicos'=>$prof->servicos->pluck('id')->values()->all(),'foto_url'=>$prof->foto_path?\Illuminate\Support\Facades\Storage::url($prof->foto_path):null];
                         @endphp
                         <div style="padding:10px 14px;border-top:1px solid var(--sa-border);display:flex;gap:8px">
                             @can('update', $prof)
@@ -165,7 +171,13 @@
                             <tr class="sa-tr">
                                 <td class="sa-td">
                                     <div style="display:flex;align-items:center;gap:10px">
+                                        @if($prof->foto_path)
+                                        <div style="width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid var(--sa-border)">
+                                            <img src="{{ \Illuminate\Support\Facades\Storage::url($prof->foto_path) }}" alt="{{ $prof->name }}" style="width:100%;height:100%;object-fit:cover">
+                                        </div>
+                                        @else
                                         <x-sa.avatar :name="$prof->name" :color="$cor" />
+                                        @endif
                                         <a href="{{ route('profissionais.show', $prof) }}" style="font-size:14px;font-weight:600;color:var(--sa-text1);text-decoration:none">{{ $prof->name }}</a>
                                     </div>
                                 </td>
@@ -183,7 +195,7 @@
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </x-sa.icon-btn>
                                         @can('update', $prof)
-                                        @php $profData2 = ['id'=>$prof->id,'name'=>$prof->name,'especialidade'=>$prof->especialidade,'comissao_pct'=>(float)($prof->comissao_pct??0),'ativo'=>(bool)$prof->ativo,'cor'=>$prof->cor??'#1a1a1a','phone'=>$prof->phone??'','admissao'=>$prof->admissao?$prof->admissao->format('Y-m-d'):'','instagram'=>$prof->instagram??'','tiktok'=>$prof->tiktok??'','facebook'=>$prof->facebook??'','agendamentos_count'=>$prof->agendamentos_count,'servicos'=>$prof->servicos->pluck('id')->values()->all()]; @endphp
+                                        @php $profData2 = ['id'=>$prof->id,'name'=>$prof->name,'especialidade'=>$prof->especialidade,'comissao_pct'=>(float)($prof->comissao_pct??0),'ativo'=>(bool)$prof->ativo,'cor'=>$prof->cor??'#1a1a1a','phone'=>$prof->phone??'','admissao'=>$prof->admissao?$prof->admissao->format('Y-m-d'):'','instagram'=>$prof->instagram??'','tiktok'=>$prof->tiktok??'','facebook'=>$prof->facebook??'','agendamentos_count'=>$prof->agendamentos_count,'servicos'=>$prof->servicos->pluck('id')->values()->all(),'foto_url'=>$prof->foto_path?\Illuminate\Support\Facades\Storage::url($prof->foto_path):null]; @endphp
                                         <button type="button"
                                                 data-prof="{{ htmlspecialchars(json_encode($profData2), ENT_QUOTES) }}"
                                                 @click="openModal(JSON.parse($el.dataset.prof))"
@@ -246,23 +258,29 @@
                             <div style="display:flex;align-items:center;gap:16px">
                                 <div style="position:relative;flex-shrink:0">
                                     <div style="width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:26px;font-weight:800;font-family:'Inter',sans-serif;color:#fff;flex-shrink:0"
-                                         :style="'background:' + form.cor">
-                                        <span x-text="(form.name || '?').charAt(0).toUpperCase()"></span>
+                                         :style="'background:' + (form.foto_url ? 'transparent' : form.cor)">
+                                        <img x-show="form.foto_url" :src="form.foto_url" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+                                        <span x-show="!form.foto_url" x-text="(form.name || '?').charAt(0).toUpperCase()"></span>
                                     </div>
-                                    <button type="button" @click="Swal.fire({title:'Em breve',text:'Upload de foto em breve!',icon:'info',confirmButtonColor:'#1a1a1a'})"
+                                    <button type="button" @click="$refs.fotoInput.click()" :disabled="uploadingFoto"
                                             style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--sa-secondary);border:2px solid var(--sa-surface);display:flex;align-items:center;justify-content:center;cursor:pointer">
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                     </button>
+                                    <input type="file" x-ref="fotoInput" accept="image/*" style="display:none" @change="uploadFoto($event)">
                                 </div>
                                 <div style="flex:1">
                                     <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:8px">Foto & Cor</div>
-                                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
                                         <template x-for="c in profColors" :key="c">
                                             <button type="button" @click="form.cor = c"
                                                     :style="'width:22px;height:22px;border-radius:50%;background:' + c + ';border:' + (form.cor === c ? '3px solid var(--sa-text1)' : '2px solid transparent') + ';cursor:pointer;transition:border 150ms'"></button>
                                         </template>
                                     </div>
-                                    <div style="font-size:11px;color:var(--sa-text3);margin-top:6px">Upload de foto em breve</div>
+                                    <div style="display:flex;gap:6px;align-items:center">
+                                        <span style="font-size:11px;color:var(--sa-text3)" x-text="uploadingFoto ? 'Enviando...' : (form.foto_url ? 'Clique no avatar para trocar' : 'Clique no avatar para enviar foto')"></span>
+                                        <button x-show="form.foto_url" type="button" @click="removeFoto()"
+                                                style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">remover</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -427,13 +445,14 @@ function staffApp() {
     const blank = () => ({
         id: null, name: '', especialidade: '', comissao_pct: 0, ativo: true,
         cor: '#1a1a1a', phone: '', admissao: '', instagram: '', tiktok: '', facebook: '',
-        agendamentos_count: 0, servicos: [],
+        agendamentos_count: 0, servicos: [], foto_url: null,
     });
 
     return {
         view: localStorage.getItem('sa_staff_view') || 'cards',
         modalOpen: false,
         saving: false,
+        uploadingFoto: false,
         form: blank(),
         profColors: PROF_COLORS,
         servicos,
@@ -456,7 +475,35 @@ function staffApp() {
 
         openModal(prof) {
             this.form = { ...blank(), ...prof, servicos: Array.isArray(prof.servicos) ? [...prof.servicos] : [] };
+            this.uploadingFoto = false;
             this.modalOpen = true;
+        },
+
+        async uploadFoto(event) {
+            const file = event.target.files[0];
+            if (!file || !this.form.id) return;
+            this.uploadingFoto = true;
+            const fd = new FormData;
+            fd.append('foto', file);
+            fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+            try {
+                const r = await fetch(`/profissionais/${this.form.id}/foto`, { method: 'POST', body: fd });
+                if (!r.ok) throw new Error('Upload falhou');
+                const data = await r.json();
+                this.form.foto_url = data.foto_url;
+            } catch {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Erro ao enviar foto', showConfirmButton: false, timer: 2000 });
+            } finally {
+                this.uploadingFoto = false;
+                event.target.value = '';
+            }
+        },
+
+        async removeFoto() {
+            if (!this.form.id) return;
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            await fetch(`/profissionais/${this.form.id}/foto`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } });
+            this.form.foto_url = null;
         },
 
         closeModal() {

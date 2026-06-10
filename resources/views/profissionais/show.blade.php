@@ -13,7 +13,13 @@
                 $ini = strtoupper(substr($profissional->name, 0, 1));
                 $cor = $profissional->cor ?? '#1a1a1a';
             @endphp
+            @if($profissional->foto_path)
+            <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--sa-border)">
+                <img src="{{ \Illuminate\Support\Facades\Storage::url($profissional->foto_path) }}" alt="{{ $profissional->name }}" style="width:100%;height:100%;object-fit:cover">
+            </div>
+            @else
             <div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;background:{{ $cor }}">{{ $ini }}</div>
+            @endif
             <div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $profissional->name }}</h1>
