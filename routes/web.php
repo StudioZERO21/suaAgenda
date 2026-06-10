@@ -47,6 +47,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/resumo', [DashboardController::class, 'resumo'])->name('dashboard.resumo');
 
     Route::get('agendamentos/exportar', [AgendamentoController::class, 'exportarCsv'])->name('agendamentos.exportar');
     Route::get('agendamentos/proximos', [AgendamentoController::class, 'proximos'])->name('agendamentos.proximos');
