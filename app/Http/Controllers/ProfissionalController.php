@@ -247,6 +247,15 @@ class ProfissionalController extends Controller
         return response()->json($profissionais);
     }
 
+    public function toggle(Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $profissional->update(['ativo' => ! $profissional->ativo]);
+
+        return response()->json(['ativo' => $profissional->ativo]);
+    }
+
     public function stats(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);

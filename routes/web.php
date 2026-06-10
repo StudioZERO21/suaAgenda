@@ -108,6 +108,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('clientes/importar', [ClienteController::class, 'importarCsv'])->name('clientes.importar');
     Route::delete('clientes/bulk-destroy', [ClienteController::class, 'destroyBulk'])->name('clientes.bulk-destroy');
     Route::resource('clientes', ClienteController::class);
+    Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     Route::get('clientes/{cliente}/agendamentos', [ClienteController::class, 'agendamentos'])->name('clientes.agendamentos');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
@@ -117,6 +118,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
+    Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
     Route::get('profissionais/{profissional}/stats', [ProfissionalController::class, 'stats'])->name('profissionais.stats');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
