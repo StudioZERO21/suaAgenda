@@ -18,7 +18,17 @@
 
 @section('content')
 <x-sa.page x-data="pdvApp()" style="display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden">
-    <x-sa.app-header title="PDV — Ponto de Venda" subtitle="Registre vendas de produtos e serviços" />
+    <x-sa.app-header title="PDV — Ponto de Venda" subtitle="Registre vendas de produtos e serviços">
+        <x-slot:actions>
+            <a href="{{ route('pdv.exportar') }}"
+               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+               onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+               onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </a>
+        </x-slot:actions>
+    </x-sa.app-header>
 
     <div class="pdv-grid" style="padding:16px 32px 24px">
         {{-- Catálogo --}}

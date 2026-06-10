@@ -68,6 +68,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('produtos/imagens/{imagem}/capa', [ProdutoController::class, 'setCapa'])->name('produtos.imagens.capa');
 
     Route::get('pdv', [PdvController::class, 'index'])->name('pdv');
+    Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
 
     Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
