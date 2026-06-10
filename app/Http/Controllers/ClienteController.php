@@ -107,6 +107,15 @@ class ClienteController extends Controller
             ->with('success', 'Cliente atualizado com sucesso.');
     }
 
+    public function toggle(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $cliente->update(['ativo' => ! $cliente->ativo]);
+
+        return response()->json(['ativo' => $cliente->ativo]);
+    }
+
     public function destroy(Cliente $cliente): RedirectResponse
     {
         $this->authorize('delete', $cliente);
@@ -246,6 +255,34 @@ class ClienteController extends Controller
                 'valor' => (float) $ag->valor,
                 'duracao' => (int) $ag->duracao,
             ])->values(),
+        ]);
+    }
+
+    public function stats(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $total = $cliente->agendamentos()->count();
+        $finalizados = $cliente->agendamentos()->where('status', 'finalizado')->count();
+        $receita = (float) $cliente->agendamentos()->where('status', 'finalizado')->sum('valor');
+        $notaMedia = round(
+            (float) (Avaliacao::whereHas('agendamento', fn ($q) => $q->where('cliente_id', $cliente->id))->avg('nota') ?? 0.0),
+            2
+        );
+        $ultimos90Dias = $cliente->agendamentos()
+            ->where('data_hora', '>=', now()->subDays(90))
+            ->count();
+        $primeiroAg = $cliente->agendamentos()->oldest('data_hora')->value('data_hora');
+        $ultimoAg = $cliente->agendamentos()->latest('data_hora')->value('data_hora');
+
+        return response()->json([
+            'total' => $total,
+            'finalizados' => $finalizados,
+            'receita_total' => $receita,
+            'nota_media' => $notaMedia,
+            'ultimos_90_dias' => $ultimos90Dias,
+            'primeiro_agendamento' => $primeiroAg?->toIso8601String(),
+            'ultimo_agendamento' => $ultimoAg?->toIso8601String(),
         ]);
     }
 
