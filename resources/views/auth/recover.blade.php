@@ -157,10 +157,24 @@ function recoverWizard() {
         toast(title, icon) {
             Swal.fire({ toast: true, position: 'top-end', icon, title, showConfirmButton: false, timer: 2200, timerProgressBar: true });
         },
-        submitEmail() {
+        csrfToken() {
+            return document.querySelector('meta[name=csrf-token]').content;
+        },
+        async post(url, data) {
+            const r = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken(), 'Accept': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            return { ok: r.ok, data: await r.json().catch(() => ({})) };
+        },
+        async submitEmail() {
             if (!this.email.includes('@')) return this.toast('E-mail inválido', 'error');
             this.loading = true;
-            setTimeout(() => { this.loading = false; this.step = 2; this.toast('Código enviado para seu e-mail!', 'success'); }, 900);
+            const { ok } = await this.post('{{ route('password.send-code') }}', { email: this.email });
+            this.loading = false;
+            if (ok) { this.step = 2; this.toast('Código enviado para seu e-mail!', 'success'); }
+            else { this.toast('Erro ao enviar código. Tente novamente.', 'error'); }
         },
         handleCode(i, e) {
             this.code[i] = e.target.value.slice(-1);
@@ -169,17 +183,28 @@ function recoverWizard() {
         handleBackspace(i, e) {
             if (!this.code[i] && i > 0) document.getElementById('code-' + (i - 1))?.focus();
         },
-        submitCode() {
+        async submitCode() {
             if (this.codeStr.length < 6) return this.toast('Digite o código completo', 'error');
             this.loading = true;
-            setTimeout(() => { this.loading = false; this.step = 3; }, 700);
+            const { ok, data } = await this.post('{{ route('password.verify-code') }}', { email: this.email, code: this.codeStr });
+            this.loading = false;
+            if (ok) { this.step = 3; }
+            else { this.toast(data.message || 'Código inválido ou expirado.', 'error'); }
         },
-        resend() { this.toast('Código reenviado!', 'success'); },
-        submitPwd() {
+        async resend() {
+            const { ok } = await this.post('{{ route('password.send-code') }}', { email: this.email });
+            if (ok) this.toast('Código reenviado!', 'success');
+        },
+        async submitPwd() {
             if (this.pwdNew.length < 6) return this.toast('Senha muito curta (mínimo 6 caracteres)', 'error');
             if (this.pwdNew !== this.pwdConfirm) return this.toast('Senhas não coincidem', 'error');
             this.loading = true;
-            setTimeout(() => { this.loading = false; this.done = true; }, 800);
+            const { ok, data } = await this.post('{{ route('password.reset-custom') }}', {
+                email: this.email, code: this.codeStr, password: this.pwdNew, password_confirmation: this.pwdConfirm,
+            });
+            this.loading = false;
+            if (ok) { this.done = true; }
+            else { this.toast(data.message || 'Erro ao redefinir senha.', 'error'); }
         },
     };
 }
