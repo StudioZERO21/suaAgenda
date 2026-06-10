@@ -48,6 +48,7 @@ class Notificacao extends Model
             'em_atendimento' => '#6366f1',
             'aniversario' => '#f59e0b',
             'estoque_baixo' => '#ef4444',
+            'cancelamento_automatico' => '#f97316',
             default => '#6b7280',
         };
     }
