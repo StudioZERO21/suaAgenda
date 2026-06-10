@@ -37,6 +37,8 @@ class AgendamentoController extends Controller
             )
             ->when($request->filled('data'), fn ($q) => $q->whereDate('data_hora', $request->data))
             ->when($request->filled('profissional_id'), fn ($q) => $q->where('profissional_id', $request->profissional_id))
+            ->when($request->filled('servico_id'), fn ($q) => $q->where('servico_id', $request->servico_id))
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')))
             ->orderBy('data_hora')
             ->paginate(20)
             ->withQueryString();
@@ -46,7 +48,12 @@ class AgendamentoController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('agendamentos.index', compact('agendamentos', 'profissionais'));
+        $servicos = Servico::where('company_id', $empresa)
+            ->ativo()
+            ->orderBy('nome')
+            ->get();
+
+        return view('agendamentos.index', compact('agendamentos', 'profissionais', 'servicos'));
     }
 
     public function create(): View

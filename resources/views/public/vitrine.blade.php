@@ -33,11 +33,14 @@
         'Atendimento modelado com precisão e atenção aos detalhes.',
     ];
 
+    $realNotaStr = $notaMediaReal !== null
+        ? number_format((float) $notaMediaReal, 1, ',', '').'★'
+        : '4.9★';
     $defaultStats = [
         ['n' => '8+', 'l' => 'Anos de experiência'],
         ['n' => number_format($company->clientes()->count() ?: 2400, 0, ',', '.'), 'l' => 'Clientes atendidos'],
-        ['n' => '4.9★', 'l' => 'Avaliação média'],
-        ['n' => '98%', 'l' => 'Satisfação'],
+        ['n' => $realNotaStr, 'l' => 'Avaliação média'],
+        ['n' => $notaMediaReal !== null ? (int) round((float) $notaMediaReal / 5 * 100).'%' : '98%', 'l' => 'Satisfação'],
     ];
     $stats = !empty($cfg['stats_items']) ? $cfg['stats_items'] : $defaultStats;
 
