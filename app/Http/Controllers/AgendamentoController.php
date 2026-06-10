@@ -318,6 +318,40 @@ class AgendamentoController extends Controller
         return back()->with('success', 'Status atualizado para "'.ucfirst($request->status).'".');
     }
 
+    public function duplicar(Request $request, Agendamento $agendamento): RedirectResponse|JsonResponse
+    {
+        $this->authorize('create', Agendamento::class);
+
+        if ($agendamento->company_id !== auth()->user()->empresa_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'data_hora' => ['required', 'date', 'after:now'],
+        ]);
+
+        $novaData = Carbon::parse($data['data_hora']);
+
+        if ($this->temConflitoHorario($agendamento->profissional_id, $novaData, $agendamento->duracao)) {
+            return back()->withErrors(['data_hora' => 'Horário já ocupado para este profissional.'])->withInput();
+        }
+
+        $novo = Agendamento::create([
+            'company_id' => $agendamento->company_id,
+            'cliente_id' => $agendamento->cliente_id,
+            'profissional_id' => $agendamento->profissional_id,
+            'servico_id' => $agendamento->servico_id,
+            'data_hora' => $novaData,
+            'duracao' => $agendamento->duracao,
+            'valor' => $agendamento->valor,
+            'observacao' => $agendamento->observacao,
+            'status' => Agendamento::STATUS_PENDENTE,
+        ]);
+
+        return redirect()->route('agendamentos.show', $novo)
+            ->with('success', 'Agendamento duplicado com sucesso.');
+    }
+
     public function bulkStatus(Request $request): JsonResponse
     {
         $this->authorize('updateAnyStatus', Agendamento::class);
