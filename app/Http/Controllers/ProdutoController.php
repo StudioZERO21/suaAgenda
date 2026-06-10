@@ -34,6 +34,36 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function buscar(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+        $q = trim((string) $request->input('q', ''));
+
+        $query = Produto::where('company_id', $companyId)->where('ativo', true)->orderBy('nome');
+
+        if ($q !== '') {
+            $query->where(function ($qb) use ($q): void {
+                $qb->where('nome', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('categoria', 'like', "%{$q}%");
+            });
+        }
+
+        $produtos = $query->limit(15)
+            ->get(['id', 'nome', 'sku', 'categoria', 'preco', 'estoque', 'unidade'])
+            ->map(fn (Produto $p) => [
+                'id' => $p->id,
+                'nome' => $p->nome,
+                'sku' => $p->sku ?? '',
+                'categoria' => $p->categoria ?? '',
+                'preco' => (float) $p->preco,
+                'estoque' => $p->estoque,
+                'unidade' => $p->unidade ?? 'un.',
+            ]);
+
+        return response()->json($produtos);
+    }
+
     public function store(StoreProdutoRequest $request): JsonResponse
     {
         $produto = Produto::create([
