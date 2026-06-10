@@ -221,6 +221,36 @@ class ClienteController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function buscar(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $q = trim((string) $request->input('q', ''));
+        $empresa = auth()->user()->empresa_id;
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->where(function ($query) use ($q): void {
+                $query->where('name', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            })
+            ->orderBy('name')
+            ->limit(15)
+            ->get(['id', 'name', 'phone', 'email'])
+            ->map(fn (Cliente $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'phone' => $c->phone ?? '',
+                'email' => $c->email ?? '',
+            ]);
+
+        return response()->json($clientes);
+    }
+
     public function importarCsv(Request $request): JsonResponse
     {
         $this->authorize('create', Cliente::class);
