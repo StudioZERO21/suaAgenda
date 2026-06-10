@@ -57,6 +57,7 @@
             ['profissionais',  'Profissionais',  '<path d=\'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/>'],
             ['horarios',       'Horários de Pico', '<circle cx=\'12\' cy=\'12\' r=\'10\'/><polyline points=\'12 6 12 12 16 14\'/>'],
             ['fidelidade',     'Fidelidade',     '<path d=\'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z\'/>'],
+            ['avaliacoes',     'Avaliações',     '<polygon points=\'12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\'/>'],
         ] as [$id, $label, $path])
         <button type="button" @click="tab = '{{ $id }}'"
             :style="tab === '{{ $id }}'
@@ -491,6 +492,98 @@
             </table>
             @endif
         </x-sa.card>
+    </div>
+
+    {{-- TAB: AVALIAÇÕES --}}
+    <div x-show="tab === 'avaliacoes'" x-cloak>
+        {{-- KPIs --}}
+        <div class="sa-grid-4" style="margin-bottom:20px">
+            <x-sa.tint-card label="Nota Média" :value="$notaMediaGeral !== null ? number_format($notaMediaGeral, 1, ',', '') . ' / 5' : '—'" :sub="$totalAvaliacoes . ' avaliações'" accent="var(--sa-secondary)">
+                <x-slot:icon><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></x-slot:icon>
+            </x-sa.tint-card>
+            <x-sa.tint-card label="Satisfação" :value="$nps . '%'" sub="nota 4 ou 5 estrelas" accent="var(--sa-primary)">
+                <x-slot:icon><polyline points="20 6 9 17 4 12"/></x-slot:icon>
+            </x-sa.tint-card>
+            <x-sa.tint-card label="Total Avaliações" :value="(string) $totalAvaliacoes" sub="no período" accent="var(--sa-primary)">
+                <x-slot:icon><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></x-slot:icon>
+            </x-sa.tint-card>
+            <x-sa.tint-card label="5 Estrelas" :value="(string) ($distribuicaoNotas['5'] ?? 0)" sub="avaliações máximas" accent="var(--sa-secondary)">
+                <x-slot:icon><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></x-slot:icon>
+            </x-sa.tint-card>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+            {{-- Distribuição de notas --}}
+            <x-sa.card>
+                <h4 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0 0 20px">Distribuição de Notas</h4>
+                @if($totalAvaliacoes === 0)
+                <p style="font-size:14px;color:var(--sa-text3);text-align:center;padding:20px 0">Nenhuma avaliação no período.</p>
+                @else
+                @php $maxDist = max($distribuicaoNotas) ?: 1; @endphp
+                @foreach(array_reverse(range(1, 5)) as $estrela)
+                @php $qtd = $distribuicaoNotas[(string) $estrela] ?? 0; $pct = round($qtd / $maxDist * 100); @endphp
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                    <span style="font-size:13px;font-weight:700;color:var(--sa-secondary);width:14px;text-align:right">{{ $estrela }}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <div style="flex:1;background:var(--sa-surface2);border-radius:4px;height:8px;overflow:hidden">
+                        <div style="height:100%;width:{{ $pct }}%;background:var(--sa-secondary);border-radius:4px;transition:width 600ms ease"></div>
+                    </div>
+                    <span style="font-size:13px;color:var(--sa-text3);width:28px;text-align:right">{{ $qtd }}</span>
+                </div>
+                @endforeach
+                @endif
+            </x-sa.card>
+
+            {{-- Top profissionais por nota --}}
+            <x-sa.card>
+                <h4 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0 0 20px">Nota por Profissional</h4>
+                @if($notasPorProfissional->isEmpty())
+                <p style="font-size:14px;color:var(--sa-text3);text-align:center;padding:20px 0">Nenhuma avaliação no período.</p>
+                @else
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    @foreach($notasPorProfissional as $prof)
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div style="width:32px;height:32px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+                            {{ strtoupper(mb_substr($prof['name'], 0, 1)) }}
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $prof['name'] }}</div>
+                            <div style="font-size:11px;color:var(--sa-text3)">{{ $prof['total'] }} avaliações</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:4px">
+                            <span style="font-size:16px;font-weight:800;color:var(--sa-secondary)">{{ number_format($prof['nota'], 1, ',', '') }}</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </x-sa.card>
+        </div>
+
+        {{-- Comentários recentes --}}
+        @if($comentariosRecentes->isNotEmpty())
+        <x-sa.card>
+            <h4 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0 0 20px">Comentários Recentes</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                @foreach($comentariosRecentes as $av)
+                <div style="background:var(--sa-surface2);border-radius:10px;padding:14px 16px;border:1px solid var(--sa-border)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <span style="font-size:14px;color:var(--sa-secondary);letter-spacing:1px">{{ str_repeat('★', $av['nota']) }}{{ str_repeat('☆', 5 - $av['nota']) }}</span>
+                        <span style="font-size:11px;color:var(--sa-text3)">{{ $av['data'] }}</span>
+                    </div>
+                    <p style="font-size:13px;color:var(--sa-text2);margin:0 0 8px;line-height:1.5;font-style:italic">"{{ $av['comentario'] }}"</p>
+                    <div style="font-size:12px;color:var(--sa-text3)">
+                        <span style="font-weight:600;color:var(--sa-text2)">{{ $av['cliente'] }}</span>
+                        @if($av['profissional'])
+                        · com {{ $av['profissional'] }}
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </x-sa.card>
+        @endif
     </div>
 
     </x-sa.body>

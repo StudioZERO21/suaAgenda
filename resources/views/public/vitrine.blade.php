@@ -41,11 +41,13 @@
     ];
     $stats = !empty($cfg['stats_items']) ? $cfg['stats_items'] : $defaultStats;
 
-    $depoimentos = [
-        ['name' => 'Miguel Santos', 'svc' => 'Corte + Barba', 'text' => 'Melhor atendimento da cidade, sem dúvidas. Saí completamente transformado.'],
-        ['name' => 'Bruno Lima', 'svc' => 'Barba completa', 'text' => 'Talento incrível e atendimento impecável. Resultado perfeito.'],
-        ['name' => 'Rodrigo Alves', 'svc' => 'Coloração', 'text' => 'Ambiente sofisticado e atendimento excelente. Super recomendo!'],
-    ];
+    $depoimentos = $avaliacoesPublicas->isNotEmpty()
+        ? $avaliacoesPublicas->toArray()
+        : [
+            ['name' => 'Miguel Santos', 'svc' => 'Corte + Barba', 'nota' => 5, 'text' => 'Melhor atendimento da cidade, sem dúvidas. Saí completamente transformado.'],
+            ['name' => 'Bruno Lima',    'svc' => 'Barba completa',  'nota' => 5, 'text' => 'Talento incrível e atendimento impecável. Resultado perfeito.'],
+            ['name' => 'Rodrigo Alves', 'svc' => 'Coloração',       'nota' => 5, 'text' => 'Ambiente sofisticado e atendimento excelente. Super recomendo!'],
+        ];
 
     $telefone = $company->phone ?? $company->whatsapp ?? '(11) 99999-0000';
 @endphp
@@ -342,8 +344,8 @@
                 @php $cor = $colorFor($t['name']); @endphp
                 <div class="vit-card" style="padding:28px">
                     <div style="display:flex;gap:2px;margin-bottom:16px">
-                        @for($s = 0; $s < 5; $s++)
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        @for($s = 1; $s <= 5; $s++)
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ $s <= ($t['nota'] ?? 5) ? 'var(--sa-secondary)' : 'var(--sa-border2)' }}" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                         @endfor
                     </div>
                     <p style="font-size:15px;color:var(--sa-text1);line-height:1.7;margin:0 0 20px;font-style:italic">"{{ $t['text'] }}"</p>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Lancamento;
 use Carbon\Carbon;
@@ -142,6 +143,48 @@ class RelatorioController extends Controller
             ])
             ->values();
 
+        // Avaliações do período
+        $avaliacoes = Avaliacao::whereHas('agendamento', fn ($q) => $q
+            ->where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+        )
+            ->with(['agendamento.cliente', 'agendamento.profissional'])
+            ->get();
+
+        $totalAvaliacoes = $avaliacoes->count();
+        $notaMediaGeral = $totalAvaliacoes > 0 ? round((float) $avaliacoes->avg('nota'), 1) : null;
+
+        $distribuicaoNotas = collect(range(1, 5))->mapWithKeys(fn (int $n) => [
+            (string) $n => $avaliacoes->where('nota', $n)->count(),
+        ])->toArray();
+
+        $positivas = $avaliacoes->whereIn('nota', [4, 5])->count();
+        $nps = $totalAvaliacoes > 0 ? (int) round($positivas / $totalAvaliacoes * 100) : 0;
+
+        $notasPorProfissional = $avaliacoes
+            ->filter(fn (Avaliacao $av) => $av->agendamento?->profissional !== null)
+            ->groupBy(fn (Avaliacao $av) => $av->agendamento->profissional_id)
+            ->map(fn ($avs) => [
+                'name' => $avs->first()->agendamento->profissional->name,
+                'nota' => round((float) $avs->avg('nota'), 1),
+                'total' => $avs->count(),
+            ])
+            ->sortByDesc('nota')
+            ->values();
+
+        $comentariosRecentes = $avaliacoes
+            ->filter(fn (Avaliacao $av) => $av->comentario !== null && strlen(trim((string) $av->comentario)) > 0)
+            ->sortByDesc('created_at')
+            ->take(8)
+            ->map(fn (Avaliacao $av) => [
+                'nota' => $av->nota,
+                'comentario' => $av->comentario,
+                'cliente' => $av->agendamento?->cliente?->name ?? 'Cliente',
+                'data' => $av->created_at->format('d/m/Y'),
+                'profissional' => $av->agendamento?->profissional?->name ?? '',
+            ])
+            ->values();
+
         return view('relatorios.index', compact(
             'receitaAgendamentos',
             'receitaLancamentos',
@@ -164,6 +207,12 @@ class RelatorioController extends Controller
             'maxEvolucaoAg',
             'maxEvolucaoRec',
             'fidelidade',
+            'totalAvaliacoes',
+            'notaMediaGeral',
+            'distribuicaoNotas',
+            'nps',
+            'notasPorProfissional',
+            'comentariosRecentes',
             'inicio',
             'fim',
             'request',
