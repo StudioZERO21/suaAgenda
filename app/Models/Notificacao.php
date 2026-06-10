@@ -47,6 +47,7 @@ class Notificacao extends Model
             'confirmado' => '#059669',
             'em_atendimento' => '#6366f1',
             'aniversario' => '#f59e0b',
+            'estoque_baixo' => '#ef4444',
             default => '#6b7280',
         };
     }
