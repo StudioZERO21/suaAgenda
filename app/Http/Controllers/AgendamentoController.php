@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgendamentoController extends Controller
 {
@@ -28,7 +29,7 @@ class AgendamentoController extends Controller
 
         $empresa = auth()->user()->empresa_id;
 
-        $agendamentos = Agendamento::with(['profissional', 'cliente', 'servico'])
+        $agendamentos = Agendamento::with(['profissional', 'cliente', 'servico', 'avaliacao'])
             ->where('company_id', $empresa)
             ->when(
                 ! $request->filled('status'),
@@ -54,6 +55,46 @@ class AgendamentoController extends Controller
             ->get();
 
         return view('agendamentos.index', compact('agendamentos', 'profissionais', 'servicos'));
+    }
+
+    public function exportarCsv(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $agendamentos = Agendamento::with(['profissional', 'cliente', 'servico', 'avaliacao'])
+            ->where('company_id', $empresa)
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('data'), fn ($q) => $q->whereDate('data_hora', $request->data))
+            ->when($request->filled('profissional_id'), fn ($q) => $q->where('profissional_id', $request->profissional_id))
+            ->when($request->filled('servico_id'), fn ($q) => $q->where('servico_id', $request->servico_id))
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')))
+            ->orderBy('data_hora')
+            ->get();
+
+        return response()->streamDownload(function () use ($agendamentos): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Data', 'Hora', 'Cliente', 'Telefone', 'Profissional', 'Serviço', 'Duração (min)', 'Valor (R$)', 'Status', 'Avaliação'], ';');
+
+            foreach ($agendamentos as $ag) {
+                fputcsv($out, [
+                    $ag->data_hora->format('d/m/Y'),
+                    $ag->data_hora->format('H:i'),
+                    $ag->cliente?->name ?? 'Avulso',
+                    $ag->cliente?->phone ?? '',
+                    $ag->profissional?->name ?? '—',
+                    $ag->servico?->nome ?? '—',
+                    $ag->duracao,
+                    number_format((float) $ag->valor, 2, ',', '.'),
+                    ucfirst($ag->status),
+                    $ag->avaliacao ? $ag->avaliacao->nota.'/5' : '',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'agendamentos-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function create(): View

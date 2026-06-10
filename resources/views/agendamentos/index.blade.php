@@ -6,13 +6,17 @@
     <x-sa.app-header
         title="Agenda"
         :subtitle="$agendamentos->total() . ' agendamento' . ($agendamentos->total() !== 1 ? 's' : '')">
-        @can('create', \App\Models\Agendamento::class)
         <x-slot:actions>
+            <x-sa.btn variant="secondary" :href="route('agendamentos.exportar', array_filter(request()->only(['data','status','profissional_id','servico_id','q'])))" size="sm"
+                :icon="'<svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\'><path d=\'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4\'/><polyline points=\'7 10 12 15 17 10\'/><line x1=\'12\' y1=\'15\' x2=\'12\' y2=\'3\'/></svg>'">
+                Exportar CSV
+            </x-sa.btn>
+            @can('create', \App\Models\Agendamento::class)
             <x-sa.btn href="{{ route('agendamentos.create') }}" :icon="view('components.sa.icons.plus')->render()">
                 Novo Agendamento
             </x-sa.btn>
+            @endcan
         </x-slot:actions>
-        @endcan
     </x-sa.app-header>
 
     <x-sa.body>
@@ -103,7 +107,15 @@
                                 @else — @endif
                             </td>
                             <td class="sa-td">
-                                <x-sa.badge :status="$ag->status" :label="ucfirst($ag->status)" />
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                                    <x-sa.badge :status="$ag->status" :label="ucfirst($ag->status)" />
+                                    @if($ag->avaliacao)
+                                    <span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--sa-secondary)" title="Avaliação: {{ $ag->avaliacao->nota }}/5">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                        {{ $ag->avaliacao->nota }}
+                                    </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="sa-td" style="text-align:right">
                                 <div style="display:inline-flex;gap:4px">
