@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\BloqueioController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CargoController;
@@ -127,6 +128,8 @@ Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoContro
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');
 Route::post('/meu-agendamento/{token}/cancelar', [AgendamentoPublicoController::class, 'cancelarMeuAgendamento'])->name('agendamento.cancelar');
+Route::get('/avaliar/{token}', [AvaliacaoController::class, 'show'])->name('avaliacao.show');
+Route::post('/avaliar/{token}', [AvaliacaoController::class, 'store'])->name('avaliacao.store');
 
 if (app()->isLocal()) {
     Route::post('/dev/login', [DevLoginController::class, 'login'])->name('dev.login');

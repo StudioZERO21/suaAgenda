@@ -274,7 +274,7 @@ class AgendamentoPublicoController extends Controller
      */
     public function meuAgendamento(string $token): View
     {
-        $ag = Agendamento::with(['servico', 'profissional', 'cliente', 'company'])
+        $ag = Agendamento::with(['servico', 'profissional', 'cliente', 'company', 'avaliacao'])
             ->where('cancel_token', $token)
             ->firstOrFail();
 

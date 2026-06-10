@@ -286,6 +286,9 @@
                             ['label' => 'Confirmados', 'value' => $stats['confirmadosHoje'], 'icon' => '<polyline points="20 6 9 17 4 12"/>'],
                             ['label' => 'Pendentes', 'value' => $stats['pendentesHoje'], 'icon' => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'],
                         ];
+                        if ($stats['notaMedia'] !== null) {
+                            $resumo[] = ['label' => 'Avaliação média', 'value' => number_format($stats['notaMedia'], 1, ',', '') . '/5 ★', 'icon' => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'];
+                        }
                     @endphp
                     @foreach($resumo as $i => $item)
                     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;{{ $i < count($resumo)-1 ? 'border-bottom:1px solid var(--sa-border)' : '' }}">

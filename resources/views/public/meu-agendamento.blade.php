@@ -17,9 +17,17 @@
     ];
     $sc = $statusConfig[$ag->status] ?? $statusConfig['pendente'];
     $isCanceled = $ag->status === 'cancelado';
+    $isFinalizado = $ag->status === 'finalizado';
+    $jaAvaliou = $ag->avaliacao !== null;
 @endphp
 
 {{-- Flash messages --}}
+@if(session('avaliado'))
+<div style="background:rgba(212,165,116,.1);border:1px solid rgba(212,165,116,.3);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <span style="font-size:14px;color:var(--sa-secondary);font-weight:600">Obrigado pela sua avaliação!</span>
+</div>
+@endif
 @if(session('cancelado'))
 <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -121,6 +129,30 @@
 <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:14px 18px;text-align:center;margin-bottom:12px">
     <p style="font-size:14px;color:#dc2626;margin:0">Este agendamento foi cancelado.</p>
 </div>
+@endif
+
+{{-- Avaliação --}}
+@if($isFinalizado)
+    @if($jaAvaliou)
+    <div style="background:rgba(212,165,116,.08);border:1px solid rgba(212,165,116,.2);border-radius:12px;padding:18px 20px;margin-bottom:16px;text-align:center">
+        <div style="font-size:22px;color:var(--sa-secondary);margin-bottom:6px;letter-spacing:2px">
+            @for($i = 1; $i <= 5; $i++){{ $i <= $ag->avaliacao->nota ? '★' : '☆' }}@endfor
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--sa-secondary)">Sua avaliação: {{ $ag->avaliacao->nota }}/5</div>
+        @if($ag->avaliacao->comentario)
+        <div style="font-size:13px;color:var(--sa-text3);margin-top:8px;font-style:italic">"{{ $ag->avaliacao->comentario }}"</div>
+        @endif
+    </div>
+    @else
+    <div style="text-align:center;margin-bottom:16px">
+        <a href="{{ route('avaliacao.show', $token) }}"
+           style="display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:8px;border:none;background:var(--sa-secondary);color:#fff;font-size:14px;font-weight:600;text-decoration:none;transition:filter 200ms"
+           onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></polygon></svg>
+            Avaliar atendimento
+        </a>
+    </div>
+    @endif
 @endif
 
 <div style="text-align:center;margin-top:16px">
