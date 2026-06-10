@@ -315,6 +315,34 @@
                     <p style="font-size:13px;color:var(--sa-text3);margin:0">Nenhum profissional cadastrado.</p>
                     @endforelse
                 </x-sa.card>
+
+                {{-- Gráfico semanal --}}
+                <x-sa.card padding="20px" x-data="weekChartApp()" x-init="animate()">
+                    <h4 style="font-family:var(--sa-font-heading);font-size:14px;font-weight:600;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="12" width="4" height="9" rx="1"/></svg>
+                        Últimos 7 dias
+                    </h4>
+                    <div style="display:flex;align-items:flex-end;gap:6px;height:80px">
+                        @foreach($stats['semana'] as $d)
+                        @php $pct = $stats['maxSemana'] > 0 ? round($d['agendamentos'] / $stats['maxSemana'] * 100) : 0; @endphp
+                        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%">
+                            <div style="flex:1;width:100%;display:flex;align-items:flex-end">
+                                <div style="width:100%;border-radius:4px 4px 0 0;background:{{ $d['isToday'] ? 'var(--sa-secondary)' : 'color-mix(in srgb,var(--sa-primary) 18%,transparent)' }};height:{{ max($pct, $d['agendamentos'] > 0 ? 8 : 0) }}%;transition:height 700ms cubic-bezier(.4,0,.2,1)"
+                                     x-bind:style="'width:100%;border-radius:4px 4px 0 0;background:{{ $d['isToday'] ? 'var(--sa-secondary)' : 'color-mix(in srgb,var(--sa-primary) 18%,transparent)' }};height:' + (ready ? {{ max($pct, $d['agendamentos'] > 0 ? 8 : 0) }} : 0) + '%;transition:height 700ms cubic-bezier(.4,0,.2,1)'">
+                                </div>
+                            </div>
+                            <span style="font-size:10px;color:{{ $d['isToday'] ? 'var(--sa-secondary)' : 'var(--sa-text3)' }};font-weight:{{ $d['isToday'] ? '700' : '500' }}">{{ $d['label'] }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:11px;color:var(--sa-text3)">{{ array_sum(array_column($stats['semana'], 'agendamentos')) }} agend. na semana</span>
+                        @php $recSemana = array_sum(array_column($stats['semana'], 'receita')); @endphp
+                        @if($recSemana > 0)
+                        <span style="font-size:11px;font-weight:700;color:var(--sa-secondary)">R$ {{ number_format($recSemana, 2, ',', '.') }}</span>
+                        @endif
+                    </div>
+                </x-sa.card>
             </div>
         </div>
     </x-sa.body>
@@ -326,6 +354,12 @@
 @push('scripts')
 @if($stats)
 <script>
+function weekChartApp() {
+    return {
+        ready: false,
+        animate() { setTimeout(() => { this.ready = true; }, 80); },
+    };
+}
 function dashboardKanbanApp() {
     return {
         cards: @json($stats['kanbanCards']),
