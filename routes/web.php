@@ -49,6 +49,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('agendamentos/exportar', [AgendamentoController::class, 'exportarCsv'])->name('agendamentos.exportar');
+    Route::get('agendamentos/proximos', [AgendamentoController::class, 'proximos'])->name('agendamentos.proximos');
     Route::patch('agendamentos/bulk-status', [AgendamentoController::class, 'bulkStatus'])->name('agendamentos.bulk-status');
     Route::resource('agendamentos', AgendamentoController::class);
     Route::post('agendamentos/{agendamento}/duplicar', [AgendamentoController::class, 'duplicar'])->name('agendamentos.duplicar');
