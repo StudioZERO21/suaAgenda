@@ -46,6 +46,7 @@ class Notificacao extends Model
             'cancelamento' => '#ef4444',
             'confirmado' => '#059669',
             'em_atendimento' => '#6366f1',
+            'aniversario' => '#f59e0b',
             default => '#6b7280',
         };
     }
