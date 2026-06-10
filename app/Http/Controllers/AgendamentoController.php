@@ -39,7 +39,7 @@ class AgendamentoController extends Controller
             ->when($request->filled('data'), fn ($q) => $q->whereDate('data_hora', $request->data))
             ->when($request->filled('profissional_id'), fn ($q) => $q->where('profissional_id', $request->profissional_id))
             ->when($request->filled('servico_id'), fn ($q) => $q->where('servico_id', $request->servico_id))
-            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')))
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')->orWhere('phone', 'like', '%'.$request->q.'%')))
             ->orderBy('data_hora')
             ->paginate(20)
             ->withQueryString();
@@ -69,7 +69,7 @@ class AgendamentoController extends Controller
             ->when($request->filled('data'), fn ($q) => $q->whereDate('data_hora', $request->data))
             ->when($request->filled('profissional_id'), fn ($q) => $q->where('profissional_id', $request->profissional_id))
             ->when($request->filled('servico_id'), fn ($q) => $q->where('servico_id', $request->servico_id))
-            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')))
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('cliente', fn ($cq) => $cq->where('name', 'like', '%'.$request->q.'%')->orWhere('phone', 'like', '%'.$request->q.'%')))
             ->orderBy('data_hora')
             ->get();
 

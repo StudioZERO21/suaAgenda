@@ -110,4 +110,22 @@ describe('agendamento_busca', function () {
             ->assertOk()
             ->assertSee('5,0★');
     });
+
+    it('busca por telefone retorna agendamentos do cliente correspondente', function () {
+        $response = $this->actingAs($this->user)
+            ->get(route('agendamentos.index', ['q' => '11999990001', 'status' => 'pendente']));
+
+        $ags = $response->getOriginalContent()->getData()['agendamentos'];
+        expect($ags->total())->toBe(1);
+        expect($ags->first()->cliente->name)->toBe('Ana Costa');
+    });
+
+    it('busca por telefone parcial retorna correspondentes', function () {
+        $response = $this->actingAs($this->user)
+            ->get(route('agendamentos.index', ['q' => '990002']));
+
+        $ags = $response->getOriginalContent()->getData()['agendamentos'];
+        expect($ags->total())->toBe(1);
+        expect($ags->first()->cliente->name)->toBe('Bruno Lima');
+    });
 });
