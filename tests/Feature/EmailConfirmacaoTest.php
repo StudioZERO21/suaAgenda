@@ -90,6 +90,62 @@ describe('email_confirmacao', function () {
         Mail::assertQueued(AgendamentoConfirmado::class, fn ($mail) => $mail->hasTo('carla@example.com'));
     });
 
+    it('envia email ao confirmar agendamento pendente via updateStatus', function () {
+        Mail::fake();
+
+        $cliente = Cliente::create([
+            'company_id' => $this->company->id,
+            'name' => 'Pedro Pendente',
+            'phone' => '11977770001',
+            'email' => 'pedro@pending.com',
+        ]);
+
+        $ag = Agendamento::create([
+            'company_id' => $this->company->id,
+            'cliente_id' => $cliente->id,
+            'profissional_id' => $this->prof->id,
+            'servico_id' => $this->servico->id,
+            'data_hora' => now()->addDay()->setTime(14, 0),
+            'duracao' => 30,
+            'status' => 'pendente',
+            'cancel_token' => Agendamento::generateCancelToken(),
+        ]);
+
+        $this->actingAs($this->user)
+            ->patchJson(route('agendamentos.updateStatus', $ag), ['status' => 'confirmado'])
+            ->assertOk();
+
+        Mail::assertQueued(AgendamentoConfirmado::class, fn ($m) => $m->hasTo('pedro@pending.com'));
+    });
+
+    it('não envia email ao confirmar agendamento já confirmado', function () {
+        Mail::fake();
+
+        $cliente = Cliente::create([
+            'company_id' => $this->company->id,
+            'name' => 'Já Confirmado',
+            'phone' => '11977770002',
+            'email' => 'ja@confirmado.com',
+        ]);
+
+        $ag = Agendamento::create([
+            'company_id' => $this->company->id,
+            'cliente_id' => $cliente->id,
+            'profissional_id' => $this->prof->id,
+            'servico_id' => $this->servico->id,
+            'data_hora' => now()->addDay()->setTime(15, 0),
+            'duracao' => 30,
+            'status' => 'confirmado',
+            'cancel_token' => Agendamento::generateCancelToken(),
+        ]);
+
+        $this->actingAs($this->user)
+            ->patchJson(route('agendamentos.updateStatus', $ag), ['status' => 'confirmado'])
+            ->assertOk();
+
+        Mail::assertNothingQueued();
+    });
+
     it('email contém link de cancel_token', function () {
         $ag = Agendamento::create([
             'company_id' => $this->company->id,

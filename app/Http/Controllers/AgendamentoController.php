@@ -295,7 +295,17 @@ class AgendamentoController extends Controller
             'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento'],
         ]);
 
+        $previousStatus = $agendamento->status;
+
         $agendamento->update(['status' => $request->status]);
+
+        if ($request->status === Agendamento::STATUS_CONFIRMADO
+            && $previousStatus !== Agendamento::STATUS_CONFIRMADO
+            && $agendamento->cliente?->email
+        ) {
+            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+            Mail::to($agendamento->cliente->email)->queue(new AgendamentoConfirmado($agendamento));
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
