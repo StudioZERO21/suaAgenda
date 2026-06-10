@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClienteController extends Controller
 {
@@ -106,6 +107,41 @@ class ClienteController extends Controller
 
         return redirect()->route('clientes.index')
             ->with('success', "Cliente {$cliente->name} removido.");
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->withCount('agendamentos')
+            ->with(['agendamentos' => fn ($q) => $q->latest('data_hora')->limit(1)])
+            ->orderBy('name')
+            ->get();
+
+        return response()->streamDownload(function () use ($clientes): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Nome', 'E-mail', 'Telefone', 'Total Agendamentos', 'Último Agendamento', 'Status'], ';');
+
+            foreach ($clientes as $c) {
+                $ultimo = $c->agendamentos->first()?->data_hora?->format('d/m/Y H:i') ?? '';
+                fputcsv($out, [
+                    $c->name,
+                    $c->email ?? '',
+                    $c->phone ?? '',
+                    $c->agendamentos_count,
+                    $ultimo,
+                    $c->ativo ? 'Ativo' : 'Inativo',
+                ], ';');
+            }
+
+            fclose($out);
+        }, 'clientes-'.now()->format('Y-m-d').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function storeFoto(Request $request, Cliente $cliente): JsonResponse

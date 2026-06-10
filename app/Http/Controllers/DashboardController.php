@@ -165,6 +165,25 @@ class DashboardController extends Controller
 
         $profCores = $profissionais->pluck('cor', 'id')->toArray();
 
+        $semana = collect(range(6, 0))->map(function (int $i) use ($hoje, $empresa): array {
+            $d = $hoje->copy()->subDays($i);
+
+            return [
+                'label' => $d->translatedFormat('D'),
+                'date' => $d->format('d/m'),
+                'agendamentos' => Agendamento::where('company_id', $empresa)
+                    ->whereDate('data_hora', $d)
+                    ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                    ->count(),
+                'receita' => (float) Agendamento::where('company_id', $empresa)
+                    ->whereDate('data_hora', $d)
+                    ->where('status', Agendamento::STATUS_FINALIZADO)
+                    ->sum('valor'),
+                'isToday' => $d->isToday(),
+            ];
+        })->values()->toArray();
+        $maxSemana = max(array_column($semana, 'agendamentos') ?: [0]);
+
         $kanbanQuery = Agendamento::where('company_id', $empresa)
             ->whereDate('data_hora', $hoje)
             ->with(['cliente', 'profissional', 'servico'])
@@ -227,6 +246,8 @@ class DashboardController extends Controller
             'donut' => $donut,
             'profissionais' => $profissionais,
             'maxProfCount' => $maxProfCount,
+            'semana' => $semana,
+            'maxSemana' => $maxSemana,
         ];
 
         return view('dashboard', compact('stats'));

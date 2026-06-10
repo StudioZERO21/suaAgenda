@@ -13,6 +13,15 @@
             <p style="font-size:14px;color:var(--sa-text3);margin:0" x-text="`${filtered.length} cliente${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}`"></p>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
+            @can('viewAny', \App\Models\Cliente::class)
+            <a href="{{ route('clientes.exportar') }}"
+               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+               onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+               onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </a>
+            @endcan
             @can('create', \App\Models\Cliente::class)
             <a href="{{ route('clientes.create') }}"
                style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;text-decoration:none;transition:filter 200ms"
