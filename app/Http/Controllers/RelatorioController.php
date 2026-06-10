@@ -10,6 +10,7 @@ use App\Models\Cliente;
 use App\Models\Lancamento;
 use App\Models\Profissional;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -361,6 +362,36 @@ class RelatorioController extends Controller
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function servicosJson(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $rows = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->with('servico:id,nome,cor')
+            ->get(['servico_id', 'valor'])
+            ->groupBy('servico_id')
+            ->map(function ($items): array {
+                $servico = $items->first()->servico;
+                $total = (float) $items->sum('valor');
+                $qtd = $items->count();
+
+                return [
+                    'nome' => $servico?->nome ?? 'Sem serviço',
+                    'cor' => $servico?->cor ?? '#999999',
+                    'total_agendamentos' => $qtd,
+                    'receita_total' => $total,
+                    'ticket_medio' => $qtd > 0 ? round($total / $qtd, 2) : 0.0,
+                ];
+            })
+            ->sortByDesc('receita_total')
+            ->values();
+
+        return response()->json($rows);
     }
 
     /** @return array{0: Carbon, 1: Carbon} */
