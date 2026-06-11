@@ -466,6 +466,46 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function agenda(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = min((int) $request->input('dias', 7), 30);
+
+        $fim = now()->addDays($dias)->endOfDay();
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereIn('status', [Agendamento::STATUS_CONFIRMADO, Agendamento::STATUS_PENDENTE])
+            ->whereBetween('data_hora', [now(), $fim])
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor', 'profissional:id,name'])
+            ->orderBy('data_hora')
+            ->get();
+
+        $grouped = $agendamentos->groupBy(fn (Agendamento $ag) => $ag->data_hora->format('Y-m-d'))
+            ->map(fn ($items, $data) => [
+                'data' => $data,
+                'total' => $items->count(),
+                'items' => $items->map(fn (Agendamento $ag) => [
+                    'id' => $ag->id,
+                    'hora' => $ag->data_hora->format('H:i'),
+                    'cliente_nome' => $ag->cliente?->name ?? '',
+                    'servico_nome' => $ag->servico?->nome ?? '',
+                    'servico_cor' => $ag->servico?->cor ?? '#999999',
+                    'profissional_nome' => $ag->profissional?->name ?? '',
+                    'status' => $ag->status,
+                    'duracao' => (int) $ag->duracao,
+                ])->values(),
+            ])->values();
+
+        return response()->json([
+            'dias' => $dias,
+            'total' => $agendamentos->count(),
+            'dias_com_agendamentos' => $grouped->count(),
+            'agenda' => $grouped,
+        ]);
+    }
+
     public function cancelados(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
