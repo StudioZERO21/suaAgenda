@@ -522,6 +522,28 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function contato(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'phone' => ['nullable', 'string', 'max:20'],
+            'instagram' => ['nullable', 'string', 'max:60'],
+            'tiktok' => ['nullable', 'string', 'max:60'],
+            'facebook' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $profissional->update($request->only('phone', 'instagram', 'tiktok', 'facebook'));
+
+        return response()->json([
+            'phone' => $profissional->phone ?? '',
+            'instagram' => $profissional->instagram ?? '',
+            'tiktok' => $profissional->tiktok ?? '',
+            'facebook' => $profissional->facebook ?? '',
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
