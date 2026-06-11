@@ -105,6 +105,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('produtos/{produto}/estoque', [ProdutoController::class, 'estoque'])->name('produtos.estoque');
     Route::patch('produtos/{produto}/preco', [ProdutoController::class, 'preco'])->name('produtos.preco');
     Route::patch('produtos/{produto}/categoria', [ProdutoController::class, 'categoria'])->name('produtos.categoria');
+    Route::patch('produtos/{produto}/unidade', [ProdutoController::class, 'unidade'])->name('produtos.unidade');
     Route::post('produtos/{produto}/imagens', [ProdutoController::class, 'storeImagem'])->name('produtos.imagens.store');
     Route::delete('produtos/imagens/{imagem}', [ProdutoController::class, 'destroyImagem'])->name('produtos.imagens.destroy');
     Route::patch('produtos/imagens/{imagem}/capa', [ProdutoController::class, 'setCapa'])->name('produtos.imagens.capa');
@@ -171,6 +172,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('servicos/{servico}/preco', [ServicoController::class, 'preco'])->name('servicos.preco');
     Route::patch('servicos/{servico}/duracao', [ServicoController::class, 'duracao'])->name('servicos.duracao');
     Route::patch('servicos/{servico}/cor', [ServicoController::class, 'cor'])->name('servicos.cor');
+    Route::patch('servicos/{servico}/descricao', [ServicoController::class, 'descricao'])->name('servicos.descricao');
     Route::get('servicos/{servico}/profissionais', [ServicoController::class, 'profissionais'])->name('servicos.profissionais');
     Route::get('servicos/{servico}/json', [ServicoController::class, 'detalhe'])->name('servicos.detalhe');
     Route::get('servicos/{servico}/proximos', [ServicoController::class, 'proximos'])->name('servicos.proximos');
