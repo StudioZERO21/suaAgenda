@@ -515,6 +515,22 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function nascimento(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate([
+            'data_nasc' => ['nullable', 'date', 'date_format:Y-m-d', 'before:today'],
+        ]);
+
+        $cliente->update(['data_nasc' => $request->input('data_nasc')]);
+
+        return response()->json([
+            'data_nasc' => $cliente->data_nasc?->format('Y-m-d'),
+            'updated_at' => $cliente->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function recentes(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
