@@ -70,6 +70,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/avaliacoes/exportar', [RelatorioController::class, 'exportarAvaliacoesCsv'])->name('relatorios.avaliacoes.exportar');
     Route::get('relatorios/profissionais', [RelatorioController::class, 'profissionaisJson'])->name('relatorios.profissionais');
     Route::get('relatorios/ocupacao', [RelatorioController::class, 'ocupacaoJson'])->name('relatorios.ocupacao');
+    Route::get('relatorios/comissoes/json', [RelatorioController::class, 'comissoesJson'])->name('relatorios.comissoes.json');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
