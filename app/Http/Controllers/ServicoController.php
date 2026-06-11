@@ -266,6 +266,22 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function duracao(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate([
+            'duracao_minutos' => ['required', 'integer', 'min:5', 'max:480'],
+        ]);
+
+        $servico->update(['duracao_minutos' => $request->integer('duracao_minutos')]);
+
+        return response()->json([
+            'duracao_minutos' => $servico->duracao_minutos,
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function profissionais(Servico $servico): JsonResponse
     {
         $this->authorize('view', $servico);
