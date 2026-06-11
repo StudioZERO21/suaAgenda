@@ -258,6 +258,46 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function detalhe(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $cliente->load(['fotos' => fn ($q) => $q->orderBy('created_at')]);
+
+        $totalAgendamentos = $cliente->agendamentos()->count();
+        $finalizados = $cliente->agendamentos()->where('status', 'finalizado')->count();
+        $receita = (float) $cliente->agendamentos()->where('status', 'finalizado')->sum('valor');
+        $notaMedia = round(
+            (float) (Avaliacao::whereHas('agendamento', fn ($q) => $q->where('cliente_id', $cliente->id))->avg('nota') ?? 0.0),
+            2
+        );
+        $ultimoAg = $cliente->agendamentos()->latest('data_hora')->value('data_hora');
+
+        return response()->json([
+            'id' => $cliente->id,
+            'name' => $cliente->name,
+            'email' => $cliente->email ?? '',
+            'phone' => $cliente->phone ?? '',
+            'data_nasc' => $cliente->data_nasc?->format('Y-m-d'),
+            'observacao' => $cliente->observacao ?? '',
+            'ativo' => $cliente->ativo,
+            'lgpd_consent' => $cliente->lgpd_consent,
+            'stats' => [
+                'total_agendamentos' => $totalAgendamentos,
+                'finalizados' => $finalizados,
+                'receita_total' => $receita,
+                'nota_media' => $notaMedia,
+                'ultimo_agendamento' => $ultimoAg?->toIso8601String(),
+            ],
+            'fotos' => $cliente->fotos->map(fn (ClienteFoto $f) => [
+                'id' => $f->id,
+                'url' => Storage::url($f->imagem_path),
+                'tipo' => $f->tipo,
+                'legenda' => $f->legenda ?? '',
+            ])->values(),
+        ]);
+    }
+
     public function aniversariantes(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
