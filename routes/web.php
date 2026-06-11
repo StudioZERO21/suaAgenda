@@ -75,6 +75,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/heatmap', [RelatorioController::class, 'heatmap'])->name('relatorios.heatmap');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
+    Route::get('financeiro/fluxo-caixa', [FinanceiroController::class, 'fluxoCaixa'])->name('financeiro.fluxo-caixa');
     Route::get('financeiro/exportar', [FinanceiroController::class, 'exportarCsv'])->name('financeiro.exportar');
     Route::get('produtos/buscar', [ProdutoController::class, 'buscar'])->name('produtos.buscar');
     Route::get('produtos/estoque-baixo', [ProdutoController::class, 'estoqueBaixo'])->name('produtos.estoque-baixo');

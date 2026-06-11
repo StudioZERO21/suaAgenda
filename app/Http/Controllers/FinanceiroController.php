@@ -239,6 +239,62 @@ class FinanceiroController extends Controller
         return response()->json($this->lancamentoToJson($lancamento));
     }
 
+    public function fluxoCaixa(Request $request): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+        $periodo = $request->input('periodo', 'month');
+        [$inicio, $fim] = $this->resolverPeriodo($periodo);
+
+        $dias = $inicio->diffInDays($fim) + 1;
+        $serie = [];
+
+        for ($i = 0; $i < $dias; $i++) {
+            $dia = $inicio->copy()->addDays($i);
+            $serie[$dia->format('Y-m-d')] = [
+                'data' => $dia->format('Y-m-d'),
+                'receita' => 0.0,
+                'despesa' => 0.0,
+                'saldo' => 0.0,
+            ];
+        }
+
+        $agFinalizados = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora', 'valor']);
+
+        foreach ($agFinalizados as $ag) {
+            $key = Carbon::parse($ag->data_hora)->format('Y-m-d');
+            if (isset($serie[$key])) {
+                $serie[$key]['receita'] += (float) $ag->valor;
+            }
+        }
+
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->where('status', 'pago')
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->get(['data', 'tipo', 'valor']);
+
+        foreach ($lancamentos as $l) {
+            $key = Carbon::parse($l->data)->format('Y-m-d');
+            if (isset($serie[$key])) {
+                if ($l->tipo === 'receita') {
+                    $serie[$key]['receita'] += (float) $l->valor;
+                } else {
+                    $serie[$key]['despesa'] += (float) $l->valor;
+                }
+            }
+        }
+
+        foreach ($serie as &$dia) {
+            $dia['saldo'] = round($dia['receita'] - $dia['despesa'], 2);
+            $dia['receita'] = round($dia['receita'], 2);
+            $dia['despesa'] = round($dia['despesa'], 2);
+        }
+
+        return response()->json(array_values($serie));
+    }
+
     public function buscarLancamentos(Request $request): JsonResponse
     {
         $q = trim((string) $request->input('q', ''));
