@@ -258,6 +258,54 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function segmentos(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = min((int) $request->input('dias', 90), 365);
+        $desde = now()->subDays($dias);
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->withCount([
+                'agendamentos as total_agendamentos',
+                'agendamentos as recentes' => fn ($q) => $q->where('data_hora', '>=', $desde)
+                    ->whereNotIn('status', ['cancelado']),
+            ])
+            ->get();
+
+        $vip = 0;
+        $recorrente = 0;
+        $novo = 0;
+        $inativo = 0;
+
+        foreach ($clientes as $c) {
+            $recentes = (int) $c->recentes;
+
+            if ($recentes >= 5) {
+                $vip++;
+            } elseif ($recentes >= 2) {
+                $recorrente++;
+            } elseif ($recentes === 1) {
+                $novo++;
+            } else {
+                $inativo++;
+            }
+        }
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_ativos' => $clientes->count(),
+            'segmentos' => [
+                ['nome' => 'VIP', 'descricao' => "≥5 agendamentos nos últimos {$dias} dias", 'total' => $vip],
+                ['nome' => 'Recorrente', 'descricao' => "2-4 agendamentos nos últimos {$dias} dias", 'total' => $recorrente],
+                ['nome' => 'Novo', 'descricao' => "1 agendamento nos últimos {$dias} dias", 'total' => $novo],
+                ['nome' => 'Inativo', 'descricao' => "0 agendamentos nos últimos {$dias} dias", 'total' => $inativo],
+            ],
+        ]);
+    }
+
     public function detalhe(Cliente $cliente): JsonResponse
     {
         $this->authorize('view', $cliente);
