@@ -492,6 +492,22 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function cor(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'cor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $profissional->update(['cor' => $request->input('cor')]);
+
+        return response()->json([
+            'cor' => $profissional->cor,
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
