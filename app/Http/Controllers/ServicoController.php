@@ -142,6 +142,27 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function ativos(): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'cor', 'duracao_minutos', 'preco'])
+            ->map(fn (Servico $s) => [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'preco' => (float) $s->preco,
+            ]);
+
+        return response()->json($servicos);
+    }
+
     public function estatisticas(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Servico::class);
