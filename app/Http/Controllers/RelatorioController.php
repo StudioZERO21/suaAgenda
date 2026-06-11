@@ -687,6 +687,41 @@ class RelatorioController extends Controller
         return response()->json($result);
     }
 
+    public function horariosPico(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora']);
+
+        $porHora = $agendamentos->groupBy(fn ($ag) => $ag->data_hora->format('H'))
+            ->map(fn ($items, string $hora) => [
+                'hora' => (int) $hora,
+                'label' => $hora.':00',
+                'total' => $items->count(),
+            ])
+            ->sortBy('hora')
+            ->values();
+
+        $maxTotal = $porHora->max('total') ?? 0;
+
+        $porHora = $porHora->map(fn (array $item) => [
+            ...$item,
+            'pct' => $maxTotal > 0 ? round($item['total'] / $maxTotal * 100) : 0,
+        ])->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'total_agendamentos' => $agendamentos->count(),
+            'horarios' => $porHora,
+        ]);
+    }
+
     public function produtosMaisVendidos(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
