@@ -6,8 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreServicoRequest;
 use App\Http\Requests\UpdateServicoRequest;
+use App\Models\Agendamento;
 use App\Models\Profissional;
 use App\Models\Servico;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -138,6 +140,58 @@ class ServicoController extends Controller
         }, 'servicos-'.now()->format('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    public function estatisticas(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $preset = $request->input('preset', '30d');
+        $hoje = Carbon::today();
+
+        [$inicio, $fim] = match ($preset) {
+            '7d' => [$hoje->copy()->subDays(6), $hoje],
+            '3m' => [$hoje->copy()->subMonths(3), $hoje],
+            'mes' => [$hoje->copy()->startOfMonth(), $hoje->copy()->endOfMonth()],
+            default => [$hoje->copy()->subDays(29), $hoje],
+        };
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'cor', 'preco', 'duracao_minutos']);
+
+        $agFinalizados = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['servico_id', 'valor'])
+            ->groupBy('servico_id');
+
+        $agTotal = Agendamento::where('company_id', $empresa)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['servico_id'])
+            ->groupBy('servico_id');
+
+        $rows = $servicos->map(function (Servico $s) use ($agFinalizados, $agTotal): array {
+            $finalizados = $agFinalizados->get($s->id, collect());
+            $total = $agTotal->get($s->id, collect());
+            $receita = (float) $finalizados->sum('valor');
+
+            return [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'preco' => (float) $s->preco,
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'total_agendamentos' => $total->count(),
+                'finalizados' => $finalizados->count(),
+                'receita_total' => $receita,
+                'ticket_medio' => $finalizados->count() > 0 ? round($receita / $finalizados->count(), 2) : 0.0,
+            ];
+        })->sortByDesc('receita_total')->values();
+
+        return response()->json($rows);
     }
 
     public function buscar(Request $request): JsonResponse
