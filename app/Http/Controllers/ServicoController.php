@@ -296,6 +296,20 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function descricao(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate(['descricao' => ['nullable', 'string', 'max:500']]);
+
+        $servico->update(['descricao' => $request->input('descricao', '')]);
+
+        return response()->json([
+            'descricao' => $servico->descricao ?? '',
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function profissionais(Servico $servico): JsonResponse
     {
         $this->authorize('view', $servico);
