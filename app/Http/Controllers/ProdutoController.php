@@ -301,6 +301,20 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function custo(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['custo' => ['required', 'numeric', 'min:0']]);
+
+        $produto->update(['custo' => $request->input('custo')]);
+
+        return response()->json([
+            'custo' => (float) $produto->custo,
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
