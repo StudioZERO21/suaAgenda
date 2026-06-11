@@ -298,6 +298,57 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function kanban(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        if (! $empresa) {
+            return response()->json(['error' => 'Empresa não configurada'], 422);
+        }
+
+        $hoje = today();
+        $isAdmin = auth()->user()->hasAnyRole(['admin_empresa', 'super_admin', 'gestor']);
+        $meuProfissionalId = auth()->user()->profissional_id;
+
+        $query = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje)
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor', 'profissional:id,name'])
+            ->orderBy('data_hora');
+
+        if (! $isAdmin) {
+            $query->where('profissional_id', $meuProfissionalId);
+        }
+
+        $cards = $query->get()->map(fn (Agendamento $ag) => [
+            'id' => $ag->id,
+            'status' => $ag->status,
+            'hora' => $ag->data_hora->format('H:i'),
+            'cliente_nome' => $ag->cliente?->name ?? 'Cliente avulso',
+            'cliente_phone' => $ag->cliente?->phone ?? '',
+            'servico_nome' => $ag->servico?->nome ?? '—',
+            'servico_cor' => $ag->servico?->cor ?? '#999999',
+            'profissional_nome' => $ag->profissional?->name ?? '—',
+            'profissional_id' => $ag->profissional_id,
+            'duracao' => (int) $ag->duracao,
+            'valor' => (float) $ag->valor,
+        ])->values();
+
+        $colunas = collect([
+            Agendamento::STATUS_PENDENTE,
+            Agendamento::STATUS_CONFIRMADO,
+            Agendamento::STATUS_EM_ATENDIMENTO,
+            Agendamento::STATUS_FINALIZADO,
+        ])->mapWithKeys(fn (string $status) => [
+            $status => $cards->where('status', $status)->values(),
+        ]);
+
+        return response()->json([
+            'data' => $hoje->toDateString(),
+            'total' => $cards->count(),
+            'colunas' => $colunas,
+        ]);
+    }
+
     public function receita(): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;
