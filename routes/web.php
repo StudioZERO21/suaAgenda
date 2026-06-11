@@ -156,6 +156,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/exportar', [ServicoController::class, 'exportarCsv'])->name('servicos.exportar');
     Route::resource('servicos', ServicoController::class)->except(['show']);
     Route::patch('servicos/{servico}/toggle', [ServicoController::class, 'toggle'])->name('servicos.toggle');
+    Route::patch('servicos/{servico}/preco', [ServicoController::class, 'preco'])->name('servicos.preco');
     Route::get('servicos/{servico}/profissionais', [ServicoController::class, 'profissionais'])->name('servicos.profissionais');
     Route::get('servicos/{servico}/json', [ServicoController::class, 'detalhe'])->name('servicos.detalhe');
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
