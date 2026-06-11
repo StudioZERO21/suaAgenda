@@ -791,6 +791,40 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function topClientes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $rows = Agendamento::where('company_id', $empresaId)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->with('cliente:id,name,phone,email')
+            ->get(['cliente_id', 'status', 'valor'])
+            ->groupBy('cliente_id')
+            ->map(function ($items) {
+                $cliente = $items->first()->cliente;
+
+                return [
+                    'cliente_id' => $cliente?->id ?? '',
+                    'name' => $cliente?->name ?? 'Cliente removido',
+                    'phone' => $cliente?->phone ?? '',
+                    'email' => $cliente?->email ?? '',
+                    'total_visitas' => $items->count(),
+                    'total_gasto' => (float) $items->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+                ];
+            })
+            ->filter(fn ($row) => $row['cliente_id'] !== '')
+            ->sortByDesc('total_visitas')
+            ->take($limite)
+            ->values();
+
+        return response()->json($rows);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
