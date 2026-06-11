@@ -563,6 +563,55 @@ class RelatorioController extends Controller
         return response()->json($rows);
     }
 
+    public function heatmap(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->get(['data_hora']);
+
+        $dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        $horas = range(7, 21);
+
+        $matriz = [];
+        foreach ($dias as $idx => $nome) {
+            foreach ($horas as $hora) {
+                $matriz[] = [
+                    'dia_semana' => $idx,
+                    'dia_nome' => $nome,
+                    'hora' => $hora,
+                    'total' => 0,
+                ];
+            }
+        }
+
+        foreach ($agendamentos as $ag) {
+            $dt = Carbon::parse($ag->data_hora);
+            $diaSemana = (int) $dt->format('w');
+            $hora = (int) $dt->format('G');
+
+            if ($hora < 7 || $hora > 21) {
+                continue;
+            }
+
+            $key = array_search(true, array_map(
+                fn ($m) => $m['dia_semana'] === $diaSemana && $m['hora'] === $hora,
+                $matriz
+            ));
+
+            if ($key !== false) {
+                $matriz[$key]['total']++;
+            }
+        }
+
+        return response()->json($matriz);
+    }
+
     public function ocupacaoJson(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
