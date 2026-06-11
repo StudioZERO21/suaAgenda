@@ -193,6 +193,31 @@ class ServicoController extends Controller
         return response()->json($profissionais);
     }
 
+    public function detalhe(Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $servico->load([
+            'profissionais' => fn ($q) => $q->where('ativo', true)->orderBy('name'),
+        ]);
+
+        return response()->json([
+            'id' => $servico->id,
+            'nome' => $servico->nome,
+            'descricao' => $servico->descricao ?? '',
+            'cor' => $servico->cor ?? '#999999',
+            'duracao_minutos' => (int) $servico->duracao_minutos,
+            'preco' => (float) $servico->preco,
+            'ativo' => $servico->ativo,
+            'profissionais' => $servico->profissionais->map(fn (Profissional $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'especialidade' => $p->especialidade ?? '',
+                'cor' => $p->cor ?? '#999999',
+            ])->values(),
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
