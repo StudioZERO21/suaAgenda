@@ -107,6 +107,22 @@ class ClienteController extends Controller
             ->with('success', 'Cliente atualizado com sucesso.');
     }
 
+    public function lgpd(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate([
+            'consent' => ['required', 'boolean'],
+        ]);
+
+        $cliente->update(['lgpd_consent' => $request->boolean('consent')]);
+
+        return response()->json([
+            'lgpd_consent' => $cliente->lgpd_consent,
+            'updated_at' => $cliente->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function toggle(Cliente $cliente): JsonResponse
     {
         $this->authorize('update', $cliente);
