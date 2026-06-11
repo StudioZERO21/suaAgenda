@@ -226,6 +226,23 @@ class ProdutoController extends Controller
         return response()->json(['id' => $imagem->id, 'is_capa' => true]);
     }
 
+    public function estoque(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate([
+            'estoque' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $produto->update(['estoque' => $request->integer('estoque')]);
+
+        return response()->json([
+            'estoque' => $produto->estoque,
+            'status' => $produto->estoqueStatus(),
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
