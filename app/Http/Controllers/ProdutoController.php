@@ -259,6 +259,20 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function categoria(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['categoria' => ['required', 'string', 'max:60']]);
+
+        $produto->update(['categoria' => $request->input('categoria')]);
+
+        return response()->json([
+            'categoria' => $produto->categoria,
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
