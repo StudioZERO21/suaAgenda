@@ -495,6 +495,26 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function contato(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate([
+            'name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:150'],
+        ]);
+
+        $cliente->update(array_filter($request->only('name', 'phone', 'email'), fn ($v) => $v !== null));
+
+        return response()->json([
+            'name' => $cliente->name,
+            'phone' => $cliente->phone ?? '',
+            'email' => $cliente->email ?? '',
+            'updated_at' => $cliente->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function recentes(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
