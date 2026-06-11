@@ -544,6 +544,31 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function proximos(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 5), 20);
+
+        $agendamentos = $profissional->agendamentos()
+            ->whereIn('status', [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
+            ->where('data_hora', '>=', now())
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor'])
+            ->orderBy('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'cliente' => $ag->cliente ? ['id' => $ag->cliente->id, 'name' => $ag->cliente->name, 'phone' => $ag->cliente->phone ?? ''] : null,
+                'servico' => $ag->servico ? ['id' => $ag->servico->id, 'nome' => $ag->servico->nome, 'cor' => $ag->servico->cor ?? '#999999'] : null,
+            ]);
+
+        return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
