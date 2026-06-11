@@ -537,6 +537,36 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function pendentes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 20), 50);
+
+        $items = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_PENDENTE)
+            ->where('data_hora', '>=', now())
+            ->with(['cliente:id,name,phone', 'servico:id,nome,cor', 'profissional:id,name'])
+            ->orderBy('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'cliente_nome' => $ag->cliente?->name ?? '',
+                'cliente_phone' => $ag->cliente?->phone ?? '',
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'valor' => (float) $ag->valor,
+                'duracao' => (int) $ag->duracao,
+                'cancel_token' => $ag->cancel_token,
+            ]);
+
+        return response()->json(['total' => $items->count(), 'items' => $items]);
+    }
+
     public function cancelados(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
