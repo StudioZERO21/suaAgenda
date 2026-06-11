@@ -508,6 +508,20 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function especialidade(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate(['especialidade' => ['nullable', 'string', 'max:100']]);
+
+        $profissional->update(['especialidade' => $request->input('especialidade', '')]);
+
+        return response()->json([
+            'especialidade' => $profissional->especialidade ?? '',
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
