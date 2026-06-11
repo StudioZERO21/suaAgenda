@@ -386,6 +386,49 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function ranking(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $preset = $request->input('preset', '30d');
+        $hoje = Carbon::today();
+
+        [$inicio, $fim] = match ($preset) {
+            '7d' => [$hoje->copy()->subDays(6), $hoje],
+            '3m' => [$hoje->copy()->subMonths(3), $hoje],
+            'mes' => [$hoje->copy()->startOfMonth(), $hoje->copy()->endOfMonth()],
+            default => [$hoje->copy()->subDays(29), $hoje],
+        };
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor']);
+
+        $agFinalizados = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['profissional_id', 'valor'])
+            ->groupBy('profissional_id');
+
+        $rows = $profissionais->map(function (Profissional $prof) use ($agFinalizados): array {
+            $items = $agFinalizados->get($prof->id, collect());
+            $receita = (float) $items->sum('valor');
+
+            return [
+                'profissional_id' => $prof->id,
+                'profissional_nome' => $prof->name,
+                'especialidade' => $prof->especialidade ?? '',
+                'cor' => $prof->cor ?? '#999999',
+                'finalizados' => $items->count(),
+                'receita_total' => $receita,
+            ];
+        })->sortByDesc('receita_total')->values();
+
+        return response()->json($rows);
+    }
+
     public function detalhe(Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);

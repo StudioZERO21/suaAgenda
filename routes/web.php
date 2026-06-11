@@ -143,6 +143,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/{servico}/profissionais', [ServicoController::class, 'profissionais'])->name('servicos.profissionais');
     Route::get('servicos/{servico}/json', [ServicoController::class, 'detalhe'])->name('servicos.detalhe');
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
+    Route::get('profissionais/ranking', [ProfissionalController::class, 'ranking'])->name('profissionais.ranking');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
