@@ -282,6 +282,20 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function cor(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate(['cor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/']]);
+
+        $servico->update(['cor' => $request->input('cor')]);
+
+        return response()->json([
+            'cor' => $servico->cor,
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function profissionais(Servico $servico): JsonResponse
     {
         $this->authorize('view', $servico);

@@ -164,6 +164,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('servicos/{servico}/toggle', [ServicoController::class, 'toggle'])->name('servicos.toggle');
     Route::patch('servicos/{servico}/preco', [ServicoController::class, 'preco'])->name('servicos.preco');
     Route::patch('servicos/{servico}/duracao', [ServicoController::class, 'duracao'])->name('servicos.duracao');
+    Route::patch('servicos/{servico}/cor', [ServicoController::class, 'cor'])->name('servicos.cor');
     Route::get('servicos/{servico}/profissionais', [ServicoController::class, 'profissionais'])->name('servicos.profissionais');
     Route::get('servicos/{servico}/json', [ServicoController::class, 'detalhe'])->name('servicos.detalhe');
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
