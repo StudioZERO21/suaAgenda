@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
+use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
@@ -449,6 +450,33 @@ class ClienteController extends Controller
             ->values();
 
         return response()->json($servicos);
+    }
+
+    public function proximos(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $limite = min((int) $request->input('limite', 5), 20);
+
+        $agendamentos = $cliente->agendamentos()
+            ->whereIn('status', ['pendente', 'confirmado'])
+            ->where('data_hora', '>=', now())
+            ->with(['servico:id,nome,cor', 'profissional:id,name'])
+            ->orderBy('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'duracao' => (int) $ag->duracao,
+            ]);
+
+        return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
     }
 
     public function observacao(Request $request, Cliente $cliente): JsonResponse

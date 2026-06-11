@@ -146,6 +146,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('clientes/{cliente}/servicos-favoritos', [ClienteController::class, 'servicosFavoritos'])->name('clientes.servicos-favoritos');
     Route::get('clientes/{cliente}/json', [ClienteController::class, 'detalhe'])->name('clientes.detalhe');
     Route::get('clientes/{cliente}/agendamentos', [ClienteController::class, 'agendamentos'])->name('clientes.agendamentos');
+    Route::get('clientes/{cliente}/proximos', [ClienteController::class, 'proximos'])->name('clientes.proximos');
     Route::get('clientes/{cliente}/fotos', [ClienteController::class, 'fotos'])->name('clientes.fotos.index');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
