@@ -239,6 +239,37 @@ class FinanceiroController extends Controller
         return response()->json($this->lancamentoToJson($lancamento));
     }
 
+    public function buscarLancamentos(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q', ''));
+        $empresaId = auth()->user()->empresa_id;
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $lancamentos = Lancamento::where('company_id', $empresaId)
+            ->where(function ($query) use ($q): void {
+                $query->where('descricao', 'like', "%{$q}%")
+                    ->orWhere('categoria', 'like', "%{$q}%")
+                    ->orWhere('tipo', 'like', "%{$q}%");
+            })
+            ->orderByDesc('data')
+            ->limit(20)
+            ->get()
+            ->map(fn (Lancamento $l) => [
+                'id' => $l->id,
+                'descricao' => $l->descricao,
+                'tipo' => $l->tipo,
+                'categoria' => $l->categoria ?? '',
+                'valor' => (float) $l->valor,
+                'data' => $l->data->format('Y-m-d'),
+                'status' => $l->status,
+            ]);
+
+        return response()->json($lancamentos);
+    }
+
     public function destroyLancamento(Lancamento $lancamento): Response
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
