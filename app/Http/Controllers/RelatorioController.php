@@ -9,6 +9,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Lancamento;
 use App\Models\Profissional;
+use App\Models\VendaItem;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -684,6 +685,42 @@ class RelatorioController extends Controller
         });
 
         return response()->json($result);
+    }
+
+    public function produtosMaisVendidos(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $itens = VendaItem::whereNotNull('produto_id')
+            ->whereHas('venda', fn ($q) => $q->where('company_id', $empresaId)
+                ->whereBetween('created_at', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            )
+            ->with('produto:id,nome,sku,categoria,unidade')
+            ->get(['produto_id', 'qtd', 'total']);
+
+        $agrupados = $itens->groupBy('produto_id')
+            ->map(function ($group): array {
+                $produto = $group->first()->produto;
+
+                return [
+                    'produto_id' => $produto?->id ?? '',
+                    'nome' => $produto?->nome ?? 'Produto removido',
+                    'sku' => $produto?->sku ?? '',
+                    'categoria' => $produto?->categoria ?? '',
+                    'unidade' => $produto?->unidade ?? 'un.',
+                    'qtd_total' => (int) $group->sum('qtd'),
+                    'receita_total' => (float) $group->sum('total'),
+                ];
+            })
+            ->sortByDesc('qtd_total')
+            ->take($limite)
+            ->values();
+
+        return response()->json($agrupados);
     }
 
     /** @return array{0: Carbon, 1: Carbon} */
