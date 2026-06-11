@@ -191,6 +191,42 @@ class PdvController extends Controller
         return response()->json(['ok' => true], 201);
     }
 
+    public function vendaDetalhe(Venda $venda): JsonResponse
+    {
+        abort_if($venda->company_id !== auth()->user()->empresa_id, 403);
+
+        $venda->load(['cliente:id,name,phone', 'profissional:id,name', 'itens.produto:id,nome,sku', 'itens.servico:id,nome']);
+
+        return response()->json([
+            'id' => $venda->id,
+            'created_at' => $venda->created_at->toIso8601String(),
+            'subtotal' => (float) $venda->subtotal,
+            'desconto' => (float) $venda->desconto,
+            'total' => (float) $venda->total,
+            'metodo_pagamento' => $venda->metodo_pagamento ?? '',
+            'observacao' => $venda->observacao ?? '',
+            'cliente' => $venda->cliente ? [
+                'id' => $venda->cliente->id,
+                'name' => $venda->cliente->name,
+                'phone' => $venda->cliente->phone ?? '',
+            ] : null,
+            'profissional' => $venda->profissional ? [
+                'id' => $venda->profissional->id,
+                'name' => $venda->profissional->name,
+            ] : null,
+            'itens' => $venda->itens->map(fn (VendaItem $item) => [
+                'id' => $item->id,
+                'descricao' => $item->descricao,
+                'qtd' => (int) $item->qtd,
+                'preco_unit' => (float) $item->preco_unit,
+                'total' => (float) $item->total,
+                'produto_nome' => $item->produto?->nome ?? '',
+                'produto_sku' => $item->produto?->sku ?? '',
+                'servico_nome' => $item->servico?->nome ?? '',
+            ])->values(),
+        ]);
+    }
+
     public function buscarProdutos(Request $request): JsonResponse
     {
         $q = trim((string) $request->input('q', ''));
