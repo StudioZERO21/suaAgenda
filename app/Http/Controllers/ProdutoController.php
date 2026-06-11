@@ -226,6 +226,15 @@ class ProdutoController extends Controller
         return response()->json(['id' => $imagem->id, 'is_capa' => true]);
     }
 
+    public function detalhe(Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $produto->load('imagens');
+
+        return response()->json($this->toJson($produto));
+    }
+
     private function toJson(Produto $p): array
     {
         $imagens = $p->relationLoaded('imagens') ? $p->imagens : collect();
