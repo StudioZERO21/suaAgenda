@@ -48,6 +48,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/resumo', [DashboardController::class, 'resumo'])->name('dashboard.resumo');
+    Route::get('/dashboard/alertas', [DashboardController::class, 'alertas'])->name('dashboard.alertas');
 
     Route::get('agendamentos/hoje', [AgendamentoController::class, 'hoje'])->name('agendamentos.hoje');
     Route::get('agendamentos/buscar', [AgendamentoController::class, 'buscar'])->name('agendamentos.buscar');

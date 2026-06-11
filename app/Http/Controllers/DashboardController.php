@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
+use App\Models\Produto;
 use App\Models\Profissional;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -294,6 +295,48 @@ class DashboardController extends Controller
             'proximos_3_dias' => $proximos3Dias,
             'clientes_ativos' => $clientesAtivos,
             'profissionais_ativos' => $profissionaisAtivos,
+        ]);
+    }
+
+    public function alertas(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        if (! $empresa) {
+            return response()->json(['error' => 'Empresa não configurada'], 422);
+        }
+
+        $hoje = now();
+
+        $pendentes = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_PENDENTE)
+            ->where('data_hora', '>=', $hoje)
+            ->count();
+
+        $estoqueBaixo = Produto::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->where(function ($q): void {
+                $q->whereColumn('estoque', '<=', 'estoque_min')->orWhere('estoque', '<=', 0);
+            })
+            ->count();
+
+        $aniversariantesHoje = Cliente::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->whereNotNull('data_nasc')
+            ->whereMonth('data_nasc', $hoje->month)
+            ->whereDay('data_nasc', $hoje->day)
+            ->count();
+
+        $emAtendimento = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_EM_ATENDIMENTO)
+            ->count();
+
+        return response()->json([
+            'pendentes' => $pendentes,
+            'estoque_baixo' => $estoqueBaixo,
+            'aniversariantes_hoje' => $aniversariantesHoje,
+            'em_atendimento' => $emAtendimento,
+            'total_alertas' => $pendentes + $estoqueBaixo + $aniversariantesHoje,
         ]);
     }
 
