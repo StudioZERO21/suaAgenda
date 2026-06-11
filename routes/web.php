@@ -165,6 +165,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/{profissional}/agendamentos', [ProfissionalController::class, 'agendamentos'])->name('profissionais.agendamentos');
     Route::get('profissionais/{profissional}/json', [ProfissionalController::class, 'detalhe'])->name('profissionais.detalhe');
     Route::get('profissionais/{profissional}/stats', [ProfissionalController::class, 'stats'])->name('profissionais.stats');
+    Route::patch('profissionais/{profissional}/comissao', [ProfissionalController::class, 'comissao'])->name('profissionais.comissao');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
     Route::get('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'show'])->name('profissionais.horarios');

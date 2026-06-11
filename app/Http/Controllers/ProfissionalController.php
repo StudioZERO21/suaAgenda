@@ -476,6 +476,22 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function comissao(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'comissao_pct' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $profissional->update(['comissao_pct' => $request->input('comissao_pct')]);
+
+        return response()->json([
+            'comissao_pct' => (float) $profissional->comissao_pct,
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
