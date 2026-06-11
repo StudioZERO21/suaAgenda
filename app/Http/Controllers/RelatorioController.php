@@ -855,6 +855,60 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function mediaTicket(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->with(['servico:id,nome,cor', 'profissional:id,name,cor'])
+            ->get(['servico_id', 'profissional_id', 'valor']);
+
+        $porServico = $agendamentos->groupBy('servico_id')->map(function ($items) {
+            $servico = $items->first()->servico;
+            $total = (float) $items->sum('valor');
+            $count = $items->count();
+
+            return [
+                'id' => $servico?->id ?? '',
+                'nome' => $servico?->nome ?? 'Serviço removido',
+                'cor' => $servico?->cor ?? '#999999',
+                'total' => $count,
+                'receita' => $total,
+                'ticket_medio' => $count > 0 ? round($total / $count, 2) : 0.0,
+            ];
+        })->sortByDesc('ticket_medio')->values();
+
+        $porProfissional = $agendamentos->groupBy('profissional_id')->map(function ($items) {
+            $prof = $items->first()->profissional;
+            $total = (float) $items->sum('valor');
+            $count = $items->count();
+
+            return [
+                'id' => $prof?->id ?? '',
+                'name' => $prof?->name ?? 'Profissional removido',
+                'cor' => $prof?->cor ?? '#999999',
+                'total' => $count,
+                'receita' => $total,
+                'ticket_medio' => $count > 0 ? round($total / $count, 2) : 0.0,
+            ];
+        })->sortByDesc('ticket_medio')->values();
+
+        $totalGeral = $agendamentos->count();
+        $receitaGeral = (float) $agendamentos->sum('valor');
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'ticket_medio' => $totalGeral > 0 ? round($receitaGeral / $totalGeral, 2) : 0.0,
+            'por_servico' => $porServico,
+            'por_profissional' => $porProfissional,
+        ]);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
