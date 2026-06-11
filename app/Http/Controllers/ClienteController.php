@@ -425,6 +425,31 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function recentes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 10), 50);
+        $dias = min((int) $request->input('dias', 30), 180);
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->where('created_at', '>=', now()->subDays($dias))
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get(['id', 'name', 'phone', 'email', 'ativo', 'created_at'])
+            ->map(fn (Cliente $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'phone' => $c->phone ?? '',
+                'email' => $c->email ?? '',
+                'ativo' => $c->ativo,
+                'cadastrado_em' => $c->created_at->toIso8601String(),
+            ]);
+
+        return response()->json(['total' => $clientes->count(), 'dias' => $dias, 'items' => $clientes]);
+    }
+
     public function buscar(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
