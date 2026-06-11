@@ -53,7 +53,7 @@ describe('agendamento_detalhe', function () {
             ->assertOk()
             ->json();
 
-        expect($data)->toHaveKeys(['id', 'data_hora', 'status', 'duracao', 'valor', 'observacoes', 'cliente', 'profissional', 'servico', 'avaliacao']);
+        expect($data)->toHaveKeys(['id', 'data_hora', 'status', 'duracao', 'valor', 'observacao', 'cliente', 'profissional', 'servico', 'avaliacao']);
     });
 
     it('retorna dados completos do agendamento', function () {

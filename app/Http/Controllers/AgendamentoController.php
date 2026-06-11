@@ -635,7 +635,7 @@ class AgendamentoController extends Controller
             'status' => $agendamento->status,
             'duracao' => (int) $agendamento->duracao,
             'valor' => (float) $agendamento->valor,
-            'observacoes' => $agendamento->observacoes ?? '',
+            'observacao' => $agendamento->observacao ?? '',
             'cliente' => $agendamento->cliente ? [
                 'id' => $agendamento->cliente->id,
                 'name' => $agendamento->cliente->name,
@@ -659,6 +659,20 @@ class AgendamentoController extends Controller
                 'nota' => $agendamento->avaliacao->nota,
                 'comentario' => $agendamento->avaliacao->comentario ?? '',
             ] : null,
+        ]);
+    }
+
+    public function observacao(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate(['observacao' => ['nullable', 'string', 'max:1000']]);
+
+        $agendamento->update(['observacao' => $request->input('observacao', '')]);
+
+        return response()->json([
+            'observacao' => $agendamento->observacao ?? '',
+            'updated_at' => $agendamento->updated_at->toIso8601String(),
         ]);
     }
 
