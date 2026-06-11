@@ -315,6 +315,21 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function estoqueMin(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['estoque_min' => ['required', 'integer', 'min:0']]);
+
+        $produto->update(['estoque_min' => $request->integer('estoque_min')]);
+
+        return response()->json([
+            'estoque_min' => $produto->estoque_min,
+            'status' => $produto->estoqueStatus(),
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
