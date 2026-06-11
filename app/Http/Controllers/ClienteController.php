@@ -568,4 +568,52 @@ class ClienteController extends Controller
 
         return response()->noContent();
     }
+
+    public function frequencia(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $agendamentos = $cliente->agendamentos()
+            ->where('status', 'finalizado')
+            ->orderBy('data_hora')
+            ->get(['data_hora', 'valor']);
+
+        $total = $agendamentos->count();
+        $ltv = (float) $agendamentos->sum('valor');
+
+        if ($total === 0) {
+            return response()->json([
+                'total_visitas' => 0,
+                'ltv' => 0.0,
+                'media_dias_entre_visitas' => null,
+                'proxima_visita_prevista' => null,
+                'frequencia_mensal' => 0.0,
+            ]);
+        }
+
+        $ultima = $agendamentos->last()->data_hora;
+
+        $mediaDias = null;
+        $proximaPrevista = null;
+        $frequenciaMensal = 0.0;
+
+        if ($total >= 2) {
+            $primeira = $agendamentos->first()->data_hora;
+            $totalDias = (int) $primeira->diffInDays($ultima);
+            $mediaDias = $totalDias > 0 ? round($totalDias / ($total - 1), 1) : null;
+
+            if ($mediaDias !== null && $mediaDias > 0) {
+                $proximaPrevista = $ultima->copy()->addDays((int) round($mediaDias))->toDateString();
+                $frequenciaMensal = round(30 / $mediaDias, 2);
+            }
+        }
+
+        return response()->json([
+            'total_visitas' => $total,
+            'ltv' => $ltv,
+            'media_dias_entre_visitas' => $mediaDias,
+            'proxima_visita_prevista' => $proximaPrevista,
+            'frequencia_mensal' => $frequenciaMensal,
+        ]);
+    }
 }
