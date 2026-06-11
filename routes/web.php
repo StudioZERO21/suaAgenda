@@ -83,6 +83,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('produtos/exportar', [ProdutoController::class, 'exportarCsv'])->name('produtos.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
     Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');
+    Route::get('produtos/{produto}/json', [ProdutoController::class, 'detalhe'])->name('produtos.detalhe');
     Route::put('produtos/{produto}', [ProdutoController::class, 'update'])->name('produtos.update');
     Route::delete('produtos/{produto}', [ProdutoController::class, 'destroy'])->name('produtos.destroy');
     Route::patch('produtos/{produto}/toggle', [ProdutoController::class, 'toggle'])->name('produtos.toggle');
