@@ -364,6 +364,44 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function comissoesJson(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $profissionais = Profissional::where('company_id', $empresaId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'comissao_pct', 'cor']);
+
+        $agFinalizados = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['profissional_id', 'valor'])
+            ->groupBy('profissional_id');
+
+        $rows = $profissionais->map(function (Profissional $prof) use ($agFinalizados): array {
+            $items = $agFinalizados->get($prof->id, collect());
+            $qtd = $items->count();
+            $receita = (float) $items->sum('valor');
+            $pct = (float) ($prof->comissao_pct ?? 0);
+            $comissao = round($receita * $pct / 100, 2);
+
+            return [
+                'profissional_id' => $prof->id,
+                'profissional_nome' => $prof->name,
+                'cor' => $prof->cor ?? '#999999',
+                'finalizados' => $qtd,
+                'receita_bruta' => $receita,
+                'comissao_pct' => $pct,
+                'valor_comissao' => $comissao,
+            ];
+        });
+
+        return response()->json($rows);
+    }
+
     public function profissionaisJson(Request $request): JsonResponse
     {
         $empresaId = auth()->user()->empresa_id;
