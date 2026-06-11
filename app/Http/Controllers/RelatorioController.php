@@ -758,6 +758,39 @@ class RelatorioController extends Controller
         return response()->json($agrupados);
     }
 
+    public function evolucaoSemanal(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        $semanas = min((int) $request->input('semanas', 8), 26);
+        $hoje = Carbon::today();
+
+        $semanasList = collect(range($semanas - 1, 0))->map(function (int $i) use ($hoje, $empresaId): array {
+            $inicio = $hoje->copy()->subWeeks($i)->startOfWeek();
+            $fim = $hoje->copy()->subWeeks($i)->endOfWeek();
+
+            $ags = Agendamento::where('company_id', $empresaId)
+                ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+                ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                ->get(['status', 'valor']);
+
+            $receita = (float) $ags->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+
+            return [
+                'semana' => $inicio->format('Y-W'),
+                'label' => $inicio->format('d/m'),
+                'total' => $ags->count(),
+                'finalizados' => $ags->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                'receita' => $receita,
+            ];
+        });
+
+        return response()->json([
+            'semanas' => $semanasList->values(),
+        ]);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {

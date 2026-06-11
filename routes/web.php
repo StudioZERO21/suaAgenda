@@ -85,6 +85,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/produtos-mais-vendidos', [RelatorioController::class, 'produtosMaisVendidos'])->name('relatorios.produtos-mais-vendidos');
     Route::get('relatorios/horarios-pico', [RelatorioController::class, 'horariosPico'])->name('relatorios.horarios-pico');
     Route::get('relatorios/retencao', [RelatorioController::class, 'retencao'])->name('relatorios.retencao');
+    Route::get('relatorios/evolucao-semanal', [RelatorioController::class, 'evolucaoSemanal'])->name('relatorios.evolucao-semanal');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
     Route::get('financeiro/fluxo-caixa', [FinanceiroController::class, 'fluxoCaixa'])->name('financeiro.fluxo-caixa');
