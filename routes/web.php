@@ -61,6 +61,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('agendamentos/{agendamento}/status', [AgendamentoController::class, 'updateStatus'])->name('agendamentos.updateStatus');
     Route::patch('agendamentos/{agendamento}/move', [AgendamentoController::class, 'move'])->name('agendamentos.move');
     Route::get('agendamentos/{agendamento}/json', [AgendamentoController::class, 'detalhe'])->name('agendamentos.detalhe');
+    Route::get('agendamentos/{agendamento}/historico-cliente', [AgendamentoController::class, 'historicoCliente'])->name('agendamentos.historico-cliente');
     Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
     Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');
