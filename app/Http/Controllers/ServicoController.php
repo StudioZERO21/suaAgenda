@@ -339,6 +339,31 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function proximos(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $limite = min((int) $request->input('limite', 5), 20);
+
+        $agendamentos = $servico->agendamentos()
+            ->whereIn('status', [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
+            ->where('data_hora', '>=', now())
+            ->with(['cliente:id,name,phone', 'profissional:id,name,cor'])
+            ->orderBy('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'cliente' => $ag->cliente ? ['id' => $ag->cliente->id, 'name' => $ag->cliente->name, 'phone' => $ag->cliente->phone ?? ''] : null,
+                'profissional' => $ag->profissional ? ['id' => $ag->profissional->id, 'name' => $ag->profissional->name, 'cor' => $ag->profissional->cor ?? '#999999'] : null,
+            ]);
+
+        return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
