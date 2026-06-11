@@ -74,6 +74,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/ocupacao', [RelatorioController::class, 'ocupacaoJson'])->name('relatorios.ocupacao');
     Route::get('relatorios/comissoes/json', [RelatorioController::class, 'comissoesJson'])->name('relatorios.comissoes.json');
     Route::get('relatorios/heatmap', [RelatorioController::class, 'heatmap'])->name('relatorios.heatmap');
+    Route::get('relatorios/retencao', [RelatorioController::class, 'retencao'])->name('relatorios.retencao');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
     Route::get('financeiro/fluxo-caixa', [FinanceiroController::class, 'fluxoCaixa'])->name('financeiro.fluxo-caixa');

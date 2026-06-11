@@ -364,6 +364,41 @@ class RelatorioController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    public function retencao(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $clientesNoPeriodo = Agendamento::where('company_id', $empresaId)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->pluck('cliente_id')
+            ->unique();
+
+        $totalNoPeriodo = $clientesNoPeriodo->count();
+
+        $recorrentes = $clientesNoPeriodo->filter(function ($clienteId) use ($empresaId, $inicio): bool {
+            return Agendamento::where('company_id', $empresaId)
+                ->where('cliente_id', $clienteId)
+                ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                ->where('data_hora', '<', $inicio->startOfDay())
+                ->exists();
+        })->count();
+
+        $novos = $totalNoPeriodo - $recorrentes;
+        $taxaRetencao = $totalNoPeriodo > 0 ? round($recorrentes / $totalNoPeriodo * 100, 1) : 0.0;
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'total_clientes_periodo' => $totalNoPeriodo,
+            'clientes_recorrentes' => $recorrentes,
+            'clientes_novos' => $novos,
+            'taxa_retencao_pct' => $taxaRetencao,
+        ]);
+    }
+
     public function comissoesJson(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
