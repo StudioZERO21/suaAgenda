@@ -298,6 +298,86 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function receita(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        if (! $empresa) {
+            return response()->json(['error' => 'Empresa não configurada'], 422);
+        }
+
+        $hoje = today();
+        $semanaInicio = $hoje->copy()->startOfWeek();
+        $mesInicio = $hoje->copy()->startOfMonth();
+        $semanaAnteriorInicio = $semanaInicio->copy()->subWeek();
+        $semanaAnteriorFim = $semanaInicio->copy()->subDay()->endOfDay();
+        $mesAnteriorInicio = $mesInicio->copy()->subMonth();
+        $mesAnteriorFim = $mesInicio->copy()->subDay()->endOfDay();
+
+        $receitaHoje = (float) Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $receitaOntem = (float) Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje->copy()->subDay())
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $receitaSemana = (float) Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$semanaInicio, $hoje->copy()->endOfDay()])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $receitaSemanaAnterior = (float) Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$semanaAnteriorInicio, $semanaAnteriorFim])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $receitaMes = (float) Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$mesInicio, $hoje->copy()->endOfDay()])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $receitaMesAnterior = (float) Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$mesAnteriorInicio, $mesAnteriorFim])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->sum('valor');
+
+        $agendamentosHoje = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $hoje)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->count();
+
+        $agendamentosSemana = Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$semanaInicio, $hoje->copy()->endOfDay()])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->count();
+
+        $agendamentosMes = Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$mesInicio, $hoje->copy()->endOfDay()])
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->count();
+
+        return response()->json([
+            'hoje' => [
+                'receita' => $receitaHoje,
+                'agendamentos' => $agendamentosHoje,
+                'variacao_vs_ontem' => $this->trendPercent($receitaHoje, $receitaOntem),
+            ],
+            'semana' => [
+                'receita' => $receitaSemana,
+                'agendamentos' => $agendamentosSemana,
+                'variacao_vs_semana_anterior' => $this->trendPercent($receitaSemana, $receitaSemanaAnterior),
+            ],
+            'mes' => [
+                'receita' => $receitaMes,
+                'agendamentos' => $agendamentosMes,
+                'variacao_vs_mes_anterior' => $this->trendPercent($receitaMes, $receitaMesAnterior),
+            ],
+        ]);
+    }
+
     public function alertas(): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;
