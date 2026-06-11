@@ -273,6 +273,34 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function unidade(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['unidade' => ['required', 'string', 'max:10']]);
+
+        $produto->update(['unidade' => $request->input('unidade')]);
+
+        return response()->json([
+            'unidade' => $produto->unidade,
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
+    public function sku(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['sku' => ['nullable', 'string', 'max:60']]);
+
+        $produto->update(['sku' => $request->input('sku', '')]);
+
+        return response()->json([
+            'sku' => $produto->sku ?? '',
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
