@@ -676,6 +676,20 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function valor(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate(['valor' => ['required', 'numeric', 'min:0']]);
+
+        $agendamento->update(['valor' => $request->input('valor')]);
+
+        return response()->json([
+            'valor' => (float) $agendamento->valor,
+            'updated_at' => $agendamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
