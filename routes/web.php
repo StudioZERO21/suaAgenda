@@ -147,6 +147,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     Route::patch('clientes/{cliente}/lgpd', [ClienteController::class, 'lgpd'])->name('clientes.lgpd');
     Route::patch('clientes/{cliente}/observacao', [ClienteController::class, 'observacao'])->name('clientes.observacao');
+    Route::patch('clientes/{cliente}/contato', [ClienteController::class, 'contato'])->name('clientes.contato');
     Route::get('clientes/{cliente}/stats', [ClienteController::class, 'stats'])->name('clientes.stats');
     Route::get('clientes/{cliente}/frequencia', [ClienteController::class, 'frequencia'])->name('clientes.frequencia');
     Route::get('clientes/{cliente}/servicos-favoritos', [ClienteController::class, 'servicosFavoritos'])->name('clientes.servicos-favoritos');
