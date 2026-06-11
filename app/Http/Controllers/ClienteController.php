@@ -425,6 +425,22 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function observacao(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate([
+            'observacao' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $cliente->update(['observacao' => $request->input('observacao')]);
+
+        return response()->json([
+            'observacao' => $cliente->observacao,
+            'updated_at' => $cliente->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function recentes(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
