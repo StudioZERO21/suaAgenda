@@ -386,6 +386,53 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function detalhe(Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $profissional->load(['servicos' => fn ($q) => $q->where('ativo', true)->orderBy('nome')]);
+
+        $mesInicio = Carbon::today()->startOfMonth();
+        $mesFim = Carbon::today()->endOfMonth();
+
+        $agsMes = Agendamento::where('profissional_id', $profissional->id)
+            ->whereBetween('data_hora', [$mesInicio, $mesFim]);
+
+        $totalMes = (clone $agsMes)->count();
+        $finalizadosMes = (clone $agsMes)->where('status', Agendamento::STATUS_FINALIZADO)->count();
+        $receitaMes = (float) (clone $agsMes)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
+        $notaMedia = round(
+            (float) (Avaliacao::whereHas('agendamento', fn ($q) => $q->where('profissional_id', $profissional->id))->avg('nota') ?? 0.0),
+            2
+        );
+
+        return response()->json([
+            'id' => $profissional->id,
+            'name' => $profissional->name,
+            'especialidade' => $profissional->especialidade ?? '',
+            'phone' => $profissional->phone ?? '',
+            'instagram' => $profissional->instagram ?? '',
+            'cor' => $profissional->cor ?? '#999999',
+            'comissao_pct' => (float) ($profissional->comissao_pct ?? 0),
+            'ativo' => $profissional->ativo,
+            'foto_url' => $profissional->foto_path ? Storage::disk('public')->url($profissional->foto_path) : null,
+            'servicos' => $profissional->servicos->map(fn (Servico $s) => [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'preco' => (float) $s->preco,
+            ])->values(),
+            'stats_mes' => [
+                'total' => $totalMes,
+                'finalizados' => $finalizadosMes,
+                'receita' => $receitaMes,
+                'taxa_conclusao' => $totalMes > 0 ? round($finalizadosMes / $totalMes * 100, 1) : 0.0,
+                'nota_media' => $notaMedia,
+            ],
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);

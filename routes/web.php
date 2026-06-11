@@ -143,6 +143,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/{profissional}/disponibilidade', [ProfissionalController::class, 'disponibilidade'])->name('profissionais.disponibilidade');
     Route::get('profissionais/{profissional}/servicos', [ProfissionalController::class, 'servicos'])->name('profissionais.servicos');
     Route::get('profissionais/{profissional}/agendamentos', [ProfissionalController::class, 'agendamentos'])->name('profissionais.agendamentos');
+    Route::get('profissionais/{profissional}/json', [ProfissionalController::class, 'detalhe'])->name('profissionais.detalhe');
     Route::get('profissionais/{profissional}/stats', [ProfissionalController::class, 'stats'])->name('profissionais.stats');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
