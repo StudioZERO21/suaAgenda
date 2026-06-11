@@ -466,6 +466,37 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function historicoCliente(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('view', $agendamento);
+
+        $limite = min((int) $request->input('limite', 10), 30);
+
+        $historico = Agendamento::where('company_id', $agendamento->company_id)
+            ->where('cliente_id', $agendamento->cliente_id)
+            ->where('id', '!=', $agendamento->id)
+            ->with(['servico:id,nome,cor', 'profissional:id,name', 'avaliacao:id,agendamento_id,nota'])
+            ->orderByDesc('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'servico_cor' => $ag->servico?->cor ?? '#999999',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'status' => $ag->status,
+                'valor' => (float) $ag->valor,
+                'nota' => $ag->avaliacao?->nota,
+            ]);
+
+        return response()->json([
+            'cliente_id' => $agendamento->cliente_id,
+            'total' => $historico->count(),
+            'items' => $historico,
+        ]);
+    }
+
     public function agenda(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
