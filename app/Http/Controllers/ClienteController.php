@@ -425,6 +425,32 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function servicosFavoritos(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $servicos = $cliente->agendamentos()
+            ->where('status', 'finalizado')
+            ->with('servico:id,nome,cor,preco')
+            ->get(['servico_id', 'valor'])
+            ->groupBy('servico_id')
+            ->map(function ($items): array {
+                $servico = $items->first()->servico;
+
+                return [
+                    'servico_id' => $servico?->id ?? '',
+                    'nome' => $servico?->nome ?? 'Sem serviço',
+                    'cor' => $servico?->cor ?? '#999999',
+                    'total_agendamentos' => $items->count(),
+                    'receita_total' => (float) $items->sum('valor'),
+                ];
+            })
+            ->sortByDesc('total_agendamentos')
+            ->values();
+
+        return response()->json($servicos);
+    }
+
     public function observacao(Request $request, Cliente $cliente): JsonResponse
     {
         $this->authorize('update', $cliente);
