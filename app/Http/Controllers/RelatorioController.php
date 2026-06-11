@@ -825,6 +825,36 @@ class RelatorioController extends Controller
         return response()->json($rows);
     }
 
+    public function receitaPorDia(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora', 'valor']);
+
+        $porDia = $agendamentos
+            ->groupBy(fn ($ag) => $ag->data_hora->toDateString())
+            ->map(fn ($items, string $data) => [
+                'data' => $data,
+                'label' => Carbon::parse($data)->format('d/m'),
+                'receita' => (float) $items->sum('valor'),
+                'total' => $items->count(),
+            ])
+            ->sortBy('data')
+            ->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'receita_total' => (float) $agendamentos->sum('valor'),
+            'dias' => $porDia,
+        ]);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
