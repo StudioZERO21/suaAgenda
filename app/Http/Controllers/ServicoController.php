@@ -250,6 +250,22 @@ class ServicoController extends Controller
         return response()->json(['ativo' => $servico->ativo]);
     }
 
+    public function preco(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate([
+            'preco' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $servico->update(['preco' => $request->input('preco')]);
+
+        return response()->json([
+            'preco' => (float) $servico->preco,
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function profissionais(Servico $servico): JsonResponse
     {
         $this->authorize('view', $servico);
