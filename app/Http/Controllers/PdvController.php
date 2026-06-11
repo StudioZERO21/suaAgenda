@@ -190,4 +190,37 @@ class PdvController extends Controller
 
         return response()->json(['ok' => true], 201);
     }
+
+    public function buscarProdutos(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q', ''));
+        $companyId = auth()->user()->empresa_id;
+
+        $query = Produto::where('company_id', $companyId)
+            ->where('ativo', true)
+            ->where('estoque', '>', 0);
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q): void {
+                $sub->where('nome', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('categoria', 'like', "%{$q}%");
+            });
+        }
+
+        $produtos = $query->orderBy('nome')
+            ->limit(15)
+            ->get(['id', 'nome', 'sku', 'categoria', 'preco', 'estoque', 'unidade'])
+            ->map(fn (Produto $p) => [
+                'id' => $p->id,
+                'nome' => $p->nome,
+                'sku' => $p->sku ?? '',
+                'categoria' => $p->categoria ?? '',
+                'preco' => (float) $p->preco,
+                'estoque' => (int) $p->estoque,
+                'unidade' => $p->unidade ?? 'un',
+            ]);
+
+        return response()->json($produtos);
+    }
 }

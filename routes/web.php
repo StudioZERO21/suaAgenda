@@ -87,6 +87,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::get('pdv', [PdvController::class, 'index'])->name('pdv');
     Route::get('pdv/resumo', [PdvController::class, 'resumo'])->name('pdv.resumo');
+    Route::get('pdv/produtos/buscar', [PdvController::class, 'buscarProdutos'])->name('pdv.produtos.buscar');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
 
