@@ -162,6 +162,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
 
     Route::get('cargos/json', [CargoController::class, 'listar'])->name('cargos.json');
+    Route::get('cargos/resumo', [CargoController::class, 'resumo'])->name('cargos.resumo');
     Route::get('cargos', [CargoController::class, 'index'])->name('cargos.index');
     Route::post('cargos', [CargoController::class, 'store'])->name('cargos.store');
     Route::put('cargos/{cargo}', [CargoController::class, 'update'])->name('cargos.update');
