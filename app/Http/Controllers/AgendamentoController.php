@@ -704,6 +704,29 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function reassignarServico(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate([
+            'servico_id' => ['required', 'uuid', 'exists:servicos,id'],
+        ]);
+
+        $servico = Servico::where('id', $request->input('servico_id'))
+            ->where('company_id', auth()->user()->empresa_id)
+            ->where('ativo', true)
+            ->firstOrFail();
+
+        $agendamento->update(['servico_id' => $servico->id]);
+
+        return response()->json([
+            'servico_id' => $agendamento->servico_id,
+            'servico_nome' => $servico->nome,
+            'servico_preco' => (float) $servico->preco,
+            'updated_at' => $agendamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function reassignarProfissional(Request $request, Agendamento $agendamento): JsonResponse
     {
         $this->authorize('update', $agendamento);
