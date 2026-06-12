@@ -669,6 +669,55 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function duracaoReal(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $minExecucoes = max(1, (int) $request->input('min_execucoes', 3));
+        $dias = $request->input('periodo_dias');
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'duracao_minutos']);
+
+        $agStats = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->selectRaw('servico_id, COUNT(*) as total, AVG(duracao) as duracao_media')
+            ->groupBy('servico_id')
+            ->get()
+            ->keyBy('servico_id');
+
+        $items = $servicos->map(function (Servico $s) use ($agStats, $minExecucoes): ?array {
+            $stat = $agStats->get($s->id);
+            $total = (int) ($stat?->total ?? 0);
+
+            if ($total < $minExecucoes) {
+                return null;
+            }
+
+            $duracaoMedia = round((float) $stat->duracao_media, 1);
+            $diferenca = round($duracaoMedia - $s->duracao_minutos, 1);
+
+            return [
+                'servico_id' => $s->id,
+                'servico_nome' => $s->nome,
+                'duracao_configurada' => (int) $s->duracao_minutos,
+                'duracao_media_real' => $duracaoMedia,
+                'diferenca_minutos' => $diferenca,
+                'total_execucoes' => $total,
+            ];
+        })->filter()->sortByDesc('diferenca_minutos')->values();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'min_execucoes' => $minExecucoes,
+            'total' => $items->count(),
+            'items' => $items,
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
