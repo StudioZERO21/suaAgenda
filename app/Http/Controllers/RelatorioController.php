@@ -909,6 +909,62 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function taxaCancelamento(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->with(['profissional:id,name,cor', 'servico:id,nome,cor'])
+            ->get(['status', 'profissional_id', 'servico_id']);
+
+        $total = $agendamentos->count();
+        $cancelados = $agendamentos->where('status', Agendamento::STATUS_CANCELADO)->count();
+        $taxa = $total > 0 ? round($cancelados / $total * 100, 1) : 0.0;
+
+        $porProfissional = $agendamentos->groupBy('profissional_id')->map(function ($items) {
+            $prof = $items->first()->profissional;
+            $t = $items->count();
+            $c = $items->where('status', Agendamento::STATUS_CANCELADO)->count();
+
+            return [
+                'id' => $prof?->id ?? '',
+                'name' => $prof?->name ?? 'Profissional removido',
+                'cor' => $prof?->cor ?? '#999999',
+                'total' => $t,
+                'cancelados' => $c,
+                'taxa' => $t > 0 ? round($c / $t * 100, 1) : 0.0,
+            ];
+        })->sortByDesc('taxa')->values();
+
+        $porServico = $agendamentos->groupBy('servico_id')->map(function ($items) {
+            $serv = $items->first()->servico;
+            $t = $items->count();
+            $c = $items->where('status', Agendamento::STATUS_CANCELADO)->count();
+
+            return [
+                'id' => $serv?->id ?? '',
+                'nome' => $serv?->nome ?? 'Serviço removido',
+                'cor' => $serv?->cor ?? '#999999',
+                'total' => $t,
+                'cancelados' => $c,
+                'taxa' => $t > 0 ? round($c / $t * 100, 1) : 0.0,
+            ];
+        })->sortByDesc('taxa')->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'total' => $total,
+            'cancelados' => $cancelados,
+            'taxa_cancelamento' => $taxa,
+            'por_profissional' => $porProfissional,
+            'por_servico' => $porServico,
+        ]);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
