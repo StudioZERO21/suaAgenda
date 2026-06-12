@@ -1089,6 +1089,62 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function comissaoMensal(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+        $empresa = auth()->user()->empresa_id;
+
+        $mes = (int) $request->input('mes', now()->month);
+        $ano = (int) $request->input('ano', now()->year);
+
+        $inicio = Carbon::create($ano, $mes, 1)->startOfMonth();
+        $fim = $inicio->copy()->endOfMonth();
+
+        $profissionais = Profissional::with('cargo')
+            ->where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'cargo_id', 'comissao_pct', 'cor']);
+
+        $receitas = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->endOfDay()])
+            ->selectRaw('profissional_id, SUM(valor) as receita, COUNT(*) as total_ag')
+            ->groupBy('profissional_id')
+            ->get()
+            ->keyBy('profissional_id');
+
+        $items = $profissionais->map(function (Profissional $p) use ($receitas): array {
+            $row = $receitas->get($p->id);
+            $receita = round((float) ($row?->receita ?? 0), 2);
+            $totalAg = (int) ($row?->total_ag ?? 0);
+            $pct = $p->comissao_pct !== null
+                ? (float) $p->comissao_pct
+                : (float) ($p->cargo?->comissao_pct ?? 0);
+            $comissao = round($receita * $pct / 100, 2);
+
+            return [
+                'profissional_id' => $p->id,
+                'profissional_nome' => $p->name,
+                'cor' => $p->cor ?? '#999999',
+                'comissao_pct' => $pct,
+                'total_agendamentos' => $totalAg,
+                'receita' => $receita,
+                'comissao' => $comissao,
+            ];
+        })->values();
+
+        return response()->json([
+            'mes' => $mes,
+            'ano' => $ano,
+            'mes_fmt' => $inicio->translatedFormat('F/Y'),
+            'total_profissionais' => $profissionais->count(),
+            'receita_total' => round((float) $items->sum('receita'), 2),
+            'comissao_total' => round((float) $items->sum('comissao'), 2),
+            'items' => $items,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
