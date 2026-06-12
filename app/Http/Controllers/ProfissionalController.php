@@ -794,6 +794,46 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function receitaPorServico(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+        $dias = $request->input('dias');
+
+        $agendamentos = $profissional->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->with('servico:id,nome,cor')
+            ->get(['servico_id', 'valor']);
+
+        $items = $agendamentos
+            ->groupBy('servico_id')
+            ->map(function ($items) {
+                $servico = $items->first()->servico;
+
+                return [
+                    'servico_id' => $servico?->id ?? '',
+                    'servico_nome' => $servico?->nome ?? 'Sem serviço',
+                    'servico_cor' => $servico?->cor ?? '#999999',
+                    'total_realizados' => $items->count(),
+                    'receita_total' => (float) $items->sum('valor'),
+                    'ticket_medio' => $items->count() > 0 ? round((float) $items->avg('valor'), 2) : null,
+                ];
+            })
+            ->sortByDesc('receita_total')
+            ->take($limite)
+            ->values();
+
+        return response()->json([
+            'profissional_id' => $profissional->id,
+            'profissional_nome' => $profissional->name,
+            'total_servicos' => $items->count(),
+            'receita_total' => (float) $agendamentos->sum('valor'),
+            'items' => $items,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
