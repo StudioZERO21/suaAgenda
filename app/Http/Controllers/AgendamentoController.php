@@ -862,6 +862,40 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function semAvaliacao(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(90, (int) $request->input('dias', 30)));
+        $limite = min((int) $request->input('limite', 20), 100);
+
+        $items = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->doesntHave('avaliacao')
+            ->with(['cliente:id,name,phone', 'servico:id,nome', 'profissional:id,name'])
+            ->orderByDesc('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'agendamento_id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'cliente_nome' => $ag->cliente?->name ?? '',
+                'cliente_phone' => $ag->cliente?->phone ?? '',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'valor' => (float) $ag->valor,
+                'dias_desde' => (int) $ag->data_hora->diffInDays(now()),
+            ]);
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total' => $items->count(),
+            'items' => $items->values(),
+        ]);
+    }
+
     public function detalhe(Agendamento $agendamento): JsonResponse
     {
         $this->authorize('view', $agendamento);
