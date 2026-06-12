@@ -296,6 +296,20 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function categoria(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate(['categoria' => ['required', 'string', 'max:60']]);
+
+        $servico->update(['categoria' => $request->input('categoria')]);
+
+        return response()->json([
+            'categoria' => $servico->categoria,
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function descricao(Request $request, Servico $servico): JsonResponse
     {
         $this->authorize('update', $servico);
