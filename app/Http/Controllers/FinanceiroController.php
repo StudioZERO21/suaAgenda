@@ -326,6 +326,24 @@ class FinanceiroController extends Controller
         return response()->json($lancamentos);
     }
 
+    public function statusLancamento(Request $request, Lancamento $lancamento): JsonResponse
+    {
+        abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
+
+        if (! auth()->user()->hasAnyRole(['admin_empresa', 'gestor'])) {
+            abort(403);
+        }
+
+        $request->validate(['status' => ['required', 'in:pendente,pago,cancelado']]);
+
+        $lancamento->update(['status' => $request->input('status')]);
+
+        return response()->json([
+            'status' => $lancamento->status,
+            'updated_at' => $lancamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroyLancamento(Lancamento $lancamento): Response
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
