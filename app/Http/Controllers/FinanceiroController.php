@@ -385,6 +385,43 @@ class FinanceiroController extends Controller
         ]);
     }
 
+    public function lancamentosVencendo(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(90, (int) $request->input('dias', 7)));
+        $tipo = $request->input('tipo');
+
+        $inicio = today();
+        $fim = today()->addDays($dias);
+
+        $lancamentos = Lancamento::where('company_id', $empresa)
+            ->where('status', 'pendente')
+            ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+            ->when(in_array($tipo, ['receita', 'despesa'], true), fn ($q) => $q->where('tipo', $tipo))
+            ->orderBy('data')
+            ->get(['id', 'descricao', 'categoria', 'tipo', 'valor', 'data', 'metodo_pagamento'])
+            ->map(fn (Lancamento $l) => [
+                'id' => $l->id,
+                'descricao' => $l->descricao,
+                'categoria' => $l->categoria ?? '',
+                'tipo' => $l->tipo,
+                'valor' => (float) $l->valor,
+                'metodo_pagamento' => $l->metodo_pagamento ?? '',
+                'data_vencimento' => $l->data->format('Y-m-d'),
+                'dias_para_vencer' => (int) $inicio->diffInDays($l->data),
+            ]);
+
+        return response()->json([
+            'dias' => $dias,
+            'data_inicio' => $inicio->format('Y-m-d'),
+            'data_fim' => $fim->format('Y-m-d'),
+            'total' => $lancamentos->count(),
+            'total_receitas' => round((float) $lancamentos->where('tipo', 'receita')->sum('valor'), 2),
+            'total_despesas' => round((float) $lancamentos->where('tipo', 'despesa')->sum('valor'), 2),
+            'items' => $lancamentos->values(),
+        ]);
+    }
+
     public function topCategorias(Request $request): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;
