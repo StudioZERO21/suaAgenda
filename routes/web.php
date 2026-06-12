@@ -215,6 +215,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('clientes/recentes', [ClienteController::class, 'recentes'])->name('clientes.recentes');
     Route::get('clientes/top-gastadores', [ClienteController::class, 'topGastadores'])->name('clientes.top-gastadores');
     Route::get('clientes/top-frequentes', [ClienteController::class, 'topFrequentes'])->name('clientes.top-frequentes');
+    Route::get('clientes/inativos', [ClienteController::class, 'inativos'])->name('clientes.inativos');
     Route::get('clientes/sem-agendamentos', [ClienteController::class, 'semAgendamentos'])->name('clientes.sem-agendamentos');
     Route::get('clientes/por-mes-cadastro', [ClienteController::class, 'porMesCadastro'])->name('clientes.por-mes-cadastro');
     Route::get('clientes/segmentos', [ClienteController::class, 'segmentos'])->name('clientes.segmentos');
