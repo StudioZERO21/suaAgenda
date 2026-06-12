@@ -95,6 +95,19 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function categorias(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $categorias = Produto::where('company_id', $companyId)
+            ->whereNotNull('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria');
+
+        return response()->json($categorias->values());
+    }
+
     public function buscar(Request $request): JsonResponse
     {
         $companyId = auth()->user()->empresa_id;
