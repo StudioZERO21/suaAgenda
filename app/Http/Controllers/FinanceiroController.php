@@ -344,6 +344,20 @@ class FinanceiroController extends Controller
         ]);
     }
 
+    public function observacaoLancamento(Request $request, Lancamento $lancamento): JsonResponse
+    {
+        abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['observacao' => ['nullable', 'string', 'max:1000']]);
+
+        $lancamento->update(['observacao' => $request->input('observacao')]);
+
+        return response()->json([
+            'observacao' => $lancamento->observacao ?? '',
+            'updated_at' => $lancamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function showLancamento(Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
