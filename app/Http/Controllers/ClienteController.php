@@ -749,6 +749,38 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function avaliacoes(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $avaliacoes = Avaliacao::where('company_id', auth()->user()->empresa_id)
+            ->whereHas('agendamento', fn ($q) => $q->where('cliente_id', $cliente->id))
+            ->with(['agendamento.servico:id,nome', 'agendamento.profissional:id,name'])
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'id' => $av->id,
+                'nota' => $av->nota,
+                'comentario' => $av->comentario ?? '',
+                'data' => $av->created_at->toDateString(),
+                'servico_nome' => $av->agendamento?->servico?->nome ?? 'Serviço removido',
+                'profissional_nome' => $av->agendamento?->profissional?->name ?? 'Profissional removido',
+            ]);
+
+        $notaMedia = $avaliacoes->count() > 0
+            ? round($avaliacoes->avg('nota'), 2)
+            : null;
+
+        return response()->json([
+            'total_avaliacoes' => $avaliacoes->count(),
+            'nota_media' => $notaMedia,
+            'items' => $avaliacoes->values(),
+        ]);
+    }
+
     public function compras(Request $request, Cliente $cliente): JsonResponse
     {
         $this->authorize('view', $cliente);
