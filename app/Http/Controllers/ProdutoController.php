@@ -62,6 +62,40 @@ class ProdutoController extends Controller
         return response()->json($produtos);
     }
 
+    public function resumoEstoque(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $produtos = Produto::where('company_id', $companyId)
+            ->where('ativo', true)
+            ->get(['nome', 'categoria', 'estoque', 'estoque_min', 'preco', 'custo']);
+
+        $semEstoque = $produtos->filter(fn (Produto $p) => $p->estoque <= 0);
+        $estoqueBaixo = $produtos->filter(fn (Produto $p) => $p->estoque > 0 && $p->estoque <= $p->estoque_min);
+
+        $valorVenda = $produtos->sum(fn (Produto $p) => (float) $p->preco * $p->estoque);
+        $valorCusto = $produtos->sum(fn (Produto $p) => (float) $p->custo * $p->estoque);
+
+        $porCategoria = $produtos->groupBy('categoria')->map(function ($items, string $categoria): array {
+            return [
+                'categoria' => $categoria ?: 'Sem categoria',
+                'total_produtos' => $items->count(),
+                'valor_estoque' => round((float) $items->sum(fn (Produto $p) => (float) $p->preco * $p->estoque), 2),
+            ];
+        })->sortByDesc('valor_estoque')->values();
+
+        return response()->json([
+            'total_produtos' => $produtos->count(),
+            'sem_estoque' => $semEstoque->count(),
+            'estoque_baixo' => $estoqueBaixo->count(),
+            'ok' => $produtos->count() - $semEstoque->count() - $estoqueBaixo->count(),
+            'valor_total_venda' => round($valorVenda, 2),
+            'valor_total_custo' => round($valorCusto, 2),
+            'margem_bruta' => $valorCusto > 0 ? round(($valorVenda - $valorCusto) / $valorVenda * 100, 1) : null,
+            'por_categoria' => $porCategoria,
+        ]);
+    }
+
     public function exportarCsv(): StreamedResponse
     {
         $companyId = auth()->user()->empresa_id;
