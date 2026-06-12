@@ -690,6 +690,20 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function duracao(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate(['duracao' => ['required', 'integer', 'min:5', 'max:480']]);
+
+        $agendamento->update(['duracao' => $request->integer('duracao')]);
+
+        return response()->json([
+            'duracao' => $agendamento->duracao,
+            'updated_at' => $agendamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
