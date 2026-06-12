@@ -467,6 +467,43 @@ class FinanceiroController extends Controller
         ]);
     }
 
+    public function porMetodoPagamento(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('dias');
+
+        $lancamentos = Lancamento::where('company_id', $empresa)
+            ->where('status', 'pago')
+            ->when($dias !== null, fn ($q) => $q->where('data', '>=', today()->subDays((int) $dias)))
+            ->get(['metodo_pagamento', 'tipo', 'valor']);
+
+        $total = $lancamentos->count();
+        $valorTotal = (float) $lancamentos->sum('valor');
+
+        $itens = $lancamentos
+            ->groupBy(fn ($l) => $l->metodo_pagamento ?? 'não informado')
+            ->map(function ($items, $metodo) use ($total, $valorTotal): array {
+                $valor = (float) $items->sum('valor');
+
+                return [
+                    'metodo' => $metodo,
+                    'total_lancamentos' => $items->count(),
+                    'valor_total' => $valor,
+                    'pct_quantidade' => $total > 0 ? round($items->count() / $total * 100, 1) : 0.0,
+                    'pct_valor' => $valorTotal > 0 ? round($valor / $valorTotal * 100, 1) : 0.0,
+                ];
+            })
+            ->sortByDesc('valor_total')
+            ->values();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total_lancamentos' => $total,
+            'valor_total' => $valorTotal,
+            'items' => $itens,
+        ]);
+    }
+
     public function categoriaLancamento(Request $request, Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
