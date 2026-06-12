@@ -89,6 +89,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/top-clientes', [RelatorioController::class, 'topClientes'])->name('relatorios.top-clientes');
     Route::get('relatorios/receita-por-dia', [RelatorioController::class, 'receitaPorDia'])->name('relatorios.receita-por-dia');
     Route::get('relatorios/media-ticket', [RelatorioController::class, 'mediaTicket'])->name('relatorios.media-ticket');
+    Route::get('relatorios/taxa-cancelamento', [RelatorioController::class, 'taxaCancelamento'])->name('relatorios.taxa-cancelamento');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
     Route::get('financeiro/resumo', [FinanceiroController::class, 'resumo'])->name('financeiro.resumo');
     Route::get('financeiro/fluxo-caixa', [FinanceiroController::class, 'fluxoCaixa'])->name('financeiro.fluxo-caixa');
