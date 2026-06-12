@@ -265,6 +265,20 @@ class PdvController extends Controller
         ]);
     }
 
+    public function observacaoVenda(Request $request, Venda $venda): JsonResponse
+    {
+        abort_if($venda->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['observacao' => ['nullable', 'string', 'max:500']]);
+
+        $venda->update(['observacao' => $request->input('observacao')]);
+
+        return response()->json([
+            'observacao' => $venda->observacao ?? '',
+            'updated_at' => $venda->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroyVenda(Venda $venda): Response
     {
         abort_if($venda->company_id !== auth()->user()->empresa_id, 403);
