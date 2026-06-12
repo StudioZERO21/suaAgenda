@@ -586,6 +586,50 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function taxaCancelamento(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'cor', 'preco', 'ativo']);
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->whereIn('servico_id', $servicos->pluck('id'))
+            ->get(['servico_id', 'status'])
+            ->groupBy('servico_id');
+
+        $items = $servicos->map(function (Servico $s) use ($agendamentos): array {
+            $ags = $agendamentos->get($s->id, collect());
+            $total = $ags->count();
+            $cancelados = $ags->where('status', Agendamento::STATUS_CANCELADO)->count();
+            $taxa = $total > 0 ? round($cancelados / $total * 100, 1) : null;
+
+            return [
+                'servico_id' => $s->id,
+                'servico_nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'preco' => (float) $s->preco,
+                'ativo' => (bool) $s->ativo,
+                'total_agendamentos' => $total,
+                'cancelados' => $cancelados,
+                'taxa_cancelamento_pct' => $taxa,
+            ];
+        })->filter(fn (array $r) => $r['total_agendamentos'] > 0)
+            ->sortByDesc('taxa_cancelamento_pct')
+            ->values();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total' => $items->count(),
+            'items' => $items,
+        ]);
+    }
+
     public function semAgendamento(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Servico::class);
