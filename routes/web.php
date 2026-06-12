@@ -226,6 +226,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/buscar', [ServicoController::class, 'buscar'])->name('servicos.buscar');
     Route::get('servicos/categorias', [ServicoController::class, 'categorias'])->name('servicos.categorias');
     Route::get('servicos/ativos', [ServicoController::class, 'ativos'])->name('servicos.ativos');
+    Route::get('servicos/sem-profissional', [ServicoController::class, 'semProfissional'])->name('servicos.sem-profissional');
     Route::get('servicos/estatisticas', [ServicoController::class, 'estatisticas'])->name('servicos.estatisticas');
     Route::get('servicos/exportar', [ServicoController::class, 'exportarCsv'])->name('servicos.exportar');
     Route::resource('servicos', ServicoController::class)->except(['show']);

@@ -179,6 +179,32 @@ class ServicoController extends Controller
         return response()->json($servicos);
     }
 
+    public function semProfissional(): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $comProfissional = Servico::where('company_id', $empresa)
+            ->has('profissionais')
+            ->pluck('id');
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->whereNotIn('id', $comProfissional)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'cor', 'duracao_minutos', 'preco', 'ativo'])
+            ->map(fn (Servico $s) => [
+                'id' => $s->id,
+                'nome' => $s->nome,
+                'cor' => $s->cor ?? '#999999',
+                'duracao_minutos' => (int) $s->duracao_minutos,
+                'preco' => (float) $s->preco,
+                'ativo' => $s->ativo,
+            ]);
+
+        return response()->json(['total' => $servicos->count(), 'items' => $servicos]);
+    }
+
     public function estatisticas(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Servico::class);
