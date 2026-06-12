@@ -772,6 +772,28 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function getAvaliacao(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('view', $agendamento);
+
+        $avaliacao = Avaliacao::where('agendamento_id', $agendamento->id)->first();
+
+        if ($avaliacao === null) {
+            return response()->json(['avaliado' => false, 'avaliacao' => null]);
+        }
+
+        return response()->json([
+            'avaliado' => true,
+            'avaliacao' => [
+                'id' => $avaliacao->id,
+                'nota' => $avaliacao->nota,
+                'comentario' => $avaliacao->comentario ?? '',
+                'estrelas' => $avaliacao->estrelas(),
+                'created_at' => $avaliacao->created_at->toIso8601String(),
+            ],
+        ]);
+    }
+
     public function avaliacao(Request $request, Agendamento $agendamento): JsonResponse
     {
         $this->authorize('view', $agendamento);
