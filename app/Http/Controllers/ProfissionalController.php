@@ -10,6 +10,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\BloqueioAgenda;
 use App\Models\Cargo;
+use App\Models\Cliente;
 use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
@@ -759,6 +760,37 @@ class ProfissionalController extends Controller
             'cancelados' => $cancelados,
             'taxa_conclusao' => $total > 0 ? round($finalizados / $total * 100, 1) : null,
             'taxa_cancelamento' => $total > 0 ? round($cancelados / $total * 100, 1) : null,
+        ]);
+    }
+
+    public function clientes(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 20), 50);
+
+        $clienteIds = $profissional->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->distinct()
+            ->pluck('cliente_id');
+
+        $clientes = Cliente::whereIn('id', $clienteIds)
+            ->orderBy('name')
+            ->limit($limite)
+            ->get(['id', 'name', 'phone', 'email', 'ativo'])
+            ->map(fn (Cliente $c) => [
+                'id' => $c->id,
+                'nome' => $c->name,
+                'phone' => $c->phone ?? '',
+                'email' => $c->email ?? '',
+                'ativo' => (bool) $c->ativo,
+            ]);
+
+        return response()->json([
+            'profissional_id' => $profissional->id,
+            'profissional_nome' => $profissional->name,
+            'total' => $clientes->count(),
+            'items' => $clientes->values(),
         ]);
     }
 
