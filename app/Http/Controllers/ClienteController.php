@@ -1055,4 +1055,40 @@ class ClienteController extends Controller
             'items' => $itens,
         ]);
     }
+
+    public function valorVitalicio(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $agendamentos = $cliente->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->get(['data_hora', 'valor']);
+
+        $receitaAgendamentos = (float) $agendamentos->sum('valor');
+        $totalAgendamentos = $agendamentos->count();
+
+        $vendas = Venda::where('company_id', $empresa)
+            ->where('cliente_id', $cliente->id)
+            ->get(['total', 'created_at']);
+
+        $receitaVendas = (float) $vendas->sum('total');
+        $totalVendas = $vendas->count();
+
+        $totalLtv = round($receitaAgendamentos + $receitaVendas, 2);
+        $primeiraInteracao = $agendamentos->merge($vendas)->sortBy('data_hora')->first();
+
+        return response()->json([
+            'cliente_id' => $cliente->id,
+            'cliente_nome' => $cliente->name,
+            'ltv_total' => $totalLtv,
+            'receita_agendamentos' => $receitaAgendamentos,
+            'total_agendamentos' => $totalAgendamentos,
+            'receita_vendas' => $receitaVendas,
+            'total_vendas' => $totalVendas,
+            'primeira_interacao' => $primeiraInteracao?->data_hora?->toIso8601String()
+                ?? $primeiraInteracao?->created_at?->toIso8601String(),
+        ]);
+    }
 }
