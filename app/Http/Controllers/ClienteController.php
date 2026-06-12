@@ -557,6 +557,41 @@ class ClienteController extends Controller
         return response()->json(['total' => $clientes->count(), 'dias' => $dias, 'items' => $clientes]);
     }
 
+    public function semAgendamentos(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 20), 100);
+        $apenasAtivos = filter_var($request->input('apenas_ativos', true), FILTER_VALIDATE_BOOLEAN);
+
+        $comAgendamentos = Agendamento::where('company_id', $empresa)
+            ->whereNotNull('cliente_id')
+            ->distinct('cliente_id')
+            ->pluck('cliente_id');
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->whereNotIn('id', $comAgendamentos)
+            ->when($apenasAtivos, fn ($q) => $q->where('ativo', true))
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get(['id', 'name', 'phone', 'email', 'ativo', 'created_at'])
+            ->map(fn (Cliente $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'phone' => $c->phone ?? '',
+                'email' => $c->email ?? '',
+                'ativo' => $c->ativo,
+                'cadastrado_em' => $c->created_at->toIso8601String(),
+            ]);
+
+        return response()->json([
+            'total' => $clientes->count(),
+            'apenas_ativos' => $apenasAtivos,
+            'items' => $clientes,
+        ]);
+    }
+
     public function topGastadores(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
