@@ -92,6 +92,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('relatorios/receita-por-dia', [RelatorioController::class, 'receitaPorDia'])->name('relatorios.receita-por-dia');
     Route::get('relatorios/media-ticket', [RelatorioController::class, 'mediaTicket'])->name('relatorios.media-ticket');
     Route::get('relatorios/taxa-cancelamento', [RelatorioController::class, 'taxaCancelamento'])->name('relatorios.taxa-cancelamento');
+    Route::get('relatorios/novos-clientes', [RelatorioController::class, 'novosClientes'])->name('relatorios.novos-clientes');
     Route::get('relatorios/por-dia-semana', [RelatorioController::class, 'agendamentosPorDiaSemana'])->name('relatorios.por-dia-semana');
     Route::get('relatorios/ticket-por-hora', [RelatorioController::class, 'ticketPorHora'])->name('relatorios.ticket-por-hora');
     Route::get('financeiro', [FinanceiroController::class, 'index'])->name('financeiro');
