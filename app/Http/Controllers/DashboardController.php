@@ -27,6 +27,10 @@ class DashboardController extends Controller
         $user = auth()->user();
         $empresa = $user->empresa_id;
 
+        if ($user->hasRole('super_admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
         if (! $empresa) {
             return view('dashboard', ['stats' => null]);
         }
