@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -73,10 +73,10 @@ describe('site_remove_banner', function () {
             ->assertOk();
     });
 
-    it('analista pode remover banner', function () {
+    it('analista não pode remover banner (sem cfg_site)', function () {
         $this->actingAs($this->analista)
             ->deleteJson(route('site.remove.banner'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('unauthenticated é rejeitado', function () {

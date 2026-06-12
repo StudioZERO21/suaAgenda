@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Venda;
 use App\Models\VendaItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 

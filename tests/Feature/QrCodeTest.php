@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -37,12 +37,10 @@ describe('qrcode_empresa', function () {
         expect($response->headers->get('content-type'))->toContain('image/svg+xml');
     });
 
-    it('analista pode baixar QR code', function () {
-        $response = $this->actingAs($this->analista)
-            ->get(route('configuracoes.empresa.qrcode'));
-
-        $response->assertOk();
-        expect($response->headers->get('content-type'))->toContain('image/svg+xml');
+    it('analista não pode baixar QR code (sem permissão de configurações)', function () {
+        $this->actingAs($this->analista)
+            ->get(route('configuracoes.empresa.qrcode'))
+            ->assertForbidden();
     });
 
     it('QR code contém SVG válido', function () {

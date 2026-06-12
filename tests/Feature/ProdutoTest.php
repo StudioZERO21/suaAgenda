@@ -5,11 +5,11 @@ declare(strict_types=1);
 use App\Models\Company;
 use App\Models\Produto;
 use App\Models\ProdutoImagem;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 

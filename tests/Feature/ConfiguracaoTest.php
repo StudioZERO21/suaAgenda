@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -48,10 +48,10 @@ describe('configuracoes preferencias', function () {
             ->assertOk();
     });
 
-    it('analista pode ver configurações', function () {
+    it('analista não pode ver configurações (sem permissão)', function () {
         $this->actingAs($this->analista)
             ->get(route('configuracoes'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('admin pode salvar preferências de tema', function () {
@@ -239,6 +239,6 @@ describe('configuracoes empresa', function () {
 
         $this->actingAs($semEmpresa)
             ->get(route('configuracoes'))
-            ->assertStatus(404);
+            ->assertForbidden();
     });
 });

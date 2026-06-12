@@ -56,7 +56,7 @@ describe('permission_teams', function () {
             ->and($this->adminA->can('cli_delete'))->toBeTrue();
     });
 
-    it('analista recebe somente o conjunto do grupo Profissional', function () {
+    it('analista recebe visualização ampla sem permissões administrativas', function () {
         $analista = User::create([
             'name' => 'Analista', 'email' => 'analista@teste.com',
             'password' => bcrypt('secret123'), 'empresa_id' => $this->empresaA->id, 'ativo' => true,
@@ -66,8 +66,9 @@ describe('permission_teams', function () {
         setPermissionsTeamId($this->empresaA->id);
 
         expect($analista->can('cal_own'))->toBeTrue()
-            ->and($analista->can('fin_own'))->toBeTrue()
-            ->and($analista->can('fin_view'))->toBeFalse()
+            ->and($analista->can('fin_view'))->toBeTrue()
+            ->and($analista->can('cli_delete'))->toBeFalse()
+            ->and($analista->can('stf_edit'))->toBeFalse()
             ->and($analista->can('cfg_perms'))->toBeFalse();
     });
 

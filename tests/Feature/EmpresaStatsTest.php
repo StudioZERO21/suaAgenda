@@ -6,10 +6,10 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\Profissional;
+use App\Models\Role;
 use App\Models\Servico;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -106,10 +106,10 @@ describe('empresa_stats', function () {
         expect((float) $data['receita_mes'])->toBe(0.0);
     });
 
-    it('analista pode ver stats', function () {
+    it('analista não pode ver stats (sem permissão de configurações)', function () {
         $this->actingAs($this->analista)
             ->getJson(route('configuracoes.empresa.stats'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('unauthenticated é redirecionado', function () {

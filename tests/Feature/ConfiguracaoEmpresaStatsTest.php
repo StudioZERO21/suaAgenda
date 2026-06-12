@@ -6,10 +6,10 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\Profissional;
+use App\Models\Role;
 use App\Models\Servico;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -130,10 +130,10 @@ describe('configuracao_empresa_stats', function () {
             ->assertOk();
     });
 
-    it('analista pode acessar', function () {
+    it('analista não pode acessar (sem permissão de configurações)', function () {
         $this->actingAs($this->analista)
             ->getJson(route('configuracoes.empresa.stats'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('unauthenticated é rejeitado', function () {

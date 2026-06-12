@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -52,16 +52,16 @@ describe('permissoes index', function () {
             ->assertOk();
     });
 
-    it('gestor pode acessar permissões', function () {
+    it('gestor não pode acessar permissões (sem cfg_perms)', function () {
         $this->actingAs($this->gestor)
             ->get(route('permissoes.index'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
-    it('analista pode acessar permissões', function () {
+    it('analista não pode acessar permissões (sem cfg_perms)', function () {
         $this->actingAs($this->analista)
             ->get(route('permissoes.index'))
-            ->assertOk();
+            ->assertForbidden();
     });
 });
 

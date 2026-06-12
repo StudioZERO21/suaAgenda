@@ -8,10 +8,10 @@ use App\Models\Lancamento;
 use App\Models\Notificacao;
 use App\Models\PortfolioItem;
 use App\Models\Produto;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Venda;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
