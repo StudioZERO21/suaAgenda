@@ -909,6 +909,38 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function agendamentosPorDiaSemana(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora', 'status', 'valor']);
+
+        $nomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        $porDia = collect(range(0, 6))->map(function (int $diaSemana) use ($agendamentos, $nomes): array {
+            $items = $agendamentos->filter(fn ($ag) => $ag->data_hora->dayOfWeek === $diaSemana);
+            $finalizados = $items->where('status', Agendamento::STATUS_FINALIZADO);
+
+            return [
+                'dia' => $diaSemana,
+                'nome' => $nomes[$diaSemana],
+                'total' => $items->count(),
+                'receita' => (float) $finalizados->sum('valor'),
+            ];
+        })->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'dias' => $porDia,
+        ]);
+    }
+
     public function taxaCancelamento(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
