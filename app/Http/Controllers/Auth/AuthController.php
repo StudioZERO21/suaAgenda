@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -39,13 +40,17 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
+        $request->ensureIsNotRateLimited();
+
         if (Auth::attempt($request->credentials(), $request->boolean('remember'))) {
+            RateLimiter::clear($request->throttleKey());
             $request->session()->regenerate();
             Log::channel('security')->info('login_sucesso', ['user_id' => Auth::id(), 'ip' => $request->ip()]);
 
             return redirect()->intended(route('dashboard'));
         }
 
+        RateLimiter::hit($request->throttleKey());
         Log::channel('security')->warning('login_falho', ['email' => $request->email, 'ip' => $request->ip()]);
 
         return back()->withErrors(['email' => 'E-mail ou senha incorretos.'])->onlyInput('email');
