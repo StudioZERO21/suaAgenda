@@ -544,6 +544,41 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function porHora(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->get(['data_hora', 'status']);
+
+        $porHora = $agendamentos->groupBy(fn (Agendamento $a) => (int) $a->data_hora->format('G'));
+
+        $horas = collect(range(0, 23))->map(function (int $hora) use ($porHora): array {
+            $items = $porHora->get($hora, collect());
+
+            return [
+                'hora' => $hora,
+                'hora_fmt' => sprintf('%02d:00', $hora),
+                'total' => $items->count(),
+                'finalizados' => $items->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                'cancelados' => $items->where('status', Agendamento::STATUS_CANCELADO)->count(),
+            ];
+        });
+
+        $horaPico = $horas->sortByDesc('total')->first();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total' => $agendamentos->count(),
+            'horas' => $horas->values(),
+            'hora_pico' => $horaPico['total'] > 0 ? $horaPico : null,
+        ]);
+    }
+
     public function resumoHoje(): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
