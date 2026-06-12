@@ -480,6 +480,31 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function contagemPorStatus(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('dias');
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->get(['status']);
+
+        $byStatus = $agendamentos->groupBy('status');
+        $total = $agendamentos->count();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total' => $total,
+            'pendente' => $byStatus->get(Agendamento::STATUS_PENDENTE, collect())->count(),
+            'confirmado' => $byStatus->get(Agendamento::STATUS_CONFIRMADO, collect())->count(),
+            'em_atendimento' => $byStatus->get(Agendamento::STATUS_EM_ATENDIMENTO, collect())->count(),
+            'finalizado' => $byStatus->get(Agendamento::STATUS_FINALIZADO, collect())->count(),
+            'cancelado' => $byStatus->get(Agendamento::STATUS_CANCELADO, collect())->count(),
+        ]);
+    }
+
     public function resumoHoje(): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
