@@ -862,6 +862,45 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function potenciaisNoShow(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $horas = max(1, min(48, (int) $request->input('horas', 2)));
+        $dias = max(1, min(30, (int) $request->input('dias', 7)));
+        $limite = min((int) $request->input('limite', 50), 200);
+
+        $corte = now()->subHours($horas);
+
+        $items = Agendamento::where('company_id', $empresa)
+            ->whereIn('status', [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
+            ->where('data_hora', '<', $corte)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->with(['cliente:id,name,phone', 'servico:id,nome', 'profissional:id,name'])
+            ->orderByDesc('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $ag) => [
+                'agendamento_id' => $ag->id,
+                'data_hora' => $ag->data_hora->toIso8601String(),
+                'status' => $ag->status,
+                'cliente_nome' => $ag->cliente?->name ?? '',
+                'cliente_phone' => $ag->cliente?->phone ?? '',
+                'profissional_nome' => $ag->profissional?->name ?? '',
+                'servico_nome' => $ag->servico?->nome ?? '',
+                'valor' => (float) $ag->valor,
+                'horas_atraso' => (int) $ag->data_hora->diffInHours(now()),
+            ]);
+
+        return response()->json([
+            'horas_tolerancia' => $horas,
+            'periodo_dias' => $dias,
+            'total' => $items->count(),
+            'items' => $items->values(),
+        ]);
+    }
+
     public function semAvaliacao(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
