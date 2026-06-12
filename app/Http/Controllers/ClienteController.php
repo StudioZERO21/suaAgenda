@@ -812,4 +812,18 @@ class ClienteController extends Controller
             'items' => $vendas->values(),
         ]);
     }
+
+    public function nome(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('update', $cliente);
+
+        $request->validate(['nome' => ['required', 'string', 'max:120']]);
+
+        $cliente->update(['name' => $request->input('nome')]);
+
+        return response()->json([
+            'nome' => $cliente->name,
+            'updated_at' => $cliente->updated_at->toIso8601String(),
+        ]);
+    }
 }
