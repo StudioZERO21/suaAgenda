@@ -399,4 +399,34 @@ class PdvController extends Controller
             'dias' => $serie,
         ]);
     }
+
+    public function categoriasReceita(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('dias');
+
+        $itens = VendaItem::whereHas('venda', function ($q) use ($empresa, $dias): void {
+            $q->where('company_id', $empresa)
+                ->when($dias !== null, fn ($q) => $q->where('created_at', '>=', now()->subDays((int) $dias)));
+        })
+            ->with('produto:id,categoria')
+            ->get(['produto_id', 'qtd', 'preco_unit'])
+            ->filter(fn ($i) => $i->produto !== null)
+            ->groupBy(fn ($i) => $i->produto->categoria ?? 'sem categoria')
+            ->map(function ($items, $categoria): array {
+                return [
+                    'categoria' => $categoria,
+                    'total_itens' => (int) $items->sum('qtd'),
+                    'receita' => (float) $items->sum(fn ($i) => $i->qtd * $i->preco_unit),
+                ];
+            })
+            ->sortByDesc('receita')
+            ->values();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total_categorias' => $itens->count(),
+            'items' => $itens,
+        ]);
+    }
 }
