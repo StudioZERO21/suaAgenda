@@ -191,6 +191,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('clientes/aniversariantes', [ClienteController::class, 'aniversariantes'])->name('clientes.aniversariantes');
     Route::get('clientes/recentes', [ClienteController::class, 'recentes'])->name('clientes.recentes');
     Route::get('clientes/top-gastadores', [ClienteController::class, 'topGastadores'])->name('clientes.top-gastadores');
+    Route::get('clientes/sem-agendamentos', [ClienteController::class, 'semAgendamentos'])->name('clientes.sem-agendamentos');
     Route::get('clientes/segmentos', [ClienteController::class, 'segmentos'])->name('clientes.segmentos');
     Route::get('clientes/exportar', [ClienteController::class, 'exportarCsv'])->name('clientes.exportar');
     Route::get('clientes/exportar/segmento', [ClienteController::class, 'exportarSegmento'])->name('clientes.exportar.segmento');
