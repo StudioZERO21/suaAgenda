@@ -557,6 +557,35 @@ class ClienteController extends Controller
         return response()->json(['total' => $clientes->count(), 'dias' => $dias, 'items' => $clientes]);
     }
 
+    public function porMesCadastro(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $ano = (int) $request->input('ano', now()->year);
+
+        $clientes = Cliente::where('company_id', $empresa)
+            ->whereYear('created_at', $ano)
+            ->get(['created_at', 'ativo']);
+
+        $meses = collect(range(1, 12))->map(function (int $mes) use ($clientes): array {
+            $deste = $clientes->filter(fn (Cliente $c) => $c->created_at->month === $mes);
+
+            return [
+                'mes' => $mes,
+                'mes_nome' => now()->setMonth($mes)->translatedFormat('M'),
+                'total' => $deste->count(),
+                'ativos' => $deste->where('ativo', true)->count(),
+            ];
+        });
+
+        return response()->json([
+            'ano' => $ano,
+            'total_ano' => $clientes->count(),
+            'meses' => $meses,
+        ]);
+    }
+
     public function semAgendamentos(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
