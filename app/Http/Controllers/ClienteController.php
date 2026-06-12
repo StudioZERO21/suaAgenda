@@ -1120,4 +1120,41 @@ class ClienteController extends Controller
                 ?? $primeiraInteracao?->created_at?->toIso8601String(),
         ]);
     }
+
+    public function topFrequentes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 10), 50);
+        $dias = $request->input('dias');
+
+        $agQuery = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->selectRaw('cliente_id, COUNT(*) as total_visitas, SUM(valor) as receita_total, MAX(data_hora) as ultima_visita')
+            ->groupBy('cliente_id')
+            ->orderByDesc('total_visitas')
+            ->limit($limite)
+            ->get();
+
+        $clienteIds = $agQuery->pluck('cliente_id');
+        $clientes = Cliente::whereIn('id', $clienteIds)->get(['id', 'name', 'phone', 'ativo'])->keyBy('id');
+
+        $items = $agQuery->map(fn ($row) => [
+            'cliente_id' => $row->cliente_id,
+            'nome' => $clientes->get($row->cliente_id)?->name ?? '',
+            'phone' => $clientes->get($row->cliente_id)?->phone ?? '',
+            'ativo' => (bool) ($clientes->get($row->cliente_id)?->ativo ?? false),
+            'total_visitas' => (int) $row->total_visitas,
+            'receita_total' => (float) $row->receita_total,
+            'ultima_visita' => $row->ultima_visita,
+        ])->values();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total' => $items->count(),
+            'items' => $items,
+        ]);
+    }
 }
