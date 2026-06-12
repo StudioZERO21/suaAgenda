@@ -1029,6 +1029,41 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function novosClientes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $clientes = Cliente::where('company_id', $empresaId)
+            ->whereBetween('created_at', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['id', 'created_at']);
+
+        $porSemana = $clientes
+            ->groupBy(fn (Cliente $c) => $c->created_at->startOfWeek()->toDateString())
+            ->map(fn ($items, string $semana) => [
+                'semana' => $semana,
+                'label' => Carbon::parse($semana)->format('d/m'),
+                'novos' => $items->count(),
+            ])
+            ->sortBy('semana')
+            ->values();
+
+        $acumulado = 0;
+        $porSemana = $porSemana->map(function (array $entry) use (&$acumulado) {
+            $acumulado += $entry['novos'];
+
+            return array_merge($entry, ['acumulado' => $acumulado]);
+        })->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'total' => $clientes->count(),
+            'por_semana' => $porSemana,
+        ]);
+    }
+
     /** @return array{0: Carbon, 1: Carbon} */
     private function resolverPeriodo(Request $request): array
     {
