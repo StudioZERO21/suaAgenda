@@ -16,3 +16,4 @@ Schedule::command('agendamentos:cancelar-pendentes')->hourly();
 Schedule::command('relatorio:semanal')->weeklyOn(1, '09:00');
 Schedule::command('notificacoes:limpar')->monthlyOn(1, '03:00');
 Schedule::command('activitylog:clean')->dailyAt('02:00');
+Schedule::command('lgpd:retencao')->dailyAt('03:30');

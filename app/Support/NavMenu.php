@@ -36,6 +36,7 @@ final class NavMenu
             ['route' => 'admin.empresas.index', 'label' => 'Empresas',  'permission' => null, 'match' => 'admin.empresas.*', 'icon' => '<path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>'],
             ['route' => 'admin.auditoria.index', 'label' => 'Auditoria', 'permission' => null, 'match' => 'admin.auditoria.*', 'icon' => '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
             ['route' => 'admin.saude.index', 'label' => 'Saúde', 'permission' => null, 'match' => 'admin.saude.*', 'icon' => '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'],
+            ['route' => 'admin.lgpd.index', 'label' => 'LGPD', 'permission' => null, 'match' => 'admin.lgpd.*', 'icon' => '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'],
         ];
     }
 

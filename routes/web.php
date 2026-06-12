@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\AdminAuditoriaController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
+use App\Http\Controllers\Admin\AdminLgpdController;
 use App\Http\Controllers\Admin\AdminSaudeController;
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
@@ -59,6 +60,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('auditoria', [AdminAuditoriaController::class, 'index'])->name('auditoria.index');
     Route::get('auditoria/json', [AdminAuditoriaController::class, 'json'])->name('auditoria.json');
     Route::get('saude', [AdminSaudeController::class, 'index'])->name('saude.index');
+    Route::get('lgpd', [AdminLgpdController::class, 'index'])->name('lgpd.index');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
@@ -252,6 +254,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::patch('clientes/{cliente}/nome', [ClienteController::class, 'nome'])->name('clientes.nome');
     Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     Route::patch('clientes/{cliente}/lgpd', [ClienteController::class, 'lgpd'])->name('clientes.lgpd');
+    Route::get('clientes/{cliente}/exportar-dados', [ClienteController::class, 'exportarDados'])->name('clientes.exportar-dados');
+    Route::post('clientes/{cliente}/anonimizar', [ClienteController::class, 'anonimizar'])->name('clientes.anonimizar');
     Route::patch('clientes/{cliente}/observacao', [ClienteController::class, 'observacao'])->name('clientes.observacao');
     Route::patch('clientes/{cliente}/contato', [ClienteController::class, 'contato'])->name('clientes.contato');
     Route::patch('clientes/{cliente}/nascimento', [ClienteController::class, 'nascimento'])->name('clientes.nascimento');

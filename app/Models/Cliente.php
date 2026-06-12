@@ -23,6 +23,9 @@ class Cliente extends Model
         'email',
         'data_nasc',
         'lgpd_consent',
+        'lgpd_consent_at',
+        'lgpd_consent_ip',
+        'anonymized_at',
         'observacao',
         'ativo',
     ];
@@ -32,8 +35,15 @@ class Cliente extends Model
         return [
             'data_nasc' => 'date',
             'lgpd_consent' => 'boolean',
+            'lgpd_consent_at' => 'datetime',
+            'anonymized_at' => 'datetime',
             'ativo' => 'boolean',
         ];
+    }
+
+    public function anonimizado(): bool
+    {
+        return $this->anonymized_at !== null;
     }
 
     public function company(): BelongsTo

@@ -11,6 +11,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
 use App\Models\Venda;
+use App\Services\LgpdService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -68,6 +69,8 @@ class ClienteController extends Controller
             ...$request->validated(),
             'company_id' => auth()->user()->empresa_id,
             'lgpd_consent' => $request->boolean('lgpd_consent'),
+            'lgpd_consent_at' => $request->boolean('lgpd_consent') ? now() : null,
+            'lgpd_consent_ip' => $request->boolean('lgpd_consent') ? $request->ip() : null,
         ]);
 
         return redirect()->route('clientes.show', $cliente)
@@ -118,12 +121,50 @@ class ClienteController extends Controller
             'consent' => ['required', 'boolean'],
         ]);
 
-        $cliente->update(['lgpd_consent' => $request->boolean('consent')]);
+        $consent = $request->boolean('consent');
+
+        $cliente->update([
+            'lgpd_consent' => $consent,
+            'lgpd_consent_at' => $consent ? now() : null,
+            'lgpd_consent_ip' => $consent ? $request->ip() : null,
+        ]);
 
         return response()->json([
             'lgpd_consent' => $cliente->lgpd_consent,
+            'lgpd_consent_at' => $cliente->lgpd_consent_at?->toIso8601String(),
             'updated_at' => $cliente->updated_at->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Portabilidade (LGPD): download de todos os dados do titular.
+     */
+    public function exportarDados(Cliente $cliente, LgpdService $lgpd): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $dados = $lgpd->exportarDados($cliente);
+        $lgpd->registrarExportacao($cliente);
+
+        $nomeArquivo = 'dados-titular-'.$cliente->id.'-'.now()->format('Ymd-His').'.json';
+
+        return response()->json($dados, 200, [
+            'Content-Disposition' => 'attachment; filename="'.$nomeArquivo.'"',
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Direito ao esquecimento (LGPD): anonimização irreversível.
+     */
+    public function anonimizar(Cliente $cliente, LgpdService $lgpd): JsonResponse
+    {
+        $this->authorize('delete', $cliente);
+
+        abort_if($cliente->anonimizado(), 422, 'Cliente já anonimizado.');
+
+        $lgpd->anonimizar($cliente);
+
+        return response()->json(['success' => true]);
     }
 
     public function toggle(Cliente $cliente): JsonResponse
