@@ -10,7 +10,9 @@ use App\Models\Cliente;
 use App\Models\Lancamento;
 use App\Models\Produto;
 use App\Models\Profissional;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -20,12 +22,19 @@ class DashboardController extends Controller
         '#1a1a1a', '#d4a574', '#6366f1', '#10b981', '#f59e0b', '#ec4899',
     ];
 
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
-        $empresa = auth()->user()->empresa_id;
+        $user = auth()->user();
+        $empresa = $user->empresa_id;
 
         if (! $empresa) {
             return view('dashboard', ['stats' => null]);
+        }
+
+        // Dispatcher por perfil: quem não tem visão completa da agenda
+        // (cal_view) vê o dashboard do funcionário (dados próprios).
+        if (! $user->can('cal_view')) {
+            return redirect()->route('dashboard.funcionario');
         }
 
         $hoje = today();
@@ -273,7 +282,9 @@ class DashboardController extends Controller
         $hoje = today();
         $amanha = $hoje->copy()->addDays(3);
 
-        $baseHoje = Agendamento::where('company_id', $empresa)->whereDate('data_hora', $hoje);
+        $baseHoje = Agendamento::where('company_id', $empresa)
+            ->when($this->apenasProprio(), fn ($q) => $q->where('profissional_id', auth()->user()->profissional_id))
+            ->whereDate('data_hora', $hoje);
 
         $hojeTotal = (clone $baseHoje)->count();
         $hojeFinalizados = (clone $baseHoje)->where('status', Agendamento::STATUS_FINALIZADO)->count();
@@ -281,6 +292,7 @@ class DashboardController extends Controller
         $hoje3Receita = (float) (clone $baseHoje)->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
 
         $proximos3Dias = Agendamento::where('company_id', $empresa)
+            ->when($this->apenasProprio(), fn ($q) => $q->where('profissional_id', auth()->user()->profissional_id))
             ->whereBetween('data_hora', [$hoje->copy()->startOfDay(), $amanha->copy()->endOfDay()])
             ->whereIn('status', [Agendamento::STATUS_CONFIRMADO, Agendamento::STATUS_PENDENTE])
             ->count();
@@ -366,47 +378,47 @@ class DashboardController extends Controller
         $mesAnteriorInicio = $mesInicio->copy()->subMonth();
         $mesAnteriorFim = $mesInicio->copy()->subDay()->endOfDay();
 
-        $receitaHoje = (float) Agendamento::where('company_id', $empresa)
+        $receitaHoje = (float) $this->baseReceita($empresa)
             ->whereDate('data_hora', $hoje)
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $receitaOntem = (float) Agendamento::where('company_id', $empresa)
+        $receitaOntem = (float) $this->baseReceita($empresa)
             ->whereDate('data_hora', $hoje->copy()->subDay())
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $receitaSemana = (float) Agendamento::where('company_id', $empresa)
+        $receitaSemana = (float) $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$semanaInicio, $hoje->copy()->endOfDay()])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $receitaSemanaAnterior = (float) Agendamento::where('company_id', $empresa)
+        $receitaSemanaAnterior = (float) $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$semanaAnteriorInicio, $semanaAnteriorFim])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $receitaMes = (float) Agendamento::where('company_id', $empresa)
+        $receitaMes = (float) $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$mesInicio, $hoje->copy()->endOfDay()])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $receitaMesAnterior = (float) Agendamento::where('company_id', $empresa)
+        $receitaMesAnterior = (float) $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$mesAnteriorInicio, $mesAnteriorFim])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->sum('valor');
 
-        $agendamentosHoje = Agendamento::where('company_id', $empresa)
+        $agendamentosHoje = $this->baseReceita($empresa)
             ->whereDate('data_hora', $hoje)
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->count();
 
-        $agendamentosSemana = Agendamento::where('company_id', $empresa)
+        $agendamentosSemana = $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$semanaInicio, $hoje->copy()->endOfDay()])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->count();
 
-        $agendamentosMes = Agendamento::where('company_id', $empresa)
+        $agendamentosMes = $this->baseReceita($empresa)
             ->whereBetween('data_hora', [$mesInicio, $hoje->copy()->endOfDay()])
             ->where('status', Agendamento::STATUS_FINALIZADO)
             ->count();
@@ -517,6 +529,24 @@ class DashboardController extends Controller
             'a_pagar' => round($aPagar, 2),
             'inadimplentes_count' => $inadimplentesCount,
         ]);
+    }
+
+    /**
+     * Usuário sem fin_view só enxerga os próprios números (fin_own).
+     */
+    private function apenasProprio(): bool
+    {
+        return ! auth()->user()->can('fin_view');
+    }
+
+    /**
+     * Base de agendamentos para métricas de receita, restrita ao próprio
+     * profissional quando o usuário não tem fin_view.
+     */
+    private function baseReceita(string $empresa): Builder
+    {
+        return Agendamento::where('company_id', $empresa)
+            ->when($this->apenasProprio(), fn ($q) => $q->where('profissional_id', auth()->user()->profissional_id));
     }
 
     /**
