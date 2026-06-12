@@ -1,0 +1,122 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Models\Agendamento;
+use App\Models\Cliente;
+use App\Models\Company;
+use App\Models\Profissional;
+use App\Models\Servico;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Role::firstOrCreate(['name' => 'admin_empresa', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'analista', 'guard_name' => 'web']);
+
+    $this->company = Company::create([
+        'name' => 'Barbearia TPH', 'slug' => 'barbearia-tph',
+        'plano' => 'trial', 'ativo' => true,
+    ]);
+
+    $this->admin = User::factory()->create(['empresa_id' => $this->company->id]);
+    $this->admin->assignRole('admin_empresa');
+
+    $this->analista = User::factory()->create(['empresa_id' => $this->company->id]);
+    $this->analista->assignRole('analista');
+
+    $this->prof = Profissional::create(['company_id' => $this->company->id, 'name' => 'Carlos', 'ativo' => true]);
+    $this->servico = Servico::create(['company_id' => $this->company->id, 'nome' => 'Corte', 'preco' => 50.0, 'duracao_minutos' => 30, 'ativo' => true]);
+    $this->cliente = Cliente::create(['company_id' => $this->company->id, 'name' => 'João', 'ativo' => true]);
+});
+
+describe('relatorio_ticket_por_hora', function () {
+    it('retorna 17 horas (6h–22h) com estrutura correta quando sem dados', function () {
+        $data = $this->actingAs($this->admin)
+            ->getJson(route('relatorios.ticket-por-hora'))
+            ->assertOk()
+            ->json();
+
+        expect($data)->toHaveKeys(['periodo', 'horas']);
+        expect($data['horas'])->toHaveCount(17);
+        expect($data['horas'][0])->toHaveKeys(['hora', 'label', 'total', 'receita', 'ticket_medio']);
+        expect($data['horas'][0]['hora'])->toBe(6);
+    });
+
+    it('calcula ticket médio para a hora correta', function () {
+        Agendamento::create([
+            'company_id' => $this->company->id, 'cliente_id' => $this->cliente->id,
+            'profissional_id' => $this->prof->id, 'servico_id' => $this->servico->id,
+            'data_hora' => now()->subDays(1)->setHour(10)->setMinute(0)->setSecond(0)->toDateTimeString(),
+            'duracao' => 30, 'valor' => 80.0, 'status' => 'finalizado',
+        ]);
+        Agendamento::create([
+            'company_id' => $this->company->id, 'cliente_id' => $this->cliente->id,
+            'profissional_id' => $this->prof->id, 'servico_id' => $this->servico->id,
+            'data_hora' => now()->subDays(2)->setHour(10)->setMinute(30)->setSecond(0)->toDateTimeString(),
+            'duracao' => 30, 'valor' => 60.0, 'status' => 'finalizado',
+        ]);
+
+        $data = $this->actingAs($this->admin)
+            ->getJson(route('relatorios.ticket-por-hora'))
+            ->assertOk()
+            ->json();
+
+        $hora10 = collect($data['horas'])->firstWhere('hora', 10);
+        expect($hora10['total'])->toBe(2);
+        expect((float) $hora10['ticket_medio'])->toBe(70.0);
+    });
+
+    it('ignora agendamentos não finalizados', function () {
+        Agendamento::create([
+            'company_id' => $this->company->id, 'cliente_id' => $this->cliente->id,
+            'profissional_id' => $this->prof->id, 'servico_id' => $this->servico->id,
+            'data_hora' => now()->subDays(1)->setHour(14)->setMinute(0)->setSecond(0)->toDateTimeString(),
+            'duracao' => 30, 'valor' => 100.0, 'status' => 'pendente',
+        ]);
+
+        $data = $this->actingAs($this->admin)
+            ->getJson(route('relatorios.ticket-por-hora'))
+            ->assertOk()
+            ->json();
+
+        $totalGeral = collect($data['horas'])->sum('total');
+        expect($totalGeral)->toBe(0);
+    });
+
+    it('não inclui dados de outra empresa', function () {
+        $outra = Company::create(['name' => 'Outra', 'slug' => 'outra-tph', 'plano' => 'trial', 'ativo' => true]);
+        $profOutra = Profissional::create(['company_id' => $outra->id, 'name' => 'X', 'ativo' => true]);
+        $servOutra = Servico::create(['company_id' => $outra->id, 'nome' => 'X', 'preco' => 50.0, 'duracao_minutos' => 30, 'ativo' => true]);
+        $cliOutra = Cliente::create(['company_id' => $outra->id, 'name' => 'Y', 'ativo' => true]);
+
+        Agendamento::create([
+            'company_id' => $outra->id, 'cliente_id' => $cliOutra->id,
+            'profissional_id' => $profOutra->id, 'servico_id' => $servOutra->id,
+            'data_hora' => now()->subDays(1)->setHour(9)->setMinute(0)->setSecond(0)->toDateTimeString(),
+            'duracao' => 30, 'valor' => 999.0, 'status' => 'finalizado',
+        ]);
+
+        $data = $this->actingAs($this->admin)
+            ->getJson(route('relatorios.ticket-por-hora'))
+            ->assertOk()
+            ->json();
+
+        $totalGeral = collect($data['horas'])->sum('total');
+        expect($totalGeral)->toBe(0);
+    });
+
+    it('analista pode acessar', function () {
+        $this->actingAs($this->analista)
+            ->getJson(route('relatorios.ticket-por-hora'))
+            ->assertOk();
+    });
+
+    it('unauthenticated é rejeitado', function () {
+        $this->getJson(route('relatorios.ticket-por-hora'))
+            ->assertUnauthorized();
+    });
+});
