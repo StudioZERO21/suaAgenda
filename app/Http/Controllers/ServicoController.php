@@ -456,6 +456,27 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function tempoMedio(Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $agendamentos = $servico->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->get(['duracao', 'valor']);
+
+        $total = $agendamentos->count();
+
+        return response()->json([
+            'servico_id' => $servico->id,
+            'servico_nome' => $servico->nome,
+            'duracao_configurada' => (int) $servico->duracao_minutos,
+            'total_realizados' => $total,
+            'duracao_media' => $total > 0 ? round($agendamentos->avg('duracao'), 1) : null,
+            'valor_medio' => $total > 0 ? round((float) $agendamentos->avg('valor'), 2) : null,
+            'valor_total' => (float) $agendamentos->sum('valor'),
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
