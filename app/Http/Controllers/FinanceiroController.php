@@ -357,6 +357,34 @@ class FinanceiroController extends Controller
         return response()->json($categorias->values());
     }
 
+    public function inadimplentes(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 20), 100);
+
+        $lancamentos = Lancamento::where('company_id', $empresa)
+            ->where('status', 'pendente')
+            ->where('data', '<', today())
+            ->orderBy('data')
+            ->limit($limite)
+            ->get(['id', 'descricao', 'categoria', 'tipo', 'valor', 'data', 'status'])
+            ->map(fn (Lancamento $l) => [
+                'id' => $l->id,
+                'descricao' => $l->descricao,
+                'categoria' => $l->categoria ?? '',
+                'tipo' => $l->tipo,
+                'valor' => (float) $l->valor,
+                'data_vencimento' => $l->data->format('Y-m-d'),
+                'dias_atraso' => (int) $l->data->diffInDays(today()),
+            ]);
+
+        return response()->json([
+            'total' => $lancamentos->count(),
+            'valor_total' => (float) $lancamentos->sum('valor'),
+            'items' => $lancamentos->values(),
+        ]);
+    }
+
     public function topCategorias(Request $request): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;
