@@ -414,6 +414,59 @@ class FinanceiroController extends Controller
         return response()->json(['total_categorias' => $categorias->count(), 'items' => $categorias]);
     }
 
+    public function comparativo(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        $mes = (int) $request->input('mes', now()->month);
+        $ano = (int) $request->input('ano', now()->year);
+
+        $atual = Carbon::createFromDate($ano, $mes, 1);
+        $anterior = $atual->copy()->subMonth();
+
+        $calcularPeriodo = function (Carbon $referencia) use ($empresa): array {
+            $inicio = $referencia->copy()->startOfMonth();
+            $fim = $referencia->copy()->endOfMonth();
+
+            $lancamentos = Lancamento::where('company_id', $empresa)
+                ->where('status', 'pago')
+                ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+                ->get(['tipo', 'valor']);
+
+            $receita = (float) $lancamentos->where('tipo', 'receita')->sum('valor');
+            $despesa = (float) $lancamentos->where('tipo', 'despesa')->sum('valor');
+
+            return [
+                'mes' => $referencia->month,
+                'ano' => $referencia->year,
+                'mes_nome' => $referencia->translatedFormat('F'),
+                'total_lancamentos' => $lancamentos->count(),
+                'receita' => $receita,
+                'despesa' => $despesa,
+                'saldo' => round($receita - $despesa, 2),
+            ];
+        };
+
+        $dadosAtual = $calcularPeriodo($atual);
+        $dadosAnterior = $calcularPeriodo($anterior);
+
+        $variacaoPct = function (float $atual, float $anterior): ?float {
+            if ($anterior == 0.0) {
+                return null;
+            }
+
+            return round(($atual - $anterior) / $anterior * 100, 1);
+        };
+
+        return response()->json([
+            'periodo_atual' => $dadosAtual,
+            'periodo_anterior' => $dadosAnterior,
+            'variacao_receita_pct' => $variacaoPct($dadosAtual['receita'], $dadosAnterior['receita']),
+            'variacao_despesa_pct' => $variacaoPct($dadosAtual['despesa'], $dadosAnterior['despesa']),
+            'variacao_saldo_pct' => $variacaoPct($dadosAtual['saldo'], $dadosAnterior['saldo']),
+        ]);
+    }
+
     public function categoriaLancamento(Request $request, Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
