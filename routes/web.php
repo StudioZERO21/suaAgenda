@@ -51,6 +51,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/dashboard/alertas', [DashboardController::class, 'alertas'])->name('dashboard.alertas');
     Route::get('/dashboard/receita', [DashboardController::class, 'receita'])->name('dashboard.receita');
     Route::get('/dashboard/kanban', [DashboardController::class, 'kanban'])->name('dashboard.kanban');
+    Route::get('/dashboard/sumario-financeiro', [DashboardController::class, 'sumarioFinanceiro'])->name('dashboard.sumario-financeiro');
 
     Route::get('agendamentos/resumo-hoje', [AgendamentoController::class, 'resumoHoje'])->name('agendamentos.resumo-hoje');
     Route::get('agendamentos/por-profissional', [AgendamentoController::class, 'porProfissional'])->name('agendamentos.por-profissional');
