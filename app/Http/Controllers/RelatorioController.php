@@ -1029,6 +1029,55 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function receitaMensal(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        $meses = max(1, min(24, (int) $request->input('meses', 12)));
+        $inicio = now()->subMonths($meses - 1)->startOfMonth();
+        $fim = now()->endOfMonth();
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio, $fim])
+            ->get(['data_hora', 'valor']);
+
+        $porMes = collect();
+        for ($i = $meses - 1; $i >= 0; $i--) {
+            $mes = now()->subMonths($i)->startOfMonth();
+            $chave = $mes->format('Y-m');
+            $porMes->put($chave, [
+                'mes' => $chave,
+                'label' => $mes->translatedFormat('M/y'),
+                'receita' => 0.0,
+                'total' => 0,
+            ]);
+        }
+
+        $agendamentos
+            ->groupBy(fn ($ag) => $ag->data_hora->format('Y-m'))
+            ->each(function ($items, string $chave) use ($porMes): void {
+                if ($porMes->has($chave)) {
+                    $porMes->put($chave, array_merge($porMes->get($chave), [
+                        'receita' => (float) $items->sum('valor'),
+                        'total' => $items->count(),
+                    ]));
+                }
+            });
+
+        $mesesList = $porMes->values();
+        $receitaTotal = (float) $mesesList->sum('receita');
+        $melhorMes = $mesesList->sortByDesc('receita')->first();
+
+        return response()->json([
+            'meses' => $meses,
+            'receita_total' => $receitaTotal,
+            'melhor_mes' => $melhorMes ? $melhorMes['mes'] : null,
+            'dados' => $mesesList->values(),
+        ]);
+    }
+
     public function churn(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
