@@ -122,6 +122,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('produtos/estoque-baixo', [ProdutoController::class, 'estoqueBaixo'])->name('produtos.estoque-baixo');
     Route::get('produtos/resumo-estoque', [ProdutoController::class, 'resumoEstoque'])->name('produtos.resumo-estoque');
     Route::get('produtos/mais-rentaveis', [ProdutoController::class, 'maisRentaveis'])->name('produtos.mais-rentaveis');
+    Route::get('produtos/giro-estoque', [ProdutoController::class, 'giroEstoque'])->name('produtos.giro-estoque');
     Route::get('produtos/exportar', [ProdutoController::class, 'exportarCsv'])->name('produtos.exportar');
     Route::get('produtos', [ProdutoController::class, 'index'])->name('produtos.index');
     Route::post('produtos', [ProdutoController::class, 'store'])->name('produtos.store');

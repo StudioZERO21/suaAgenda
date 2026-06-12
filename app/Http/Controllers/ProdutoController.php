@@ -483,6 +483,54 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function giroEstoque(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+        $apenasAtivos = filter_var($request->input('apenas_ativos', true), FILTER_VALIDATE_BOOLEAN);
+
+        $produtos = Produto::where('company_id', $companyId)
+            ->when($apenasAtivos, fn ($q) => $q->where('ativo', true))
+            ->get(['id', 'nome', 'categoria', 'preco', 'estoque', 'estoque_min', 'ativo']);
+
+        $vendas = VendaItem::whereIn('produto_id', $produtos->pluck('id'))
+            ->whereHas('venda', fn ($q) => $q
+                ->where('company_id', $companyId)
+                ->where('created_at', '>=', now()->subDays($dias)->startOfDay())
+            )
+            ->selectRaw('produto_id, SUM(qtd) as qtd_vendida, SUM(qtd * preco_unit) as receita')
+            ->groupBy('produto_id')
+            ->get()
+            ->keyBy('produto_id');
+
+        $items = $produtos->map(function (Produto $p) use ($vendas, $dias): array {
+            $venda = $vendas->get($p->id);
+            $qtdVendida = (int) ($venda?->qtd_vendida ?? 0);
+            $receita = round((float) ($venda?->receita ?? 0), 2);
+            $giro = $p->estoque > 0 ? round($qtdVendida / $p->estoque, 2) : null;
+            $diasEstoque = $qtdVendida > 0 ? round($p->estoque / ($qtdVendida / $dias), 0) : null;
+
+            return [
+                'id' => $p->id,
+                'nome' => $p->nome,
+                'categoria' => $p->categoria ?? 'Outros',
+                'preco' => (float) $p->preco,
+                'estoque_atual' => $p->estoque,
+                'estoque_min' => $p->estoque_min,
+                'qtd_vendida' => $qtdVendida,
+                'receita_periodo' => $receita,
+                'giro' => $giro,
+                'dias_estoque' => $diasEstoque !== null ? (int) $diasEstoque : null,
+            ];
+        })->sortByDesc('giro')->values();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_produtos' => $produtos->count(),
+            'items' => $items,
+        ]);
+    }
+
     private function toJson(Produto $p): array
     {
         $imagens = $p->relationLoaded('imagens') ? $p->imagens : collect();
