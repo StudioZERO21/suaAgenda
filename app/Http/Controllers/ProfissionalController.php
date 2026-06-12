@@ -544,6 +544,22 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function admissao(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'admissao' => ['nullable', 'date', 'date_format:Y-m-d', 'before_or_equal:today'],
+        ]);
+
+        $profissional->update(['admissao' => $request->input('admissao')]);
+
+        return response()->json([
+            'admissao' => $profissional->admissao?->format('Y-m-d'),
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function proximos(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
