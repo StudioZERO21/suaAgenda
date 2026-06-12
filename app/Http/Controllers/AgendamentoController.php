@@ -862,6 +862,56 @@ class AgendamentoController extends Controller
         return response()->json(['total' => $items->count(), 'items' => $items]);
     }
 
+    public function antecedenciaMedia(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->where('created_at', '>=', now()->subDays($dias)->startOfDay())
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->get(['created_at', 'data_hora', 'status']);
+
+        if ($agendamentos->isEmpty()) {
+            return response()->json([
+                'periodo_dias' => $dias,
+                'total' => 0,
+                'antecedencia_media_dias' => null,
+                'antecedencia_min_dias' => null,
+                'antecedencia_max_dias' => null,
+                'mesmo_dia' => 0,
+                'menos_de_1_dia' => 0,
+                'ate_3_dias' => 0,
+                'mais_de_3_dias' => 0,
+            ]);
+        }
+
+        $antecedencias = $agendamentos->map(function (Agendamento $ag): int {
+            $diff = (int) $ag->created_at->startOfDay()->diffInDays($ag->data_hora->startOfDay(), false);
+
+            return max(0, $diff);
+        });
+
+        $mesmodia = $antecedencias->filter(fn (int $d) => $d === 0)->count();
+        $menos1 = $antecedencias->filter(fn (int $d) => $d === 1)->count();
+        $ate3 = $antecedencias->filter(fn (int $d) => $d >= 2 && $d <= 3)->count();
+        $mais3 = $antecedencias->filter(fn (int $d) => $d > 3)->count();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total' => $agendamentos->count(),
+            'antecedencia_media_dias' => round($antecedencias->avg(), 1),
+            'antecedencia_min_dias' => $antecedencias->min(),
+            'antecedencia_max_dias' => $antecedencias->max(),
+            'mesmo_dia' => $mesmodia,
+            'menos_de_1_dia' => $menos1,
+            'ate_3_dias' => $ate3,
+            'mais_de_3_dias' => $mais3,
+        ]);
+    }
+
     public function potenciaisNoShow(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);

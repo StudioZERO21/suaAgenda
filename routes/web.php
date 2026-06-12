@@ -67,6 +67,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('agendamentos/cancelados', [AgendamentoController::class, 'cancelados'])->name('agendamentos.cancelados');
     Route::get('agendamentos/sem-avaliacao', [AgendamentoController::class, 'semAvaliacao'])->name('agendamentos.sem-avaliacao');
     Route::get('agendamentos/potenciais-no-show', [AgendamentoController::class, 'potenciaisNoShow'])->name('agendamentos.potenciais-no-show');
+    Route::get('agendamentos/antecedencia-media', [AgendamentoController::class, 'antecedenciaMedia'])->name('agendamentos.antecedencia-media');
     Route::get('agendamentos/pendentes', [AgendamentoController::class, 'pendentes'])->name('agendamentos.pendentes');
     Route::get('agendamentos/em-atendimento', [AgendamentoController::class, 'emAtendimento'])->name('agendamentos.em-atendimento');
     Route::get('agendamentos/agenda', [AgendamentoController::class, 'agenda'])->name('agendamentos.agenda');
