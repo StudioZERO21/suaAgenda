@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreServicoRequest;
 use App\Http\Requests\UpdateServicoRequest;
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Carbon\Carbon;
@@ -390,6 +391,38 @@ class ServicoController extends Controller
             ]);
 
         return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
+    }
+
+    public function avaliacoes(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $avaliacoes = Avaliacao::where('company_id', auth()->user()->empresa_id)
+            ->whereHas('agendamento', fn ($q) => $q->where('servico_id', $servico->id))
+            ->with(['agendamento.cliente:id,name', 'agendamento.profissional:id,name'])
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'id' => $av->id,
+                'nota' => $av->nota,
+                'comentario' => $av->comentario ?? '',
+                'data' => $av->created_at->toDateString(),
+                'cliente_nome' => $av->agendamento?->cliente?->name ?? 'Cliente removido',
+                'profissional_nome' => $av->agendamento?->profissional?->name ?? 'Profissional removido',
+            ]);
+
+        $notaMedia = $avaliacoes->count() > 0
+            ? round($avaliacoes->avg('nota'), 2)
+            : null;
+
+        return response()->json([
+            'total_avaliacoes' => $avaliacoes->count(),
+            'nota_media' => $notaMedia,
+            'items' => $avaliacoes->values(),
+        ]);
     }
 
     public function nome(Request $request, Servico $servico): JsonResponse
