@@ -445,6 +445,44 @@ class ProdutoController extends Controller
         return response()->json($this->toJson($produto));
     }
 
+    public function maisRentaveis(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 10), 50);
+        $apenasAtivos = filter_var($request->input('apenas_ativos', true), FILTER_VALIDATE_BOOLEAN);
+
+        $produtos = Produto::where('company_id', $companyId)
+            ->when($apenasAtivos, fn ($q) => $q->where('ativo', true))
+            ->whereNotNull('custo')
+            ->where('custo', '>', 0)
+            ->get(['id', 'nome', 'categoria', 'preco', 'custo', 'estoque', 'ativo']);
+
+        $ranked = $produtos->map(function (Produto $p): array {
+            $preco = (float) $p->preco;
+            $custo = (float) $p->custo;
+            $lucro = $preco - $custo;
+            $margem = $preco > 0 ? round($lucro / $preco * 100, 1) : 0.0;
+
+            return [
+                'id' => $p->id,
+                'nome' => $p->nome,
+                'categoria' => $p->categoria ?? 'Outros',
+                'preco' => $preco,
+                'custo' => $custo,
+                'lucro_unitario' => round($lucro, 2),
+                'margem_pct' => $margem,
+                'estoque' => $p->estoque,
+                'valor_lucro_estoque' => round($lucro * $p->estoque, 2),
+                'ativo' => (bool) $p->ativo,
+            ];
+        })->sortByDesc('margem_pct')->take($limite)->values();
+
+        return response()->json([
+            'total' => $ranked->count(),
+            'items' => $ranked,
+        ]);
+    }
+
     private function toJson(Produto $p): array
     {
         $imagens = $p->relationLoaded('imagens') ? $p->imagens : collect();
