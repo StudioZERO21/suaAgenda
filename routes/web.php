@@ -212,6 +212,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('clientes/{cliente}/timeline', [ClienteController::class, 'timeline'])->name('clientes.timeline');
     Route::get('clientes/{cliente}/ticket-medio', [ClienteController::class, 'ticketMedio'])->name('clientes.ticket-medio');
     Route::get('clientes/{cliente}/tempo-sem-visita', [ClienteController::class, 'tempoSemVisita'])->name('clientes.tempo-sem-visita');
+    Route::get('clientes/{cliente}/produtos-favoritos', [ClienteController::class, 'produtosFavoritos'])->name('clientes.produtos-favoritos');
     Route::get('clientes/{cliente}/fotos', [ClienteController::class, 'fotos'])->name('clientes.fotos.index');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');

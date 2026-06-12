@@ -983,4 +983,41 @@ class ClienteController extends Controller
             'risco_churn' => $risco,
         ]);
     }
+
+    public function produtosFavoritos(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $itens = Venda::where('company_id', auth()->user()->empresa_id)
+            ->where('cliente_id', $cliente->id)
+            ->with('itens.produto:id,nome,categoria,preco')
+            ->get()
+            ->pluck('itens')
+            ->flatten()
+            ->filter(fn ($item) => $item->produto_id !== null)
+            ->groupBy('produto_id')
+            ->map(function ($items) {
+                $produto = $items->first()->produto;
+
+                return [
+                    'produto_id' => $produto?->id ?? '',
+                    'produto_nome' => $produto?->nome ?? 'Produto removido',
+                    'categoria' => $produto?->categoria ?? '',
+                    'total_comprado' => (int) $items->sum('qtd'),
+                    'total_gasto' => (float) $items->sum('total'),
+                ];
+            })
+            ->sortByDesc('total_comprado')
+            ->take($limite)
+            ->values();
+
+        return response()->json([
+            'cliente_id' => $cliente->id,
+            'cliente_nome' => $cliente->name,
+            'total' => $itens->count(),
+            'items' => $itens,
+        ]);
+    }
 }
