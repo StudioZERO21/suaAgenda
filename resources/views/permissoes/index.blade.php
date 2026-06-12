@@ -414,7 +414,8 @@
 <script>
 function permissionsApp() {
     const catalogo = @json($catalogo);
-    const defaultGroups = ['g-admin', 'g-mgr', 'g-prof', 'g-recep', 'g-intern'];
+    const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+    const jsonHeaders = () => ({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() });
 
     const blankGroup = () => ({ nome: '', cor: '#6366f1', descricao: '', perms: [] });
 
@@ -539,32 +540,37 @@ function permissionsApp() {
                 : [...new Set([...this.groupForm.perms, ...ids])];
         },
 
-        saveGroup() {
+        async saveGroup() {
             if (!this.groupForm.nome.trim()) {
                 return Swal.fire({ title: 'Atenção', text: 'Nome do grupo obrigatório.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             }
             this.groupSaving = true;
-            setTimeout(() => {
-                if (this.editGroup) {
-                    this.grupos = this.grupos.map(g =>
-                        g.id === this.editGroup.id ? { ...g, ...this.groupForm } : g
-                    );
-                } else {
-                    this.grupos.push({ ...this.groupForm, id: 'g-' + Date.now() });
-                }
-                this.groupSaving = false;
-                this.groupModalOpen = false;
-                Swal.fire({
-                    title: this.editGroup ? 'Grupo atualizado!' : 'Grupo criado!',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#1a1a1a',
+            try {
+                const url = this.editGroup ? '/permissoes/grupos/' + this.editGroup.id : '/permissoes/grupos';
+                const r = await fetch(url, {
+                    method: this.editGroup ? 'PUT' : 'POST',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(this.groupForm),
                 });
-            }, 700);
+                const data = await r.json();
+                if (!r.ok) throw new Error(Object.values(data.errors || {}).flat()[0] || data.message || 'Erro ao salvar grupo.');
+                if (this.editGroup) {
+                    this.grupos = this.grupos.map(g => g.id === data.id ? data : g);
+                } else {
+                    this.grupos.push(data);
+                }
+                this.groupModalOpen = false;
+                Swal.fire({ title: this.editGroup ? 'Grupo atualizado!' : 'Grupo criado!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            } finally {
+                this.groupSaving = false;
+            }
         },
 
         deleteGroup(id) {
-            if (defaultGroups.includes(id)) {
+            const grupo = this.grupos.find(g => g.id === id);
+            if (grupo?.is_system) {
                 return Swal.fire({ title: 'Atenção', text: 'Grupos padrão não podem ser excluídos.', icon: 'error', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
             }
             Swal.fire({
@@ -575,19 +581,37 @@ function permissionsApp() {
                 confirmButtonText: 'Remover',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#ef4444',
-            }).then(result => {
-                if (result.isConfirmed) {
+            }).then(async result => {
+                if (!result.isConfirmed) return;
+                try {
+                    const r = await fetch('/permissoes/grupos/' + id, { method: 'DELETE', headers: jsonHeaders() });
+                    if (!r.ok) throw new Error('Erro ao remover grupo.');
                     this.grupos = this.grupos.filter(g => g.id !== id);
-                    Swal.fire({ title: 'Grupo removido', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+                    Object.entries(this.roleGroups).forEach(([cargoId, gId]) => {
+                        if (gId === id) delete this.roleGroups[cargoId];
+                    });
+                    Swal.fire({ title: 'Grupo removido', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                } catch (e) {
+                    Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
                 }
             });
         },
 
-        doAssign() {
+        async doAssign() {
             if (!this.assignRole) return;
-            this.roleGroups = { ...this.roleGroups, [this.assignRole.id]: this.assignSel };
-            this.assignModalOpen = false;
-            Swal.fire({ title: 'Grupo atribuído!', icon: 'success', confirmButtonText: 'OK', confirmButtonColor: '#1a1a1a' });
+            try {
+                const r = await fetch('/permissoes/cargos/' + this.assignRole.id + '/grupo', {
+                    method: 'PATCH',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ grupo_id: this.assignSel || null }),
+                });
+                if (!r.ok) throw new Error('Erro ao atribuir grupo.');
+                this.roleGroups = { ...this.roleGroups, [this.assignRole.id]: this.assignSel };
+                this.assignModalOpen = false;
+                Swal.fire({ title: 'Grupo atribuído!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            }
         },
 
         async changeUserRole(user) {

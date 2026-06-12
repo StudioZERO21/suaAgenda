@@ -23,6 +23,7 @@ class Cargo extends Model
         'cor',
         'descricao',
         'comissao_pct',
+        'grupo_acesso_id',
     ];
 
     protected $casts = [
@@ -37,5 +38,10 @@ class Cargo extends Model
     public function profissionais(): HasMany
     {
         return $this->hasMany(Profissional::class);
+    }
+
+    public function grupoAcesso(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'grupo_acesso_id');
     }
 }

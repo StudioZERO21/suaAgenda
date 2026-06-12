@@ -16,6 +16,7 @@ class SetTenantMiddleware
 
         if ($user && $user->empresa_id) {
             app()->instance('tenant_id', $user->empresa_id);
+            setPermissionsTeamId($user->empresa_id);
         }
 
         return $next($request);
