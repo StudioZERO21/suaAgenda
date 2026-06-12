@@ -56,6 +56,26 @@ class BloqueioController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, BloqueioAgenda $bloqueio): JsonResponse
+    {
+        $this->authorize('update', Company::find($bloqueio->company_id));
+
+        $data = $request->validate([
+            'data_inicio' => ['sometimes', 'date'],
+            'data_fim' => ['sometimes', 'date', 'after_or_equal:data_inicio'],
+            'motivo' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $bloqueio->update($data);
+
+        return response()->json([
+            'id' => $bloqueio->id,
+            'data_inicio' => $bloqueio->data_inicio->format('Y-m-d'),
+            'data_fim' => $bloqueio->data_fim->format('Y-m-d'),
+            'motivo' => $bloqueio->motivo,
+        ]);
+    }
+
     public function destroy(BloqueioAgenda $bloqueio): Response
     {
         $this->authorize('update', Company::find($bloqueio->company_id));
