@@ -12,6 +12,7 @@ use App\Models\BloqueioAgenda;
 use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Models\Venda;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -583,6 +584,33 @@ class ProfissionalController extends Controller
             ]);
 
         return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
+    }
+
+    public function vendas(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $vendas = Venda::where('company_id', auth()->user()->empresa_id)
+            ->where('profissional_id', $profissional->id)
+            ->with('itens.produto:id,nome')
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Venda $v) => [
+                'id' => $v->id,
+                'data' => $v->created_at->toDateString(),
+                'total' => (float) $v->total,
+                'metodo_pagamento' => $v->metodo_pagamento,
+                'total_itens' => $v->itens->sum('qtd'),
+            ]);
+
+        return response()->json([
+            'total_vendas' => $vendas->count(),
+            'total_receita' => (float) $vendas->sum('total'),
+            'items' => $vendas->values(),
+        ]);
     }
 
     public function nome(Request $request, Profissional $profissional): JsonResponse
