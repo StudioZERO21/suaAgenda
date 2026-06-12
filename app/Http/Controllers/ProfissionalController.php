@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateProfissionalRequest;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\BloqueioAgenda;
+use App\Models\Cargo;
 use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
@@ -657,6 +658,30 @@ class ProfissionalController extends Controller
 
         return response()->json([
             'name' => $profissional->name,
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
+    public function cargo(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate(['cargo_id' => ['nullable', 'uuid', 'exists:cargos,id']]);
+
+        $cargoId = $request->input('cargo_id');
+
+        if ($cargoId !== null) {
+            $cargo = Cargo::where('id', $cargoId)
+                ->where('company_id', auth()->user()->empresa_id)
+                ->firstOrFail();
+            $profissional->update(['cargo_id' => $cargo->id]);
+        } else {
+            $profissional->update(['cargo_id' => null]);
+        }
+
+        return response()->json([
+            'cargo_id' => $profissional->cargo_id,
+            'cargo_nome' => $profissional->cargo?->nome,
             'updated_at' => $profissional->updated_at->toIso8601String(),
         ]);
     }

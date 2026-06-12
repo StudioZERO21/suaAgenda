@@ -42,6 +42,11 @@ class Profissional extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function cargo(): BelongsTo
+    {
+        return $this->belongsTo(Cargo::class);
+    }
+
     public function servicos(): BelongsToMany
     {
         return $this->belongsToMany(Servico::class, 'profissional_servico');
