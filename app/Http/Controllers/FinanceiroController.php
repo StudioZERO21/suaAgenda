@@ -585,6 +585,52 @@ class FinanceiroController extends Controller
         return response()->noContent();
     }
 
+    public function previsaoReceita(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(60, (int) $request->input('dias', 14)));
+
+        $inicio = today();
+        $fim = today()->addDays($dias - 1);
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereIn('status', [Agendamento::STATUS_CONFIRMADO, Agendamento::STATUS_PENDENTE])
+            ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora', 'status', 'valor']);
+
+        $porDia = $agendamentos->groupBy(fn (Agendamento $a) => $a->data_hora->format('Y-m-d'));
+
+        $dias_serie = collect(range(0, $dias - 1))->map(function (int $offset) use ($inicio, $porDia): array {
+            $dia = $inicio->copy()->addDays($offset);
+            $chave = $dia->format('Y-m-d');
+            $items = $porDia->get($chave, collect());
+            $confirmados = $items->where('status', Agendamento::STATUS_CONFIRMADO);
+            $pendentes = $items->where('status', Agendamento::STATUS_PENDENTE);
+
+            return [
+                'data' => $chave,
+                'dia_semana' => $dia->translatedFormat('D'),
+                'total_agendamentos' => $items->count(),
+                'confirmados' => $confirmados->count(),
+                'pendentes' => $pendentes->count(),
+                'receita_confirmada' => round((float) $confirmados->sum('valor'), 2),
+                'receita_pendente' => round((float) $pendentes->sum('valor'), 2),
+                'receita_total' => round((float) $items->sum('valor'), 2),
+            ];
+        });
+
+        return response()->json([
+            'dias' => $dias,
+            'data_inicio' => $inicio->format('Y-m-d'),
+            'data_fim' => $fim->format('Y-m-d'),
+            'total_agendamentos' => $agendamentos->count(),
+            'receita_confirmada' => round((float) $agendamentos->where('status', Agendamento::STATUS_CONFIRMADO)->sum('valor'), 2),
+            'receita_pendente' => round((float) $agendamentos->where('status', Agendamento::STATUS_PENDENTE)->sum('valor'), 2),
+            'receita_total_prevista' => round((float) $agendamentos->sum('valor'), 2),
+            'por_dia' => $dias_serie->values(),
+        ]);
+    }
+
     private function lancamentoToJson(Lancamento $l): array
     {
         return [
