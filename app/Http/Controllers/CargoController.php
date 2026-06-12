@@ -163,6 +163,20 @@ class CargoController extends Controller
         ]);
     }
 
+    public function nivel(Request $request, Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['nivel' => ['required', 'string', 'max:50']]);
+
+        $cargo->update(['nivel' => $request->input('nivel')]);
+
+        return response()->json([
+            'nivel' => $cargo->nivel,
+            'updated_at' => $cargo->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function comissao(Request $request, Cargo $cargo): JsonResponse
     {
         abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
