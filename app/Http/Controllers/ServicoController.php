@@ -586,6 +586,45 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function semAgendamento(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+        $apenasAtivos = filter_var($request->input('apenas_ativos', true), FILTER_VALIDATE_BOOLEAN);
+
+        $servicos = Servico::where('company_id', $empresa)
+            ->when($apenasAtivos, fn ($q) => $q->where('ativo', true))
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'cor', 'preco', 'duracao_minutos', 'ativo', 'created_at']);
+
+        $comAgendamento = Agendamento::where('company_id', $empresa)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->pluck('servico_id')
+            ->unique();
+
+        $semAgendamento = $servicos->whereNotIn('id', $comAgendamento)->values();
+
+        $items = $semAgendamento->map(fn (Servico $s) => [
+            'id' => $s->id,
+            'nome' => $s->nome,
+            'cor' => $s->cor ?? '#999999',
+            'preco' => (float) $s->preco,
+            'duracao_minutos' => (int) $s->duracao_minutos,
+            'ativo' => (bool) $s->ativo,
+            'criado_em' => $s->created_at->toDateString(),
+        ]);
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_servicos' => $servicos->count(),
+            'sem_agendamento' => $items->count(),
+            'items' => $items->values(),
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
