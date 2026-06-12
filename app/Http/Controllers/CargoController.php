@@ -8,6 +8,7 @@ use App\Http\Requests\StoreCargoRequest;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cargo;
+use App\Models\Profissional;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -236,6 +237,76 @@ class CargoController extends Controller
         $cargo->delete();
 
         return response()->noContent();
+    }
+
+    public function resumo(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        $cargos = Cargo::where('company_id', $empresa)->orderBy('nome')->get();
+
+        if ($cargos->isEmpty()) {
+            return response()->json(['total_cargos' => 0, 'items' => []]);
+        }
+
+        $cargoIds = $cargos->pluck('id');
+
+        $profissionaisPorCargo = Profissional::where('company_id', $empresa)
+            ->whereIn('cargo_id', $cargoIds)
+            ->get(['id', 'cargo_id', 'ativo'])
+            ->groupBy('cargo_id');
+
+        $profIds = Profissional::where('company_id', $empresa)
+            ->whereIn('cargo_id', $cargoIds)
+            ->pluck('id');
+
+        $agMes = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereMonth('data_hora', now()->month)
+            ->whereYear('data_hora', now()->year)
+            ->whereIn('profissional_id', $profIds)
+            ->selectRaw('profissional_id, SUM(valor) as receita')
+            ->groupBy('profissional_id')
+            ->get()
+            ->keyBy('profissional_id');
+
+        $avaliacoes = Avaliacao::where('avaliacoes.company_id', $empresa)
+            ->join('agendamentos', 'avaliacoes.agendamento_id', '=', 'agendamentos.id')
+            ->whereIn('agendamentos.profissional_id', $profIds)
+            ->get(['avaliacoes.nota', 'agendamentos.profissional_id'])
+            ->groupBy('profissional_id');
+
+        $profPorCargo = Profissional::where('company_id', $empresa)
+            ->whereIn('cargo_id', $cargoIds)
+            ->pluck('cargo_id', 'id');
+
+        $items = $cargos->map(function (Cargo $cargo) use ($profissionaisPorCargo, $agMes, $avaliacoes): array {
+            $profs = $profissionaisPorCargo->get($cargo->id, collect());
+            $profIds = $profs->pluck('id');
+
+            $receitaMes = $profIds->sum(fn ($id) => (float) ($agMes->get($id)?->receita ?? 0));
+
+            $notasProfs = $profIds->flatMap(fn ($id) => $avaliacoes->get($id, collect()));
+            $mediaAvaliacao = $notasProfs->count() > 0 ? round($notasProfs->avg('nota'), 1) : null;
+
+            return [
+                'cargo_id' => $cargo->id,
+                'cargo_nome' => $cargo->nome,
+                'nivel' => $cargo->nivel ?? '',
+                'cor' => $cargo->cor ?? '#999999',
+                'comissao_pct' => (float) ($cargo->comissao_pct ?? 0),
+                'total_profissionais' => $profs->count(),
+                'ativos' => $profs->where('ativo', true)->count(),
+                'inativos' => $profs->where('ativo', false)->count(),
+                'receita_mes' => round($receitaMes, 2),
+                'media_avaliacao' => $mediaAvaliacao,
+            ];
+        });
+
+        return response()->json([
+            'total_cargos' => $cargos->count(),
+            'items' => $items->values(),
+        ]);
     }
 
     private function toJson(Cargo $c): array
