@@ -585,6 +585,22 @@ class ProfissionalController extends Controller
         return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
     }
 
+    public function nome(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('update', $profissional);
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $profissional->update(['name' => $request->input('name')]);
+
+        return response()->json([
+            'name' => $profissional->name,
+            'updated_at' => $profissional->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
