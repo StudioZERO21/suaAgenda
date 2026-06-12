@@ -80,6 +80,20 @@ class CargoController extends Controller
         ]);
     }
 
+    public function nome(Request $request, Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate(['nome' => ['required', 'string', 'max:100']]);
+
+        $cargo->update(['nome' => $request->input('nome')]);
+
+        return response()->json([
+            'nome' => $cargo->nome,
+            'updated_at' => $cargo->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function comissao(Request $request, Cargo $cargo): JsonResponse
     {
         abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
