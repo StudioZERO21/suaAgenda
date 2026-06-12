@@ -143,6 +143,21 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function categorias(): JsonResponse
+    {
+        $this->authorize('viewAny', Servico::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $categorias = Servico::where('company_id', $empresa)
+            ->whereNotNull('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria');
+
+        return response()->json($categorias->values());
+    }
+
     public function ativos(): JsonResponse
     {
         $this->authorize('viewAny', Servico::class);
