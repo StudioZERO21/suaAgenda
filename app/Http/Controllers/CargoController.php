@@ -14,6 +14,19 @@ use Illuminate\View\View;
 
 class CargoController extends Controller
 {
+    public function listar(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $cargos = Cargo::where('company_id', $companyId)
+            ->withCount('profissionais as membros')
+            ->orderBy('nome')
+            ->get()
+            ->map(fn (Cargo $c): array => $this->toJson($c));
+
+        return response()->json($cargos->values());
+    }
+
     public function index(): View
     {
         $companyId = auth()->user()->empresa_id;
