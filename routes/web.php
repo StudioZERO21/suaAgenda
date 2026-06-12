@@ -258,6 +258,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/{profissional}/taxa-confirmacao', [ProfissionalController::class, 'taxaConfirmacao'])->name('profissionais.taxa-confirmacao');
     Route::get('profissionais/{profissional}/clientes', [ProfissionalController::class, 'clientes'])->name('profissionais.clientes');
     Route::get('profissionais/{profissional}/receita-por-servico', [ProfissionalController::class, 'receitaPorServico'])->name('profissionais.receita-por-servico');
+    Route::get('profissionais/{profissional}/faturamento-mensal', [ProfissionalController::class, 'faturamentoMensal'])->name('profissionais.faturamento-mensal');
     Route::get('profissionais/{profissional}/vendas', [ProfissionalController::class, 'vendas'])->name('profissionais.vendas');
     Route::get('profissionais/{profissional}/avaliacoes', [ProfissionalController::class, 'avaliacoes'])->name('profissionais.avaliacoes');
     Route::get('profissionais/{profissional}/json', [ProfissionalController::class, 'detalhe'])->name('profissionais.detalhe');

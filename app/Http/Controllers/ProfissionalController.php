@@ -877,6 +877,38 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function faturamentoMensal(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $ano = (int) $request->input('ano', now()->year);
+
+        $agendamentos = $profissional->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereYear('data_hora', $ano)
+            ->get(['data_hora', 'valor']);
+
+        $meses = collect(range(1, 12))->map(function (int $mes) use ($agendamentos, $ano): array {
+            $deste = $agendamentos->filter(fn (Agendamento $a) => $a->data_hora->month === $mes);
+
+            return [
+                'mes' => $mes,
+                'mes_nome' => Carbon::createFromDate($ano, $mes, 1)->translatedFormat('M'),
+                'total_finalizados' => $deste->count(),
+                'receita' => (float) $deste->sum('valor'),
+            ];
+        });
+
+        return response()->json([
+            'profissional_id' => $profissional->id,
+            'profissional_nome' => $profissional->name,
+            'ano' => $ano,
+            'total_ano' => $agendamentos->count(),
+            'receita_ano' => (float) $agendamentos->sum('valor'),
+            'meses' => $meses,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
