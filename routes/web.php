@@ -155,6 +155,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('permissoes/usuarios/{user}/profissional', [PermissaoController::class, 'assignUserProfissional'])->name('permissoes.users.profissional');
 
     Route::get('financeiro/lancamentos/buscar', [FinanceiroController::class, 'buscarLancamentos'])->name('financeiro.lancamentos.buscar');
+    Route::get('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'showLancamento'])->name('financeiro.lancamentos.show');
     Route::post('financeiro/lancamentos', [FinanceiroController::class, 'storeLancamento'])->name('financeiro.lancamentos.store');
     Route::put('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'updateLancamento'])->name('financeiro.lancamentos.update');
     Route::patch('financeiro/lancamentos/{lancamento}/status', [FinanceiroController::class, 'statusLancamento'])->name('financeiro.lancamentos.status');
