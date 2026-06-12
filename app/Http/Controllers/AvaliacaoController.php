@@ -66,6 +66,46 @@ class AvaliacaoController extends Controller
         return response()->noContent();
     }
 
+    public function distribuicao(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $profissionalId = $request->input('profissional_id');
+        $dias = $request->input('periodo_dias');
+
+        $query = Avaliacao::where('avaliacoes.company_id', $empresa)
+            ->join('agendamentos', 'avaliacoes.agendamento_id', '=', 'agendamentos.id')
+            ->select('avaliacoes.nota', 'avaliacoes.created_at', 'agendamentos.profissional_id');
+
+        if ($profissionalId !== null) {
+            $query->where('agendamentos.profissional_id', $profissionalId);
+        }
+
+        if ($dias !== null) {
+            $query->where('avaliacoes.created_at', '>=', now()->subDays((int) $dias));
+        }
+
+        $avaliacoes = $query->get();
+        $total = $avaliacoes->count();
+
+        $distribuicao = collect(range(1, 5))->map(function (int $estrela) use ($avaliacoes, $total): array {
+            $count = $avaliacoes->where('nota', $estrela)->count();
+
+            return [
+                'estrelas' => $estrela,
+                'quantidade' => $count,
+                'percentual' => $total > 0 ? round($count / $total * 100, 1) : 0.0,
+            ];
+        })->values();
+
+        return response()->json([
+            'total' => $total,
+            'media' => $total > 0 ? round((float) $avaliacoes->avg('nota'), 2) : null,
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'profissional_id' => $profissionalId,
+            'distribuicao' => $distribuicao,
+        ]);
+    }
+
     public function update(Request $request, Avaliacao $avaliacao): JsonResponse
     {
         $agendamento = $avaliacao->agendamento;
