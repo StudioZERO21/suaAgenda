@@ -586,6 +586,38 @@ class ProfissionalController extends Controller
         return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
     }
 
+    public function avaliacoes(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $avaliacoes = Avaliacao::where('company_id', auth()->user()->empresa_id)
+            ->whereHas('agendamento', fn ($q) => $q->where('profissional_id', $profissional->id))
+            ->with(['agendamento.cliente:id,name', 'agendamento.servico:id,nome'])
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'id' => $av->id,
+                'nota' => $av->nota,
+                'comentario' => $av->comentario ?? '',
+                'data' => $av->created_at->toDateString(),
+                'cliente_nome' => $av->agendamento?->cliente?->name ?? 'Cliente removido',
+                'servico_nome' => $av->agendamento?->servico?->nome ?? 'Serviço removido',
+            ]);
+
+        $notaMedia = $avaliacoes->count() > 0
+            ? round($avaliacoes->avg('nota'), 2)
+            : null;
+
+        return response()->json([
+            'total_avaliacoes' => $avaliacoes->count(),
+            'nota_media' => $notaMedia,
+            'items' => $avaliacoes->values(),
+        ]);
+    }
+
     public function vendas(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
