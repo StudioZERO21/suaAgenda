@@ -80,6 +80,25 @@ class CargoController extends Controller
         ]);
     }
 
+    public function detalhe(Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $cargo->loadCount('profissionais as membros');
+
+        return response()->json([
+            'id' => $cargo->id,
+            'nome' => $cargo->nome,
+            'nivel' => $cargo->nivel,
+            'cor' => $cargo->cor,
+            'descricao' => $cargo->descricao ?? '',
+            'comissao' => (float) ($cargo->comissao_pct ?? 0),
+            'membros' => (int) ($cargo->membros ?? 0),
+            'created_at' => $cargo->created_at->toIso8601String(),
+            'updated_at' => $cargo->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function profissionais(Cargo $cargo): JsonResponse
     {
         abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
