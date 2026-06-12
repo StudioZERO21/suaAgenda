@@ -344,6 +344,13 @@ class FinanceiroController extends Controller
         ]);
     }
 
+    public function showLancamento(Lancamento $lancamento): JsonResponse
+    {
+        abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
+
+        return response()->json($this->lancamentoToJson($lancamento));
+    }
+
     public function destroyLancamento(Lancamento $lancamento): Response
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
