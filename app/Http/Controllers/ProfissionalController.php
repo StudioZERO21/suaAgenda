@@ -388,6 +388,27 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function semCargo(): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->whereNull('cargo_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'ativo', 'especialidade', 'cor'])
+            ->map(fn (Profissional $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'ativo' => (bool) $p->ativo,
+                'especialidade' => $p->especialidade ?? '',
+                'cor' => $p->cor ?? '#999999',
+            ]);
+
+        return response()->json(['total' => $profissionais->count(), 'items' => $profissionais->values()]);
+    }
+
     public function ranking(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Profissional::class);
