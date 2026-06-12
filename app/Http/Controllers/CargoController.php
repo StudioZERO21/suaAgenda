@@ -80,6 +80,29 @@ class CargoController extends Controller
         ]);
     }
 
+    public function profissionais(Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $profissionais = $cargo->profissionais()
+            ->orderBy('name')
+            ->get(['id', 'name', 'ativo', 'especialidade', 'cor'])
+            ->map(fn (object $p): array => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'ativo' => (bool) $p->ativo,
+                'especialidade' => $p->especialidade ?? '',
+                'cor' => $p->cor ?? '#999999',
+            ]);
+
+        return response()->json([
+            'cargo_id' => $cargo->id,
+            'cargo_nome' => $cargo->nome,
+            'total' => $profissionais->count(),
+            'items' => $profissionais->values(),
+        ]);
+    }
+
     public function descricao(Request $request, Cargo $cargo): JsonResponse
     {
         abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
