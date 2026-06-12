@@ -946,4 +946,41 @@ class ClienteController extends Controller
             'geral' => $calcular(0),
         ]);
     }
+
+    public function tempoSemVisita(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $ultimoAgendamento = $cliente->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->latest('data_hora')
+            ->first(['data_hora']);
+
+        if ($ultimoAgendamento === null) {
+            return response()->json([
+                'cliente_id' => $cliente->id,
+                'cliente_nome' => $cliente->name,
+                'dias_sem_visita' => null,
+                'ultima_visita' => null,
+                'risco_churn' => 'sem_historico',
+            ]);
+        }
+
+        $dias = (int) $ultimoAgendamento->data_hora->diffInDays(now());
+
+        $risco = match (true) {
+            $dias <= 30 => 'baixo',
+            $dias <= 60 => 'medio',
+            $dias <= 90 => 'alto',
+            default => 'critico',
+        };
+
+        return response()->json([
+            'cliente_id' => $cliente->id,
+            'cliente_nome' => $cliente->name,
+            'dias_sem_visita' => $dias,
+            'ultima_visita' => $ultimoAgendamento->data_hora->toIso8601String(),
+            'risco_churn' => $risco,
+        ]);
+    }
 }
