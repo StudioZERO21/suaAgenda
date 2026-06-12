@@ -467,4 +467,40 @@ class PdvController extends Controller
             'por_dia_semana' => $porDiaSemana->values(),
         ]);
     }
+
+    public function vendasPorHora(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $vendas = Venda::where('company_id', $empresa)
+            ->where('created_at', '>=', now()->subDays($dias)->startOfDay())
+            ->get(['total', 'created_at']);
+
+        $porHora = $vendas->groupBy(fn (Venda $v) => (int) $v->created_at->format('G'));
+
+        $horas = collect(range(0, 23))->map(function (int $hora) use ($porHora): array {
+            $items = $porHora->get($hora, collect());
+            $count = $items->count();
+            $soma = (float) $items->sum('total');
+
+            return [
+                'hora' => $hora,
+                'hora_fmt' => sprintf('%02d:00', $hora),
+                'total_vendas' => $count,
+                'valor_total' => round($soma, 2),
+                'ticket_medio' => $count > 0 ? round($soma / $count, 2) : null,
+            ];
+        });
+
+        $horaPico = $horas->sortByDesc('total_vendas')->first();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_vendas' => $vendas->count(),
+            'valor_total' => round((float) $vendas->sum('total'), 2),
+            'horas' => $horas->values(),
+            'hora_pico' => $horaPico['total_vendas'] > 0 ? $horaPico : null,
+        ]);
+    }
 }
