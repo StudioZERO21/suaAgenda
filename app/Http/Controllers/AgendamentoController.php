@@ -1186,6 +1186,59 @@ class AgendamentoController extends Controller
         ], 201);
     }
 
+    public function faixaHoraria(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('periodo_dias');
+
+        $query = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)));
+
+        $agendamentos = $query->get(['data_hora', 'valor']);
+        $total = $agendamentos->count();
+
+        $faixas = [
+            'madrugada' => ['label' => 'Madrugada', 'inicio' => 0, 'fim' => 6],
+            'manha' => ['label' => 'Manhã', 'inicio' => 6, 'fim' => 12],
+            'tarde' => ['label' => 'Tarde', 'inicio' => 12, 'fim' => 18],
+            'noite' => ['label' => 'Noite', 'inicio' => 18, 'fim' => 24],
+        ];
+
+        $resultado = collect($faixas)->map(function (array $faixa, string $key) use ($agendamentos, $total): array {
+            $grupo = $agendamentos->filter(function ($ag) use ($faixa): bool {
+                $hora = Carbon::parse($ag->data_hora)->hour;
+
+                return $hora >= $faixa['inicio'] && $hora < $faixa['fim'];
+            });
+
+            $count = $grupo->count();
+            $receita = round((float) $grupo->sum('valor'), 2);
+
+            return [
+                'faixa' => $key,
+                'label' => $faixa['label'],
+                'horario' => sprintf('%02dh–%02dh', $faixa['inicio'], $faixa['fim']),
+                'total_agendamentos' => $count,
+                'receita' => $receita,
+                'percentual' => $total > 0 ? round($count / $total * 100, 1) : 0.0,
+            ];
+        })->values();
+
+        $melhorFaixa = $total > 0
+            ? $resultado->sortByDesc('total_agendamentos')->first()['faixa']
+            : null;
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total' => $total,
+            'melhor_faixa' => $melhorFaixa,
+            'faixas' => $resultado,
+        ]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
