@@ -826,4 +826,65 @@ class ClienteController extends Controller
             'updated_at' => $cliente->updated_at->toIso8601String(),
         ]);
     }
+
+    public function timeline(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $limite = min((int) $request->input('limite', 20), 50);
+
+        $agendamentos = collect($cliente->agendamentos()
+            ->with(['servico:id,nome,cor', 'profissional:id,name,cor'])
+            ->orderByDesc('data_hora')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Agendamento $a) => [
+                'tipo' => 'agendamento',
+                'id' => $a->id,
+                'data' => $a->data_hora->toIso8601String(),
+                'status' => $a->status,
+                'servico' => $a->servico?->nome,
+                'profissional' => $a->profissional?->name,
+                'valor' => (float) ($a->valor ?? 0),
+            ])->all());
+
+        $compras = collect(Venda::where('company_id', auth()->user()->empresa_id)
+            ->where('cliente_id', $cliente->id)
+            ->with('itens.produto:id,nome')
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Venda $v) => [
+                'tipo' => 'compra',
+                'id' => $v->id,
+                'data' => $v->created_at->toIso8601String(),
+                'total' => (float) $v->total,
+                'itens_count' => $v->itens->count(),
+            ])->all());
+
+        $avaliacoes = collect(Avaliacao::whereHas('agendamento', fn ($q) => $q->where('cliente_id', $cliente->id))
+            ->where('company_id', auth()->user()->empresa_id)
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Avaliacao $av) => [
+                'tipo' => 'avaliacao',
+                'id' => $av->id,
+                'data' => $av->created_at->toIso8601String(),
+                'nota' => $av->nota,
+                'comentario' => $av->comentario ?? '',
+            ])->all());
+
+        $timeline = $agendamentos
+            ->merge($compras)
+            ->merge($avaliacoes)
+            ->sortByDesc('data')
+            ->take($limite)
+            ->values();
+
+        return response()->json([
+            'total' => $timeline->count(),
+            'items' => $timeline,
+        ]);
+    }
 }

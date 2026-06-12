@@ -200,6 +200,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('clientes/{cliente}/proximos', [ClienteController::class, 'proximos'])->name('clientes.proximos');
     Route::get('clientes/{cliente}/compras', [ClienteController::class, 'compras'])->name('clientes.compras');
     Route::get('clientes/{cliente}/avaliacoes', [ClienteController::class, 'avaliacoes'])->name('clientes.avaliacoes');
+    Route::get('clientes/{cliente}/timeline', [ClienteController::class, 'timeline'])->name('clientes.timeline');
     Route::get('clientes/{cliente}/fotos', [ClienteController::class, 'fotos'])->name('clientes.fotos.index');
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
