@@ -357,6 +357,35 @@ class FinanceiroController extends Controller
         return response()->json($categorias->values());
     }
 
+    public function topCategorias(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $tipo = $request->input('tipo');
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $query = Lancamento::where('company_id', $empresa)
+            ->whereNotNull('categoria')
+            ->where('status', '!=', 'cancelado')
+            ->when(in_array($tipo, ['receita', 'despesa'], true), fn ($q) => $q->where('tipo', $tipo));
+
+        $categorias = $query->get(['categoria', 'tipo', 'valor'])
+            ->groupBy('categoria')
+            ->map(function ($items, $categoria) {
+                return [
+                    'categoria' => $categoria,
+                    'total_lancamentos' => $items->count(),
+                    'total_receitas' => (float) $items->where('tipo', 'receita')->sum('valor'),
+                    'total_despesas' => (float) $items->where('tipo', 'despesa')->sum('valor'),
+                    'saldo' => (float) ($items->where('tipo', 'receita')->sum('valor') - $items->where('tipo', 'despesa')->sum('valor')),
+                ];
+            })
+            ->sortByDesc(fn ($item) => $item['total_receitas'] + $item['total_despesas'])
+            ->take($limite)
+            ->values();
+
+        return response()->json(['total_categorias' => $categorias->count(), 'items' => $categorias]);
+    }
+
     public function categoriaLancamento(Request $request, Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
