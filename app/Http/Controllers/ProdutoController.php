@@ -8,6 +8,7 @@ use App\Http\Requests\StoreProdutoRequest;
 use App\Http\Requests\UpdateProdutoRequest;
 use App\Models\Produto;
 use App\Models\ProdutoImagem;
+use App\Models\VendaItem;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -327,6 +328,32 @@ class ProdutoController extends Controller
             'estoque_min' => $produto->estoque_min,
             'status' => $produto->estoqueStatus(),
             'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
+    public function vendas(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $itens = VendaItem::where('produto_id', $produto->id)
+            ->with(['venda:id,company_id,created_at,total'])
+            ->whereHas('venda', fn ($q) => $q->where('company_id', $produto->company_id))
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (VendaItem $item) => [
+                'venda_id' => $item->venda_id,
+                'data' => $item->created_at->toDateString(),
+                'qtd' => $item->qtd,
+                'preco_unit' => (float) $item->preco_unit,
+                'total' => (float) $item->total,
+            ]);
+
+        return response()->json([
+            'total_vendas' => $itens->count(),
+            'items' => $itens->values(),
         ]);
     }
 
