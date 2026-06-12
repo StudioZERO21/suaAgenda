@@ -6,8 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class AvaliacaoController extends Controller
@@ -51,5 +53,41 @@ class AvaliacaoController extends Controller
 
         return redirect()->route('agendamento.meu', $token)
             ->with('avaliado', true);
+    }
+
+    public function destroy(Avaliacao $avaliacao): Response
+    {
+        $agendamento = $avaliacao->agendamento;
+        abort_if($agendamento === null || $agendamento->company_id !== auth()->user()->empresa_id, 403);
+        abort_if(! auth()->user()->hasAnyRole(['admin_empresa', 'gestor']), 403);
+
+        $avaliacao->delete();
+
+        return response()->noContent();
+    }
+
+    public function update(Request $request, Avaliacao $avaliacao): JsonResponse
+    {
+        $agendamento = $avaliacao->agendamento;
+        abort_if($agendamento === null || $agendamento->company_id !== auth()->user()->empresa_id, 403);
+        abort_if(! auth()->user()->hasAnyRole(['admin_empresa', 'gestor']), 403);
+
+        $request->validate([
+            'nota' => ['required', 'integer', 'min:1', 'max:5'],
+            'comentario' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $avaliacao->update([
+            'nota' => $request->integer('nota'),
+            'comentario' => $request->input('comentario'),
+        ]);
+
+        return response()->json([
+            'id' => $avaliacao->id,
+            'nota' => $avaliacao->nota,
+            'comentario' => $avaliacao->comentario ?? '',
+            'estrelas' => $avaliacao->estrelas(),
+            'updated_at' => $avaliacao->updated_at->toIso8601String(),
+        ]);
     }
 }
