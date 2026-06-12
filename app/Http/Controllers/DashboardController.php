@@ -90,7 +90,7 @@ class DashboardController extends Controller
 
         $agendamentosHoje = Agendamento::where('company_id', $empresa)
             ->whereDate('data_hora', $hoje)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->count();
 
         $confirmadosHoje = Agendamento::where('company_id', $empresa)
@@ -167,7 +167,7 @@ class DashboardController extends Controller
             ->withCount([
                 'agendamentos as agendamentos_mes_count' => function ($q) use ($mesInicio, $mesFim) {
                     $q->whereBetween('data_hora', [$mesInicio, $mesFim])
-                        ->where('status', '!=', Agendamento::STATUS_CANCELADO);
+                        ->whereNotIn('status', Agendamento::STATUSES_INATIVOS);
                 },
             ])
             ->orderByDesc('agendamentos_mes_count')
@@ -190,7 +190,7 @@ class DashboardController extends Controller
                 'date' => $d->format('d/m'),
                 'agendamentos' => Agendamento::where('company_id', $empresa)
                     ->whereDate('data_hora', $d)
-                    ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                    ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
                     ->count(),
                 'receita' => (float) Agendamento::where('company_id', $empresa)
                     ->whereDate('data_hora', $d)

@@ -424,7 +424,7 @@ class ProfissionalController extends Controller
 
         $agHoje = Agendamento::where('company_id', $empresa)
             ->whereDate('data_hora', today())
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->get(['profissional_id', 'status', 'valor'])
             ->groupBy('profissional_id');
 
@@ -1020,7 +1020,7 @@ class ProfissionalController extends Controller
             ->get(['id', 'name', 'especialidade', 'cor', 'foto_path']);
 
         $comAgendamento = Agendamento::where('company_id', $empresa)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereDate('data_hora', $data)
             ->pluck('profissional_id')
             ->unique();

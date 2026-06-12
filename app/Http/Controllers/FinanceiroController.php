@@ -430,7 +430,7 @@ class FinanceiroController extends Controller
 
         $query = Lancamento::where('company_id', $empresa)
             ->whereNotNull('categoria')
-            ->where('status', '!=', 'cancelado')
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->when(in_array($tipo, ['receita', 'despesa'], true), fn ($q) => $q->where('tipo', $tipo));
 
         $categorias = $query->get(['categoria', 'tipo', 'valor'])

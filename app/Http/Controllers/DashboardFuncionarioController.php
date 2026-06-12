@@ -33,7 +33,7 @@ class DashboardFuncionarioController extends Controller
 
         $agendaHoje = (clone $baseProprio)
             ->whereDate('data_hora', $hoje)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->with(['cliente:id,name,phone', 'servico:id,nome,cor'])
             ->orderBy('data_hora')
             ->get();

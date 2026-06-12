@@ -27,6 +27,11 @@ class Agendamento extends Model
 
     const STATUS_EM_ATENDIMENTO = 'em_atendimento';
 
+    const STATUS_NO_SHOW = 'no_show';
+
+    /** Status que não contam como agendamento ativo. */
+    const STATUSES_INATIVOS = [self::STATUS_CANCELADO, self::STATUS_NO_SHOW];
+
     protected $fillable = [
         'company_id',
         'profissional_id',
@@ -81,7 +86,7 @@ class Agendamento extends Model
 
     public function scopeAtivo(Builder $query): Builder
     {
-        return $query->whereNotIn('status', [self::STATUS_CANCELADO]);
+        return $query->whereNotIn('status', self::STATUSES_INATIVOS);
     }
 
     public function scopePorData(Builder $query, string $data): Builder

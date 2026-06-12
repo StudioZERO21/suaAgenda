@@ -232,7 +232,7 @@ class ServicoController extends Controller
             ->groupBy('servico_id');
 
         $agTotal = Agendamento::where('company_id', $empresa)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->get(['servico_id'])
             ->groupBy('servico_id');
@@ -645,7 +645,7 @@ class ServicoController extends Controller
 
         $comAgendamento = Agendamento::where('company_id', $empresa)
             ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->pluck('servico_id')
             ->unique();
 
