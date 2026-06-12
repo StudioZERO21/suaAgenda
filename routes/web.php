@@ -208,6 +208,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('profissionais/{profissional}/especialidade', [ProfissionalController::class, 'especialidade'])->name('profissionais.especialidade');
     Route::patch('profissionais/{profissional}/contato', [ProfissionalController::class, 'contato'])->name('profissionais.contato');
     Route::patch('profissionais/{profissional}/admissao', [ProfissionalController::class, 'admissao'])->name('profissionais.admissao');
+    Route::patch('profissionais/{profissional}/nome', [ProfissionalController::class, 'nome'])->name('profissionais.nome');
     Route::post('profissionais/{profissional}/foto', [ProfissionalController::class, 'uploadFoto'])->name('profissionais.foto.upload');
     Route::delete('profissionais/{profissional}/foto', [ProfissionalController::class, 'deleteFoto'])->name('profissionais.foto.delete');
     Route::get('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'show'])->name('profissionais.horarios');
