@@ -221,6 +221,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/{servico}/proximos', [ServicoController::class, 'proximos'])->name('servicos.proximos');
     Route::get('servicos/{servico}/avaliacoes', [ServicoController::class, 'avaliacoes'])->name('servicos.avaliacoes');
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
+    Route::get('profissionais/sem-cargo', [ProfissionalController::class, 'semCargo'])->name('profissionais.sem-cargo');
     Route::get('profissionais/ranking', [ProfissionalController::class, 'ranking'])->name('profissionais.ranking');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
