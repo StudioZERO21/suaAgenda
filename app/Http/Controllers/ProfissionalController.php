@@ -583,6 +583,27 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function proximosBloqueios(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $limite = min((int) $request->input('limite', 10), 30);
+
+        $bloqueios = BloqueioAgenda::where('profissional_id', $profissional->id)
+            ->where('data_fim', '>=', today())
+            ->orderBy('data_inicio')
+            ->limit($limite)
+            ->get()
+            ->map(fn (BloqueioAgenda $b) => [
+                'id' => $b->id,
+                'data_inicio' => $b->data_inicio->format('Y-m-d'),
+                'data_fim' => $b->data_fim->format('Y-m-d'),
+                'motivo' => $b->motivo ?? '',
+            ]);
+
+        return response()->json(['total' => $bloqueios->count(), 'items' => $bloqueios]);
+    }
+
     public function proximos(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
