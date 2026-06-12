@@ -453,6 +453,57 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function disponivelAgora(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $agora = now();
+        $janela = max(5, min(120, (int) $request->input('janela_minutos', 30)));
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor', 'foto_path']);
+
+        $emAtendimento = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_EM_ATENDIMENTO)
+            ->pluck('profissional_id')
+            ->flip();
+
+        $proximosIds = Agendamento::where('company_id', $empresa)
+            ->whereIn('status', [Agendamento::STATUS_CONFIRMADO, Agendamento::STATUS_PENDENTE])
+            ->whereBetween('data_hora', [$agora, $agora->copy()->addMinutes($janela)])
+            ->pluck('profissional_id')
+            ->flip();
+
+        $items = $profissionais->map(function (Profissional $p) use ($emAtendimento, $proximosIds): array {
+            $ocupado = isset($emAtendimento[$p->id]);
+            $emBreve = isset($proximosIds[$p->id]);
+
+            return [
+                'profissional_id' => $p->id,
+                'profissional_nome' => $p->name,
+                'especialidade' => $p->especialidade ?? '',
+                'cor' => $p->cor ?? '#999999',
+                'disponivel' => ! $ocupado && ! $emBreve,
+                'em_atendimento' => $ocupado,
+                'proximo_em_breve' => $emBreve && ! $ocupado,
+            ];
+        });
+
+        $disponiveis = $items->filter(fn (array $i) => $i['disponivel'])->count();
+
+        return response()->json([
+            'agora' => $agora->toIso8601String(),
+            'janela_minutos' => $janela,
+            'total' => $profissionais->count(),
+            'disponiveis' => $disponiveis,
+            'ocupados' => $items->filter(fn (array $i) => $i['em_atendimento'])->count(),
+            'items' => $items->values(),
+        ]);
+    }
+
     public function ranking(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Profissional::class);
