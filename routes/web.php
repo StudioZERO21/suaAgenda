@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
 use App\Http\Controllers\Auth\AuthController;
@@ -45,6 +47,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// ── Painel Super Admin (visão global do SaaS) ──────────────────────
+Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('empresas', [AdminEmpresaController::class, 'index'])->name('empresas.index');
+    Route::get('empresas/{empresa}', [AdminEmpresaController::class, 'show'])->name('empresas.show');
+    Route::patch('empresas/{empresa}/toggle', [AdminEmpresaController::class, 'toggle'])->name('empresas.toggle');
+});
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));

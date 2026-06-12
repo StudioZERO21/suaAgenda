@@ -645,8 +645,11 @@
 <body x-data="appShell()" x-init="init()">
 
 @php
-    $nav = \App\Support\NavMenu::itens(auth()->user());
-    $podeCriarAgendamento = auth()->user()->can('cal_create');
+    $isSuperAdmin = auth()->user()->hasRole('super_admin');
+    $nav = $isSuperAdmin
+        ? \App\Support\NavMenu::admin()
+        : \App\Support\NavMenu::itens(auth()->user());
+    $podeCriarAgendamento = ! $isSuperAdmin && auth()->user()->can('cal_create');
 
     $userName = auth()->user()->name;
     $nameParts = explode(' ', trim($userName));
@@ -720,6 +723,7 @@
 
         {{-- Footer expandido --}}
         <div class="sidebar-footer-full" style="flex-shrink:0">
+            @if(! $isSuperAdmin && \App\Support\NavMenu::pode(auth()->user(), ['cfg_company']))
             <div style="padding:0 10px 8px">
                 <a href="{{ route('configuracoes.empresa') }}" class="sa-side-btn sa-side-btn--company">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--sa-side-muted);flex-shrink:0">
@@ -729,6 +733,7 @@
                     <span>Configurações da Empresa</span>
                 </a>
             </div>
+            @endif
             <div style="border-top:1px solid rgba(255,255,255,.08);padding:14px 16px">
                 <button type="button" @click="toggleDark()" class="sa-side-btn sa-side-btn--muted" style="margin-bottom:10px;width:100%">
                     <svg x-show="!dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--sa-side-muted);flex-shrink:0">
@@ -908,7 +913,7 @@
 </div>
 
 {{-- ── Mobile Bottom Nav ────────────────────────────────────────── --}}
-@php $podeVer = fn (?array $perms) => \App\Support\NavMenu::pode(auth()->user(), $perms); @endphp
+@php $podeVer = fn (?array $perms) => ! $isSuperAdmin && \App\Support\NavMenu::pode(auth()->user(), $perms); @endphp
 <nav class="sa-bottom-nav">
     <a href="{{ route('dashboard') }}" class="sa-bottom-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

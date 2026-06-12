@@ -25,6 +25,19 @@ final class NavMenu
     }
 
     /**
+     * Menu do painel super_admin (visão global do SaaS).
+     *
+     * @return list<array{route: string, label: string, icon: string, match: string, permission: null}>
+     */
+    public static function admin(): array
+    {
+        return [
+            ['route' => 'admin.dashboard',      'label' => 'Dashboard', 'permission' => null, 'match' => 'admin.dashboard',  'icon' => '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'],
+            ['route' => 'admin.empresas.index', 'label' => 'Empresas',  'permission' => null, 'match' => 'admin.empresas.*', 'icon' => '<path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>'],
+        ];
+    }
+
+    /**
      * @param  list<string>|null  $permissions
      */
     public static function pode(User $user, ?array $permissions): bool
