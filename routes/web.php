@@ -171,6 +171,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::delete('cargos/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
 
     Route::get('permissoes', [PermissaoController::class, 'index'])->name('permissoes.index');
+    Route::get('permissoes/usuarios/json', [PermissaoController::class, 'usuariosJson'])->name('permissoes.usuarios.json');
     Route::patch('permissoes/usuarios/{user}/role', [PermissaoController::class, 'assignUserRole'])->name('permissoes.users.role');
     Route::patch('permissoes/usuarios/{user}/profissional', [PermissaoController::class, 'assignUserProfissional'])->name('permissoes.users.profissional');
 
