@@ -76,6 +76,34 @@ class PermissaoController extends Controller
         ]);
     }
 
+    public function usuariosJson(): JsonResponse
+    {
+        abort_if(! auth()->user()->hasRole(['admin_empresa', 'super_admin', 'gestor']), 403);
+
+        $companyId = auth()->user()->empresa_id;
+
+        $users = User::where('empresa_id', $companyId)
+            ->withTrashed(false)
+            ->with(['roles', 'profissional:id,name,especialidade,cor'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $u): array => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'ativo' => (bool) $u->ativo,
+                'role' => $u->roles->first()?->name ?? '',
+                'profissional_id' => $u->profissional_id ?? '',
+                'profissional_nome' => $u->profissional?->name ?? '',
+                'criado_em' => $u->created_at->toDateString(),
+            ]);
+
+        return response()->json([
+            'total' => $users->count(),
+            'items' => $users->values(),
+        ]);
+    }
+
     public function assignUserRole(Request $request, User $user): JsonResponse
     {
         abort_if(! auth()->user()->hasRole('admin_empresa'), 403);
