@@ -409,6 +409,45 @@ class AgendamentoController extends Controller
         return response()->json(['data' => $data, 'total_agendamentos' => $agendamentos->count(), 'profissionais' => $grouped]);
     }
 
+    public function porServico(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $data = $request->input('data', today()->toDateString());
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', $data)
+            ->with(['servico:id,nome,cor', 'profissional:id,name', 'cliente:id,name'])
+            ->orderBy('data_hora')
+            ->get();
+
+        $grouped = $agendamentos->groupBy('servico_id')
+            ->map(function ($items, $servicoId) {
+                $primeiro = $items->first();
+
+                return [
+                    'servico_id' => $servicoId,
+                    'servico_nome' => $primeiro->servico?->nome ?? 'Sem serviço',
+                    'servico_cor' => $primeiro->servico?->cor ?? '#999999',
+                    'total' => $items->count(),
+                    'finalizados' => $items->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                    'receita' => (float) $items->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+                    'agendamentos' => $items->map(fn (Agendamento $ag) => [
+                        'id' => $ag->id,
+                        'data_hora' => $ag->data_hora->toIso8601String(),
+                        'status' => $ag->status,
+                        'cliente_nome' => $ag->cliente?->name ?? '',
+                        'profissional_nome' => $ag->profissional?->name ?? '',
+                        'valor' => (float) $ag->valor,
+                    ])->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $data, 'total_agendamentos' => $agendamentos->count(), 'servicos' => $grouped]);
+    }
+
     public function resumoHoje(): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
