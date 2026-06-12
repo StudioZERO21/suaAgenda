@@ -429,4 +429,42 @@ class PdvController extends Controller
             'items' => $itens,
         ]);
     }
+
+    public function ticketMedio(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $vendas = Venda::where('company_id', $empresa)
+            ->where('created_at', '>=', now()->subDays($dias)->startOfDay())
+            ->get(['total', 'created_at']);
+
+        $total = $vendas->count();
+        $soma = (float) $vendas->sum('total');
+        $ticketMedio = $total > 0 ? round($soma / $total, 2) : null;
+        $ticketMin = $total > 0 ? (float) $vendas->min('total') : null;
+        $ticketMax = $total > 0 ? (float) $vendas->max('total') : null;
+
+        $porDiaSemana = collect(range(0, 6))->map(function (int $dia) use ($vendas): array {
+            $label = Carbon::now()->startOfWeek()->addDays($dia)->translatedFormat('D');
+            $deste = $vendas->filter(fn (Venda $v) => $v->created_at->dayOfWeek === $dia);
+
+            return [
+                'dia_semana' => $dia,
+                'dia_nome' => $label,
+                'total_vendas' => $deste->count(),
+                'ticket_medio' => $deste->count() > 0 ? round((float) $deste->avg('total'), 2) : null,
+            ];
+        });
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_vendas' => $total,
+            'valor_total' => round($soma, 2),
+            'ticket_medio' => $ticketMedio,
+            'ticket_min' => $ticketMin,
+            'ticket_max' => $ticketMax,
+            'por_dia_semana' => $porDiaSemana->values(),
+        ]);
+    }
 }
