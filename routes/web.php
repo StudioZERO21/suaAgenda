@@ -137,6 +137,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
+    Route::patch('pdv/vendas/{venda}/observacao', [PdvController::class, 'observacaoVenda'])->name('pdv.vendas.observacao');
     Route::delete('pdv/vendas/{venda}', [PdvController::class, 'destroyVenda'])->name('pdv.vendas.destroy');
 
     Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
