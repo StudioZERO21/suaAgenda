@@ -172,6 +172,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('clientes/importar', [ClienteController::class, 'importarCsv'])->name('clientes.importar');
     Route::delete('clientes/bulk-destroy', [ClienteController::class, 'destroyBulk'])->name('clientes.bulk-destroy');
     Route::resource('clientes', ClienteController::class);
+    Route::patch('clientes/{cliente}/nome', [ClienteController::class, 'nome'])->name('clientes.nome');
     Route::patch('clientes/{cliente}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     Route::patch('clientes/{cliente}/lgpd', [ClienteController::class, 'lgpd'])->name('clientes.lgpd');
     Route::patch('clientes/{cliente}/observacao', [ClienteController::class, 'observacao'])->name('clientes.observacao');
