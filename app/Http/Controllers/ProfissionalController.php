@@ -496,6 +496,53 @@ class ProfissionalController extends Controller
         return response()->json($rows);
     }
 
+    public function rankingAvaliacoes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $apenas_com_avaliacoes = filter_var($request->input('apenas_com_avaliacoes', false), FILTER_VALIDATE_BOOLEAN);
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor']);
+
+        $avaliacoes = Avaliacao::where('avaliacoes.company_id', $empresa)
+            ->join('agendamentos', 'avaliacoes.agendamento_id', '=', 'agendamentos.id')
+            ->get(['avaliacoes.nota', 'agendamentos.profissional_id'])
+            ->groupBy('profissional_id');
+
+        $rows = $profissionais->map(function (Profissional $prof) use ($avaliacoes): array {
+            $itens = $avaliacoes->get($prof->id, collect());
+            $total = $itens->count();
+            $media = $total > 0 ? round($itens->avg('nota'), 1) : null;
+
+            $distribuicao = [];
+            for ($n = 1; $n <= 5; $n++) {
+                $distribuicao[(string) $n] = $itens->where('nota', $n)->count();
+            }
+
+            return [
+                'profissional_id' => $prof->id,
+                'profissional_nome' => $prof->name,
+                'especialidade' => $prof->especialidade ?? '',
+                'cor' => $prof->cor ?? '#999999',
+                'total_avaliacoes' => $total,
+                'media_nota' => $media,
+                'distribuicao' => $distribuicao,
+            ];
+        });
+
+        if ($apenas_com_avaliacoes) {
+            $rows = $rows->filter(fn (array $r) => $r['total_avaliacoes'] > 0);
+        }
+
+        $rows = $rows->sortByDesc('media_nota')->values();
+
+        return response()->json($rows);
+    }
+
     public function detalhe(Profissional $profissional): JsonResponse
     {
         $this->authorize('view', $profissional);
