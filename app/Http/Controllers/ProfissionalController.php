@@ -410,6 +410,49 @@ class ProfissionalController extends Controller
         return response()->json(['total' => $profissionais->count(), 'items' => $profissionais->values()]);
     }
 
+    public function agendamentosHoje(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $incluirSem = filter_var($request->input('incluir_sem_agendamentos', false), FILTER_VALIDATE_BOOLEAN);
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor']);
+
+        $agHoje = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', today())
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->get(['profissional_id', 'status', 'valor'])
+            ->groupBy('profissional_id');
+
+        $items = $profissionais
+            ->map(function (Profissional $p) use ($agHoje): array {
+                $ags = $agHoje->get($p->id, collect());
+
+                return [
+                    'profissional_id' => $p->id,
+                    'profissional_nome' => $p->name,
+                    'especialidade' => $p->especialidade ?? '',
+                    'cor' => $p->cor ?? '#999999',
+                    'total_hoje' => $ags->count(),
+                    'finalizados' => $ags->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                    'pendentes' => $ags->whereIn('status', [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])->count(),
+                    'receita_hoje' => (float) $ags->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+                ];
+            })
+            ->when(! $incluirSem, fn ($col) => $col->filter(fn ($i) => $i['total_hoje'] > 0))
+            ->values();
+
+        return response()->json([
+            'data' => today()->format('Y-m-d'),
+            'total_profissionais' => $items->count(),
+            'items' => $items,
+        ]);
+    }
+
     public function ranking(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Profissional::class);
