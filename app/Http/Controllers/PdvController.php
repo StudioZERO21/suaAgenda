@@ -228,6 +228,43 @@ class PdvController extends Controller
         ]);
     }
 
+    public function listarVendas(Request $request): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 20), 100);
+        $periodo = $request->input('periodo', 'mes');
+        $hoje = Carbon::today();
+
+        [$inicio, $fim] = match ($periodo) {
+            'hoje' => [$hoje->copy()->startOfDay(), $hoje->copy()->endOfDay()],
+            'semana' => [$hoje->copy()->startOfWeek(), $hoje->copy()->endOfWeek()],
+            default => [$hoje->copy()->startOfMonth(), $hoje->copy()->endOfMonth()],
+        };
+
+        $vendas = Venda::where('company_id', $companyId)
+            ->whereBetween('created_at', [$inicio, $fim])
+            ->with(['cliente:id,name', 'itens'])
+            ->latest()
+            ->limit($limite)
+            ->get()
+            ->map(fn (Venda $v): array => [
+                'id' => $v->id,
+                'created_at' => $v->created_at->toIso8601String(),
+                'cliente_nome' => $v->cliente?->name ?? 'Avulso',
+                'total' => (float) $v->total,
+                'desconto' => (float) $v->desconto,
+                'metodo_pagamento' => $v->metodo_pagamento ?? '',
+                'total_itens' => $v->itens->count(),
+            ]);
+
+        return response()->json([
+            'periodo' => $periodo,
+            'total' => $vendas->count(),
+            'receita_total' => (float) $vendas->sum('total'),
+            'items' => $vendas->values(),
+        ]);
+    }
+
     public function destroyVenda(Venda $venda): Response
     {
         abort_if($venda->company_id !== auth()->user()->empresa_id, 403);
