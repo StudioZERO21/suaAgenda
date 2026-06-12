@@ -364,4 +364,39 @@ class PdvController extends Controller
 
         return response()->json(['total_produtos' => $itens->count(), 'items' => $itens]);
     }
+
+    public function vendasPorDia(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        $mes = (int) $request->input('mes', now()->month);
+        $ano = (int) $request->input('ano', now()->year);
+
+        $inicio = Carbon::createFromDate($ano, $mes, 1)->startOfMonth();
+        $fim = $inicio->copy()->endOfMonth();
+        $diasNoMes = (int) $inicio->daysInMonth;
+
+        $vendas = Venda::where('company_id', $empresa)
+            ->whereBetween('created_at', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['created_at', 'total']);
+
+        $serie = collect(range(1, $diasNoMes))->map(function (int $dia) use ($inicio, $vendas): array {
+            $data = $inicio->copy()->setDay($dia);
+            $dosDia = $vendas->filter(fn (Venda $v) => Carbon::parse($v->created_at)->isSameDay($data));
+
+            return [
+                'data' => $data->format('Y-m-d'),
+                'total_vendas' => $dosDia->count(),
+                'receita' => (float) $dosDia->sum('total'),
+            ];
+        });
+
+        return response()->json([
+            'mes' => $mes,
+            'ano' => $ano,
+            'total_mes' => $vendas->count(),
+            'receita_mes' => (float) $vendas->sum('total'),
+            'dias' => $serie,
+        ]);
+    }
 }
