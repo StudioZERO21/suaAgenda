@@ -254,6 +254,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/sem-profissional', [ServicoController::class, 'semProfissional'])->name('servicos.sem-profissional');
     Route::get('servicos/sem-agendamento', [ServicoController::class, 'semAgendamento'])->name('servicos.sem-agendamento');
     Route::get('servicos/taxa-cancelamento', [ServicoController::class, 'taxaCancelamento'])->name('servicos.taxa-cancelamento');
+    Route::get('servicos/duracao-real', [ServicoController::class, 'duracaoReal'])->name('servicos.duracao-real');
     Route::get('servicos/estatisticas', [ServicoController::class, 'estatisticas'])->name('servicos.estatisticas');
     Route::get('servicos/exportar', [ServicoController::class, 'exportarCsv'])->name('servicos.exportar');
     Route::resource('servicos', ServicoController::class)->except(['show']);
