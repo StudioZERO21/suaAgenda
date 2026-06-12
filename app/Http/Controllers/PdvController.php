@@ -505,6 +505,39 @@ class PdvController extends Controller
         ]);
     }
 
+    public function evolucaoMensal(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $meses = max(2, min(24, (int) $request->input('meses', 6)));
+
+        $serie = collect(range($meses - 1, 0))->map(function (int $offset): Carbon {
+            return now()->startOfMonth()->subMonths($offset);
+        })->map(function (Carbon $inicio) use ($empresa): array {
+            $fim = $inicio->copy()->endOfMonth();
+
+            $vendas = Venda::where('company_id', $empresa)
+                ->whereBetween('created_at', [$inicio->startOfDay(), $fim->endOfDay()])
+                ->get(['total', 'created_at']);
+
+            $totalVendas = $vendas->count();
+            $valorTotal = round((float) $vendas->sum('total'), 2);
+
+            return [
+                'mes' => $inicio->month,
+                'ano' => $inicio->year,
+                'mes_fmt' => $inicio->translatedFormat('M/y'),
+                'total_vendas' => $totalVendas,
+                'valor_total' => $valorTotal,
+                'ticket_medio' => $totalVendas > 0 ? round($valorTotal / $totalVendas, 2) : null,
+            ];
+        });
+
+        return response()->json([
+            'meses' => $meses,
+            'serie' => $serie->values(),
+        ]);
+    }
+
     public function clientesSemCompra(Request $request): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;
