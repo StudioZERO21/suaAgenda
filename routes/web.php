@@ -52,6 +52,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('/dashboard/receita', [DashboardController::class, 'receita'])->name('dashboard.receita');
     Route::get('/dashboard/kanban', [DashboardController::class, 'kanban'])->name('dashboard.kanban');
 
+    Route::get('agendamentos/resumo-hoje', [AgendamentoController::class, 'resumoHoje'])->name('agendamentos.resumo-hoje');
     Route::get('agendamentos/hoje', [AgendamentoController::class, 'hoje'])->name('agendamentos.hoje');
     Route::get('agendamentos/buscar', [AgendamentoController::class, 'buscar'])->name('agendamentos.buscar');
     Route::get('agendamentos/exportar', [AgendamentoController::class, 'exportarCsv'])->name('agendamentos.exportar');

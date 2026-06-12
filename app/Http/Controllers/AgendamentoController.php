@@ -370,6 +370,35 @@ class AgendamentoController extends Controller
         return response()->json(['updated' => $updated]);
     }
 
+    public function resumoHoje(): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereDate('data_hora', today())
+            ->get(['id', 'status', 'valor', 'data_hora', 'profissional_id']);
+
+        $byStatus = $agendamentos->groupBy('status');
+
+        $proximo = $agendamentos
+            ->filter(fn (Agendamento $a) => in_array($a->status, [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO]) && $a->data_hora->isFuture())
+            ->sortBy('data_hora')
+            ->first();
+
+        return response()->json([
+            'total' => $agendamentos->count(),
+            'pendentes' => $byStatus->get(Agendamento::STATUS_PENDENTE, collect())->count(),
+            'confirmados' => $byStatus->get(Agendamento::STATUS_CONFIRMADO, collect())->count(),
+            'em_atendimento' => $byStatus->get(Agendamento::STATUS_EM_ATENDIMENTO, collect())->count(),
+            'finalizados' => $byStatus->get(Agendamento::STATUS_FINALIZADO, collect())->count(),
+            'cancelados' => $byStatus->get(Agendamento::STATUS_CANCELADO, collect())->count(),
+            'receita_dia' => (float) $agendamentos->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+            'proximo_horario' => $proximo?->data_hora->toIso8601String(),
+        ]);
+    }
+
     public function hoje(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
