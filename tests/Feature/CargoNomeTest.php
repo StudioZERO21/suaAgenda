@@ -70,7 +70,7 @@ describe('cargo_nome', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('cargos.nome', $cargoOutra), ['nome' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

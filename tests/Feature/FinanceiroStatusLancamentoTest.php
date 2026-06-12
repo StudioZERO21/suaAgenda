@@ -81,7 +81,7 @@ describe('financeiro_status_lancamento', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('financeiro.lancamentos.status', $lancOutra), ['status' => 'pago'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

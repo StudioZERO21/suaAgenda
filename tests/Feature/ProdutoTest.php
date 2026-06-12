@@ -155,7 +155,7 @@ describe('produtos CRUD', function () {
             ->assertJsonStructure(['errors' => ['nome']]);
     });
 
-    it('isolamento: produto de outra empresa retorna 403', function () {
+    it('isolamento: produto de outra empresa retorna 404', function () {
         $outra = Company::create(['name' => 'Outra', 'slug' => 'outra', 'plano' => 'trial', 'ativo' => true]);
         $produtoAlheio = Produto::create([
             'company_id' => $outra->id,
@@ -167,7 +167,7 @@ describe('produtos CRUD', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('produtos.destroy', $produtoAlheio))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });
 
@@ -281,7 +281,7 @@ describe('produto imagens', function () {
         expect($img2->fresh()->is_capa)->toBeTrue();
     });
 
-    it('isolamento: imagem de produto de outra empresa retorna 403', function () {
+    it('isolamento: imagem de produto de outra empresa retorna 404', function () {
         $outra = Company::create(['name' => 'Outra2', 'slug' => 'outra2', 'plano' => 'trial', 'ativo' => true]);
         $produtoAlheio = Produto::create([
             'company_id' => $outra->id,
@@ -299,7 +299,7 @@ describe('produto imagens', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('produtos.imagens.destroy', $imagemAlheia))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('resposta do index inclui array de imagens', function () {

@@ -247,7 +247,7 @@ class ProdutoController extends Controller
     public function destroyImagem(ProdutoImagem $imagem): Response
     {
         $produto = $imagem->produto;
-        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+        abort_if($produto === null || $produto->company_id !== auth()->user()->empresa_id, 404);
 
         Storage::disk('public')->delete($imagem->imagem_path);
 
@@ -266,7 +266,7 @@ class ProdutoController extends Controller
     public function setCapa(ProdutoImagem $imagem): JsonResponse
     {
         $produto = $imagem->produto;
-        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+        abort_if($produto === null || $produto->company_id !== auth()->user()->empresa_id, 404);
 
         $produto->imagens()->update(['is_capa' => false]);
         $imagem->update(['is_capa' => true]);

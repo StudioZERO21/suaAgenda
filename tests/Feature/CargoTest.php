@@ -117,7 +117,7 @@ describe('cargos CRUD', function () {
             ->assertJsonStructure(['errors' => ['comissao']]);
     });
 
-    it('isolamento: cargo de outra empresa retorna 403', function () {
+    it('isolamento: cargo de outra empresa retorna 404', function () {
         $outra = Company::create(['name' => 'Outra', 'slug' => 'outra', 'plano' => 'trial', 'ativo' => true]);
         $cargoAlheio = Cargo::create([
             'company_id' => $outra->id,
@@ -128,6 +128,6 @@ describe('cargos CRUD', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('cargos.destroy', $cargoAlheio))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });

@@ -148,7 +148,7 @@ describe('lancamentos json api', function () {
                 'data' => now()->format('Y-m-d'),
                 'status' => 'pago',
             ])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('admin pode excluir lançamento e recebe 204', function () {
@@ -181,6 +181,6 @@ describe('lancamentos json api', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('financeiro.lancamentos.destroy', $lancamentoAlheio))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });

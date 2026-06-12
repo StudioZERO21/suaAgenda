@@ -80,7 +80,7 @@ describe('financeiro_lancamento_categoria', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('financeiro.lancamentos.categoria', $lancOutra), ['categoria' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

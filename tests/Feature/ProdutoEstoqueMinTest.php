@@ -73,7 +73,7 @@ describe('produto_estoque_min', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.estoque-min', $prodOutra), ['estoque_min' => 5])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

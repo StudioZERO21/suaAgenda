@@ -89,7 +89,7 @@ describe('financeiro_lancamento_observacao', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('financeiro.lancamentos.observacao', $lancOutra), ['observacao' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

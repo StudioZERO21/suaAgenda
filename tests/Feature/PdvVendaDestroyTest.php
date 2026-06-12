@@ -102,7 +102,7 @@ describe('pdv_venda_destroy', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('pdv.vendas.destroy', $vendaOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

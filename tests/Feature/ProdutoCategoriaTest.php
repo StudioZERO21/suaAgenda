@@ -84,7 +84,7 @@ describe('produto_categoria', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.categoria', $prodOutra), ['categoria' => 'hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

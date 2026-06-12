@@ -70,7 +70,7 @@ describe('produto_detalhe', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('produtos.detalhe', $prodOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('analista pode ver detalhe', function () {

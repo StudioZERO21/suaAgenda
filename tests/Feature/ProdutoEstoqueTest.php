@@ -82,7 +82,7 @@ describe('produto_estoque', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.estoque', $prodOutra), ['estoque' => 99])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('analista pode alterar estoque da própria empresa', function () {

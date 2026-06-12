@@ -83,7 +83,7 @@ describe('produto_toggle', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.toggle', $prodOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

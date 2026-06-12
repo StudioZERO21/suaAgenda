@@ -132,6 +132,6 @@ describe('notificacoes', function () {
 
         $this->actingAs($this->user)
             ->patchJson(route('notificacoes.lida', $n->id))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });
