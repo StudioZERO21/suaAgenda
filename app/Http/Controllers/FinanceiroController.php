@@ -344,6 +344,19 @@ class FinanceiroController extends Controller
         ]);
     }
 
+    public function categorias(): JsonResponse
+    {
+        $empresaId = auth()->user()->empresa_id;
+
+        $categorias = Lancamento::where('company_id', $empresaId)
+            ->whereNotNull('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria');
+
+        return response()->json($categorias->values());
+    }
+
     public function categoriaLancamento(Request $request, Lancamento $lancamento): JsonResponse
     {
         abort_if($lancamento->company_id !== auth()->user()->empresa_id, 403);
