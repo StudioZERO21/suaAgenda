@@ -9,6 +9,7 @@ use App\Http\Requests\StoreAgendamentoRequest;
 use App\Http\Requests\UpdateAgendamentoRequest;
 use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
@@ -769,6 +770,37 @@ class AgendamentoController extends Controller
             'profissional_nome' => $profissional->name,
             'updated_at' => $agendamento->updated_at->toIso8601String(),
         ]);
+    }
+
+    public function avaliacao(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('view', $agendamento);
+
+        abort_if($agendamento->status !== Agendamento::STATUS_FINALIZADO, 422, 'Apenas agendamentos finalizados podem ser avaliados.');
+
+        if (Avaliacao::where('agendamento_id', $agendamento->id)->exists()) {
+            return response()->json(['message' => 'Este agendamento já foi avaliado.'], 409);
+        }
+
+        $request->validate([
+            'nota' => ['required', 'integer', 'min:1', 'max:5'],
+            'comentario' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $avaliacao = Avaliacao::create([
+            'company_id' => auth()->user()->empresa_id,
+            'agendamento_id' => $agendamento->id,
+            'nota' => $request->integer('nota'),
+            'comentario' => $request->input('comentario'),
+        ]);
+
+        return response()->json([
+            'id' => $avaliacao->id,
+            'nota' => $avaliacao->nota,
+            'comentario' => $avaliacao->comentario ?? '',
+            'estrelas' => $avaliacao->estrelas(),
+            'created_at' => $avaliacao->created_at->toIso8601String(),
+        ], 201);
     }
 
     public function destroy(Agendamento $agendamento): RedirectResponse
