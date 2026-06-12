@@ -557,6 +557,37 @@ class ClienteController extends Controller
         return response()->json(['total' => $clientes->count(), 'dias' => $dias, 'items' => $clientes]);
     }
 
+    public function topGastadores(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 10), 50);
+        $dias = $request->input('dias');
+
+        $agQuery = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->selectRaw('cliente_id, COUNT(*) as total_agendamentos, SUM(valor) as receita')
+            ->groupBy('cliente_id')
+            ->orderByDesc('receita')
+            ->limit($limite)
+            ->get();
+
+        $clienteIds = $agQuery->pluck('cliente_id');
+        $clientes = Cliente::whereIn('id', $clienteIds)->get(['id', 'name', 'phone', 'email', 'ativo'])->keyBy('id');
+
+        $items = $agQuery->map(fn ($row) => [
+            'cliente_id' => $row->cliente_id,
+            'nome' => $clientes->get($row->cliente_id)?->name ?? '',
+            'phone' => $clientes->get($row->cliente_id)?->phone ?? '',
+            'total_agendamentos' => (int) $row->total_agendamentos,
+            'receita_total' => (float) $row->receita,
+        ])->values();
+
+        return response()->json(['total' => $items->count(), 'items' => $items]);
+    }
+
     public function buscar(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Cliente::class);
