@@ -14,6 +14,7 @@ use App\Http\Controllers\CargoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ConfiguracaoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardFuncionarioController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\FinanceiroController;
 use App\Http\Controllers\HorarioTrabalhoController;
@@ -48,6 +49,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/funcionario', [DashboardFuncionarioController::class, 'index'])->name('dashboard.funcionario');
     Route::get('/dashboard/resumo', [DashboardController::class, 'resumo'])->name('dashboard.resumo');
     Route::get('/dashboard/alertas', [DashboardController::class, 'alertas'])->name('dashboard.alertas');
     Route::get('/dashboard/receita', [DashboardController::class, 'receita'])->name('dashboard.receita');
