@@ -909,6 +909,38 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function ticketPorHora(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        [$inicio, $fim] = $this->resolverPeriodo($request);
+
+        $agendamentos = Agendamento::where('company_id', $empresaId)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
+            ->get(['data_hora', 'valor']);
+
+        $porHora = collect(range(6, 22))->map(function (int $hora) use ($agendamentos): array {
+            $items = $agendamentos->filter(fn ($ag) => $ag->data_hora->hour === $hora);
+            $count = $items->count();
+            $receita = (float) $items->sum('valor');
+
+            return [
+                'hora' => $hora,
+                'label' => sprintf('%02d:00', $hora),
+                'total' => $count,
+                'receita' => $receita,
+                'ticket_medio' => $count > 0 ? round($receita / $count, 2) : 0.0,
+            ];
+        })->values();
+
+        return response()->json([
+            'periodo' => $request->input('preset', '30d'),
+            'horas' => $porHora,
+        ]);
+    }
+
     public function agendamentosPorDiaSemana(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
