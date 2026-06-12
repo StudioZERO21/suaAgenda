@@ -32,6 +32,7 @@ class CheckModulePermission
         'pdv' => ['fin_pdv'],
         'financeiro' => ['fin_view', 'fin_own'],
         'lancamentos.' => ['fin_view', 'fin_own'],
+        'regras.' => ['cfg_rules'],
         'relatorios' => ['fin_view', 'fin_export'],
         'portfolio.' => ['ptf_view'],
         'cargos.' => ['stf_view', 'stf_edit'],

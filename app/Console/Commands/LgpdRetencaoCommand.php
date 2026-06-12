@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Services\LgpdService;
+use App\Services\RegraService;
 use Illuminate\Console\Command;
 
 /**
@@ -59,11 +60,19 @@ class LgpdRetencaoCommand extends Command
     }
 
     /**
-     * Prazo de retenção da empresa. Será lido da regra de negócio
-     * lgpd_retencao (etapa 1.282); por ora, sem configuração = desligado.
+     * Prazo de retenção da empresa, lido da regra lgpd_retencao.
+     * Empresa sem a regra ativa = retenção desligada.
      */
     private function mesesConfigurados(Company $company): ?int
     {
-        return null;
+        $regras = app(RegraService::class);
+
+        if (! $regras->enabled('lgpd_retencao', $company->id)) {
+            return null;
+        }
+
+        $meses = $regras->param('lgpd_retencao', 'meses', null, $company->id);
+
+        return $meses !== null ? (int) $meses : null;
     }
 }
