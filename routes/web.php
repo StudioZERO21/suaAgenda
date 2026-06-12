@@ -160,6 +160,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::put('cargos/{cargo}', [CargoController::class, 'update'])->name('cargos.update');
     Route::get('cargos/{cargo}/json', [CargoController::class, 'detalhe'])->name('cargos.detalhe');
     Route::get('cargos/{cargo}/profissionais', [CargoController::class, 'profissionais'])->name('cargos.profissionais');
+    Route::get('cargos/{cargo}/estatisticas', [CargoController::class, 'estatisticas'])->name('cargos.estatisticas');
     Route::patch('cargos/{cargo}/descricao', [CargoController::class, 'descricao'])->name('cargos.descricao');
     Route::patch('cargos/{cargo}/nome', [CargoController::class, 'nome'])->name('cargos.nome');
     Route::patch('cargos/{cargo}/nivel', [CargoController::class, 'nivel'])->name('cargos.nivel');
