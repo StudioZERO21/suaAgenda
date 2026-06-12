@@ -73,6 +73,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('agendamentos/{agendamento}/profissional', [AgendamentoController::class, 'reassignarProfissional'])->name('agendamentos.profissional');
     Route::patch('agendamentos/{agendamento}/servico', [AgendamentoController::class, 'reassignarServico'])->name('agendamentos.servico');
     Route::patch('agendamentos/{agendamento}/cliente', [AgendamentoController::class, 'reassignarCliente'])->name('agendamentos.cliente');
+    Route::get('agendamentos/{agendamento}/avaliacao', [AgendamentoController::class, 'getAvaliacao'])->name('agendamentos.avaliacao.get');
     Route::post('agendamentos/{agendamento}/avaliacao', [AgendamentoController::class, 'avaliacao'])->name('agendamentos.avaliacao');
     Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
