@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -52,10 +52,10 @@ describe('configuracao_qrcode', function () {
             ->assertOk();
     });
 
-    it('analista pode baixar QR code', function () {
+    it('analista não pode baixar QR code (sem permissão de configurações)', function () {
         $this->actingAs($this->analista)
             ->get(route('configuracoes.empresa.qrcode'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('unauthenticated é redirecionado', function () {

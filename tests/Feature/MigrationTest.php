@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 

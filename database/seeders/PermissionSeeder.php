@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\Company;
 use App\Models\Role;
 use App\Services\GrupoAcessoProvisioner;
+use App\Support\DefaultRolePermissions;
 use App\Support\SaDemoData;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -23,22 +24,14 @@ class PermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
         }
 
-        // 2. Papéis globais recebem seus conjuntos
-        $grupos = collect(SaDemoData::gruposAcesso())->keyBy('id');
-
-        $sets = [
-            'admin_empresa' => array_keys(SaDemoData::permissionsFlat()),
-            'gestor' => $grupos['g-mgr']['perms'],
-            'analista' => $grupos['g-prof']['perms'],
-        ];
-
-        foreach ($sets as $roleName => $perms) {
+        // 2. Papéis globais recebem seus conjuntos default
+        foreach (['admin_empresa', 'gestor', 'analista'] as $roleName) {
             $role = Role::whereNull('company_id')
                 ->where('name', $roleName)
                 ->where('guard_name', 'web')
                 ->first();
 
-            $role?->syncPermissions($perms);
+            $role?->syncPermissions(DefaultRolePermissions::for($roleName));
         }
 
         // super_admin não precisa de permissions (Gate::before)

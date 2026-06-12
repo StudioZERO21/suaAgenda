@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -88,12 +88,12 @@ describe('site_upload_banner', function () {
         Storage::disk('public')->assertExists($secondPath);
     });
 
-    it('analista pode fazer upload do banner', function () {
+    it('analista não pode fazer upload do banner (sem cfg_site)', function () {
         $file = UploadedFile::fake()->image('banner-analista.jpg');
 
         $this->actingAs($this->analista)
             ->postJson(route('site.upload.banner'), ['image' => $file])
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('unauthenticated é rejeitado', function () {

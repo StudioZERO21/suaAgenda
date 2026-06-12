@@ -28,6 +28,7 @@ use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
+use App\Http\Middleware\CheckModulePermission;
 use App\Http\Middleware\SetTenantMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -44,7 +45,7 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
+Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/resumo', [DashboardController::class, 'resumo'])->name('dashboard.resumo');

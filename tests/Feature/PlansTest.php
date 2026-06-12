@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use App\Models\Company;
 use App\Models\Plan;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -106,10 +106,10 @@ describe('plans controller', function () {
             ->assertSee('Planos & Assinatura');
     });
 
-    it('exibe página de planos para gestor', function () {
+    it('gestor não acessa página de planos (sem cfg_plans)', function () {
         $this->actingAs($this->gestor)
             ->get(route('planos.index'))
-            ->assertOk();
+            ->assertForbidden();
     });
 
     it('redireciona visitante para login', function () {
