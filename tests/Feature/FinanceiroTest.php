@@ -108,7 +108,7 @@ describe('financeiro_lancamentos', function () use (&$lancamentoPayload) {
 
         $this->actingAs($this->admin)
             ->putJson(route('financeiro.lancamentos.update', $lancamento), $lancamentoPayload())
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('isolamento: não pode excluir lançamento de outra empresa', function () use (&$lancamentoPayload) {
@@ -117,7 +117,7 @@ describe('financeiro_lancamentos', function () use (&$lancamentoPayload) {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('financeiro.lancamentos.destroy', $lancamento))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('valor é obrigatório e positivo', function () use (&$lancamentoPayload) {

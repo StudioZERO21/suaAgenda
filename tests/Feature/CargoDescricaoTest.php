@@ -75,7 +75,7 @@ describe('cargo_descricao', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('cargos.descricao', $cargoOutra), ['descricao' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

@@ -99,7 +99,7 @@ describe('cargo_profissionais', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('cargos.profissionais', $cargoOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

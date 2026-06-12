@@ -76,7 +76,7 @@ describe('produto_sku', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.sku', $prodOutra), ['sku' => 'X-001'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

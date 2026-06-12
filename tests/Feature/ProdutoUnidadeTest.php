@@ -73,7 +73,7 @@ describe('produto_unidade', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.unidade', $prodOutra), ['unidade' => 'kg'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

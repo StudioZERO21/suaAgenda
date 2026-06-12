@@ -89,7 +89,7 @@ describe('pdv_venda_detalhe', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('pdv.vendas.detalhe', $vendaOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('analista pode ver detalhe', function () {

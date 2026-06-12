@@ -78,7 +78,7 @@ describe('produto_descricao', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.descricao', $prodOutra), ['descricao' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBloqueioRequest;
+use App\Http\Requests\UpdateBloqueioRequest;
 use App\Models\BloqueioAgenda;
 use App\Models\Company;
 use App\Models\Profissional;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class BloqueioController extends Controller
@@ -30,15 +31,11 @@ class BloqueioController extends Controller
         return response()->json($bloqueios);
     }
 
-    public function store(Request $request, Profissional $profissional): JsonResponse
+    public function store(StoreBloqueioRequest $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('update', $profissional->company);
 
-        $data = $request->validate([
-            'data_inicio' => ['required', 'date'],
-            'data_fim' => ['required', 'date', 'after_or_equal:data_inicio'],
-            'motivo' => ['nullable', 'string', 'max:120'],
-        ]);
+        $data = $request->validated();
 
         $bloqueio = BloqueioAgenda::create([
             'company_id' => $profissional->company_id,
@@ -56,15 +53,11 @@ class BloqueioController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, BloqueioAgenda $bloqueio): JsonResponse
+    public function update(UpdateBloqueioRequest $request, BloqueioAgenda $bloqueio): JsonResponse
     {
         $this->authorize('update', Company::findOrFail($bloqueio->company_id));
 
-        $data = $request->validate([
-            'data_inicio' => ['sometimes', 'date'],
-            'data_fim' => ['sometimes', 'date', 'after_or_equal:data_inicio'],
-            'motivo' => ['nullable', 'string', 'max:120'],
-        ]);
+        $data = $request->validated();
 
         $bloqueio->update($data);
 

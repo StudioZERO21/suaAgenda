@@ -121,7 +121,7 @@ describe('cargo_estatisticas', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('cargos.estatisticas', $cargoOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('analista pode acessar', function () {

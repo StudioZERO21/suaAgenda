@@ -79,7 +79,7 @@ describe('cargo_cor', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('cargos.cor', $cargoOutra), ['cor' => '#ff0000'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

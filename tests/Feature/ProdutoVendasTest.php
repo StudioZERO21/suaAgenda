@@ -79,7 +79,7 @@ describe('produto_vendas', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('produtos.vendas', $prodOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

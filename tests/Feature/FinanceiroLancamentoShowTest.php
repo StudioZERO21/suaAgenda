@@ -71,7 +71,7 @@ describe('financeiro_lancamento_show', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('financeiro.lancamentos.show', $lancOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

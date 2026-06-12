@@ -50,9 +50,9 @@ describe('notificacao_destroy', function () {
 
         $this->actingAs($this->user)
             ->deleteJson(route('notificacoes.destroy', $notifOutra))
-            ->assertForbidden();
+            ->assertNotFound();
 
-        expect(Notificacao::find($notifOutra->id))->not->toBeNull();
+        expect(Notificacao::withoutGlobalScope('company')->find($notifOutra->id))->not->toBeNull();
     });
 
     it('unread-count retorna zero quando não há não lidas', function () {

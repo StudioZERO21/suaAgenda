@@ -84,7 +84,7 @@ describe('cargo_comissao', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('cargos.comissao', $cargoOutra), ['comissao' => 15.0])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

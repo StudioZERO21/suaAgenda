@@ -83,7 +83,7 @@ describe('produto_preco', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.preco', $prodOutra), ['preco' => 99.0])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

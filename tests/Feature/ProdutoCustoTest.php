@@ -71,7 +71,7 @@ describe('produto_custo', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.custo', $prodOutra), ['custo' => 5.0])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

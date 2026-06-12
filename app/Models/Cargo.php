@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cargo extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use BelongsToCompany, HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'company_id',

@@ -82,7 +82,7 @@ describe('notificacao_mark_read', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('notificacoes.lida', $notifOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('markAllRead não afeta notificações de outra empresa', function () {

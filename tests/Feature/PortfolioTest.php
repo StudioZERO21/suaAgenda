@@ -131,7 +131,7 @@ describe('portfolio crud', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('portfolio.fotos.destroy', $item))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('admin pode marcar foto como destaque', function () {
@@ -174,6 +174,6 @@ describe('portfolio crud', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('portfolio.fotos.toggle', $item))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });

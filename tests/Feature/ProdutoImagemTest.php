@@ -82,7 +82,7 @@ describe('produto_imagem_store', function () {
         $file = UploadedFile::fake()->image('test.jpg');
         $this->actingAs($this->admin)
             ->postJson(route('produtos.imagens.store', $prodOutra), ['imagem' => $file])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });
 
@@ -109,7 +109,7 @@ describe('produto_imagem_destroy', function () {
 
         $this->actingAs($this->admin)
             ->deleteJson(route('produtos.imagens.destroy', $imagem))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 });
 
@@ -141,7 +141,7 @@ describe('produto_imagem_set_capa', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('produtos.imagens.capa', $imagem))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

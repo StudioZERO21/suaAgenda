@@ -75,7 +75,7 @@ describe('portfolio_toggle_featured', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('portfolio.fotos.toggle', $itemOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('analista pode alternar destaque', function () {

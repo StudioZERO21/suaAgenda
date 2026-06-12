@@ -76,7 +76,7 @@ describe('cargo_detalhe', function () {
 
         $this->actingAs($this->admin)
             ->getJson(route('cargos.detalhe', $cargoOutra))
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

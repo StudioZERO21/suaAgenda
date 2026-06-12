@@ -65,7 +65,7 @@ class CargoController extends Controller
 
     public function update(StoreCargoRequest $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
 
         $cargo->update([
             'nome' => $request->nome,
@@ -82,7 +82,7 @@ class CargoController extends Controller
 
     public function cor(Request $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
 
         $request->validate([
             'cor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -98,7 +98,7 @@ class CargoController extends Controller
 
     public function detalhe(Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('view', $cargo);
 
         $cargo->loadCount('profissionais as membros');
 
@@ -117,7 +117,7 @@ class CargoController extends Controller
 
     public function profissionais(Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('view', $cargo);
 
         $profissionais = $cargo->profissionais()
             ->orderBy('name')
@@ -140,7 +140,7 @@ class CargoController extends Controller
 
     public function estatisticas(Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('view', $cargo);
 
         $profissionais = $cargo->profissionais()->get(['id', 'name', 'ativo']);
         $profIds = $profissionais->pluck('id');
@@ -174,7 +174,7 @@ class CargoController extends Controller
 
     public function descricao(Request $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
 
         $request->validate(['descricao' => ['nullable', 'string', 'max:500']]);
 
@@ -188,7 +188,7 @@ class CargoController extends Controller
 
     public function nome(Request $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
 
         $request->validate(['nome' => ['required', 'string', 'max:100']]);
 
@@ -202,7 +202,7 @@ class CargoController extends Controller
 
     public function nivel(Request $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
 
         $request->validate(['nivel' => ['required', 'string', 'max:50']]);
 
@@ -216,7 +216,7 @@ class CargoController extends Controller
 
     public function comissao(Request $request, Cargo $cargo): JsonResponse
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('update', $cargo);
         abort_if(! auth()->user()->hasRole('admin_empresa'), 403);
 
         $request->validate(['comissao' => ['required', 'numeric', 'min:0', 'max:100']]);
@@ -232,7 +232,7 @@ class CargoController extends Controller
 
     public function destroy(Cargo $cargo): Response
     {
-        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        $this->authorize('delete', $cargo);
 
         $cargo->delete();
 

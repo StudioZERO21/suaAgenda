@@ -87,7 +87,7 @@ describe('pdv_venda_observacao', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('pdv.vendas.observacao', $vendaOutra), ['observacao' => 'Hack'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {

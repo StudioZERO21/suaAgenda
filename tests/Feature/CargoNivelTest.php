@@ -84,7 +84,7 @@ describe('cargo_nivel', function () {
 
         $this->actingAs($this->admin)
             ->patchJson(route('cargos.nivel', $cargoOutra), ['nivel' => 'Senior'])
-            ->assertForbidden();
+            ->assertNotFound();
     });
 
     it('unauthenticated é rejeitado', function () {
