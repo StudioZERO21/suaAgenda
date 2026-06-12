@@ -58,7 +58,7 @@ class BloqueioController extends Controller
 
     public function update(Request $request, BloqueioAgenda $bloqueio): JsonResponse
     {
-        $this->authorize('update', Company::find($bloqueio->company_id));
+        $this->authorize('update', Company::findOrFail($bloqueio->company_id));
 
         $data = $request->validate([
             'data_inicio' => ['sometimes', 'date'],
@@ -78,7 +78,7 @@ class BloqueioController extends Controller
 
     public function destroy(BloqueioAgenda $bloqueio): Response
     {
-        $this->authorize('update', Company::find($bloqueio->company_id));
+        $this->authorize('update', Company::findOrFail($bloqueio->company_id));
         $bloqueio->delete();
 
         return response()->noContent();

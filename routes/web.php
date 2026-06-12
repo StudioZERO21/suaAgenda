@@ -33,13 +33,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
     Route::view('/recuperar-senha', 'auth.recover')->name('password.request');
-    Route::post('/recuperar-senha/enviar-codigo', [PasswordResetController::class, 'sendCode'])->name('password.send-code');
-    Route::post('/recuperar-senha/verificar-codigo', [PasswordResetController::class, 'verifyCode'])->name('password.verify-code');
-    Route::post('/recuperar-senha/redefinir', [PasswordResetController::class, 'resetPassword'])->name('password.reset-custom');
+    Route::post('/recuperar-senha/enviar-codigo', [PasswordResetController::class, 'sendCode'])->middleware('throttle:5,1')->name('password.send-code');
+    Route::post('/recuperar-senha/verificar-codigo', [PasswordResetController::class, 'verifyCode'])->middleware('throttle:10,1')->name('password.verify-code');
+    Route::post('/recuperar-senha/redefinir', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:10,1')->name('password.reset-custom');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');

@@ -226,7 +226,8 @@ class AgendamentoPublicoController extends Controller
             ['name' => $request->cliente_nome, 'email' => $request->cliente_email]
         );
 
-        $servico = Servico::find($request->servico_id);
+        $servico = Servico::where('company_id', $company->id)
+            ->findOrFail($request->servico_id);
 
         $agendamento = Agendamento::create([
             'company_id' => $company->id,
@@ -234,8 +235,8 @@ class AgendamentoPublicoController extends Controller
             'profissional_id' => $request->profissional_id,
             'servico_id' => $request->servico_id,
             'data_hora' => $request->data_hora,
-            'duracao' => $servico?->duracao_minutos ?? 30,
-            'valor' => $servico?->preco,
+            'duracao' => $servico->duracao_minutos,
+            'valor' => $servico->preco,
             'status' => ($company->resolvedSettings()['advanced']['confirm_required'] ?? true)
                 ? Agendamento::STATUS_PENDENTE
                 : Agendamento::STATUS_CONFIRMADO,
