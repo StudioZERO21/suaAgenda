@@ -1145,6 +1145,63 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function servicosExecutados(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('periodo_dias');
+        $topN = min((int) $request->input('top', 5), 20);
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'cor']);
+
+        if ($profissionais->isEmpty()) {
+            return response()->json(['periodo_dias' => $dias !== null ? (int) $dias : null, 'items' => []]);
+        }
+
+        $agQuery = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereIn('profissional_id', $profissionais->pluck('id'))
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->selectRaw('profissional_id, servico_id, COUNT(*) as execucoes, SUM(valor) as receita')
+            ->groupBy('profissional_id', 'servico_id')
+            ->orderByDesc('execucoes')
+            ->get();
+
+        $servicoIds = $agQuery->pluck('servico_id')->unique();
+        $servicos = Servico::whereIn('id', $servicoIds)->get(['id', 'nome'])->keyBy('id');
+
+        $porProfissional = $agQuery->groupBy('profissional_id');
+
+        $items = $profissionais->map(function (Profissional $p) use ($porProfissional, $servicos, $topN): array {
+            $linhas = $porProfissional->get($p->id, collect())->take($topN);
+            $totalExec = (int) $porProfissional->get($p->id, collect())->sum('execucoes');
+            $totalReceita = round((float) $porProfissional->get($p->id, collect())->sum('receita'), 2);
+
+            return [
+                'profissional_id' => $p->id,
+                'profissional_nome' => $p->name,
+                'cor' => $p->cor ?? '#999999',
+                'total_execucoes' => $totalExec,
+                'receita_total' => $totalReceita,
+                'servicos' => $linhas->map(fn ($row) => [
+                    'servico_id' => $row->servico_id,
+                    'servico_nome' => $servicos->get($row->servico_id)?->nome ?? '',
+                    'execucoes' => (int) $row->execucoes,
+                    'receita' => round((float) $row->receita, 2),
+                ])->values(),
+            ];
+        })->values();
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'items' => $items,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
