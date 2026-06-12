@@ -13,6 +13,7 @@ use App\Models\VendaItem;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -225,6 +226,27 @@ class PdvController extends Controller
                 'servico_nome' => $item->servico?->nome ?? '',
             ])->values(),
         ]);
+    }
+
+    public function destroyVenda(Venda $venda): Response
+    {
+        abort_if($venda->company_id !== auth()->user()->empresa_id, 403);
+        abort_if(! auth()->user()->hasAnyRole(['admin_empresa', 'gestor']), 403);
+
+        DB::transaction(function () use ($venda): void {
+            foreach ($venda->itens as $item) {
+                if ($item->produto_id !== null) {
+                    Produto::where('id', $item->produto_id)
+                        ->where('company_id', $venda->company_id)
+                        ->increment('estoque', $item->qtd);
+                }
+            }
+
+            $venda->lancamentos()->delete();
+            $venda->delete();
+        });
+
+        return response()->noContent();
     }
 
     public function buscarProdutos(Request $request): JsonResponse
