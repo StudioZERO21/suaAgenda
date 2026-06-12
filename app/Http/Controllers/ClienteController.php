@@ -887,4 +887,32 @@ class ClienteController extends Controller
             'items' => $timeline,
         ]);
     }
+
+    public function ticketMedio(Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $base = $cliente->agendamentos()->where('status', Agendamento::STATUS_FINALIZADO);
+
+        $calcular = fn (int $dias): array => (function () use ($base, $dias): array {
+            $q = (clone $base)->when($dias > 0, fn ($q) => $q->where('data_hora', '>=', now()->subDays($dias)));
+            $total = $q->count();
+            $receita = (float) $q->sum('valor');
+
+            return [
+                'total' => $total,
+                'receita' => $receita,
+                'ticket_medio' => $total > 0 ? round($receita / $total, 2) : null,
+            ];
+        })();
+
+        return response()->json([
+            'cliente_id' => $cliente->id,
+            'cliente_nome' => $cliente->name,
+            'ultimos_7_dias' => $calcular(7),
+            'ultimos_30_dias' => $calcular(30),
+            'ultimos_90_dias' => $calcular(90),
+            'geral' => $calcular(0),
+        ]);
+    }
 }
