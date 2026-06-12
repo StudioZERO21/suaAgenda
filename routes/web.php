@@ -206,6 +206,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('clientes/{cliente}/fotos', [ClienteController::class, 'storeFoto'])->name('clientes.fotos.store');
     Route::delete('clientes/fotos/{foto}', [ClienteController::class, 'destroyFoto'])->name('clientes.fotos.destroy');
     Route::get('servicos/buscar', [ServicoController::class, 'buscar'])->name('servicos.buscar');
+    Route::get('servicos/categorias', [ServicoController::class, 'categorias'])->name('servicos.categorias');
     Route::get('servicos/ativos', [ServicoController::class, 'ativos'])->name('servicos.ativos');
     Route::get('servicos/estatisticas', [ServicoController::class, 'estatisticas'])->name('servicos.estatisticas');
     Route::get('servicos/exportar', [ServicoController::class, 'exportarCsv'])->name('servicos.exportar');
