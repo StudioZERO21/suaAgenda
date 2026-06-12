@@ -585,6 +585,47 @@ class FinanceiroController extends Controller
         return response()->noContent();
     }
 
+    public function evolucaoSaldo(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $meses = max(2, min(24, (int) $request->input('meses', 6)));
+
+        $serie = collect(range($meses - 1, 0))->map(function (int $offset): Carbon {
+            return now()->startOfMonth()->subMonths($offset);
+        })->map(function (Carbon $inicio) use ($empresa): array {
+            $fim = $inicio->copy()->endOfMonth();
+
+            $lancamentos = Lancamento::where('company_id', $empresa)
+                ->where('status', 'pago')
+                ->whereBetween('data', [$inicio->format('Y-m-d'), $fim->format('Y-m-d')])
+                ->get(['tipo', 'valor']);
+
+            $receita = round((float) $lancamentos->where('tipo', 'receita')->sum('valor'), 2);
+            $despesa = round((float) $lancamentos->where('tipo', 'despesa')->sum('valor'), 2);
+
+            $receitaAg = round((float) Agendamento::where('company_id', $empresa)
+                ->where('status', Agendamento::STATUS_FINALIZADO)
+                ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->endOfDay()])
+                ->sum('valor'), 2);
+
+            return [
+                'mes' => $inicio->month,
+                'ano' => $inicio->year,
+                'mes_fmt' => $inicio->translatedFormat('M/y'),
+                'receita_lancamentos' => $receita,
+                'receita_agendamentos' => $receitaAg,
+                'receita_total' => round($receita + $receitaAg, 2),
+                'despesa' => $despesa,
+                'saldo' => round($receita + $receitaAg - $despesa, 2),
+            ];
+        });
+
+        return response()->json([
+            'meses' => $meses,
+            'serie' => $serie->values(),
+        ]);
+    }
+
     public function previsaoReceita(Request $request): JsonResponse
     {
         $empresa = auth()->user()->empresa_id;

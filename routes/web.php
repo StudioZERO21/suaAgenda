@@ -187,6 +187,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('financeiro/inadimplentes', [FinanceiroController::class, 'inadimplentes'])->name('financeiro.inadimplentes');
     Route::get('financeiro/lancamentos-vencendo', [FinanceiroController::class, 'lancamentosVencendo'])->name('financeiro.lancamentos-vencendo');
     Route::get('financeiro/previsao-receita', [FinanceiroController::class, 'previsaoReceita'])->name('financeiro.previsao-receita');
+    Route::get('financeiro/evolucao-saldo', [FinanceiroController::class, 'evolucaoSaldo'])->name('financeiro.evolucao-saldo');
     Route::get('financeiro/comparativo', [FinanceiroController::class, 'comparativo'])->name('financeiro.comparativo');
     Route::get('financeiro/por-metodo-pagamento', [FinanceiroController::class, 'porMetodoPagamento'])->name('financeiro.por-metodo-pagamento');
     Route::get('financeiro/lancamentos/buscar', [FinanceiroController::class, 'buscarLancamentos'])->name('financeiro.lancamentos.buscar');
