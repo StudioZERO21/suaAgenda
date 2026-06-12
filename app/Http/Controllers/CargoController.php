@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCargoRequest;
+use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Cargo;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
@@ -132,6 +134,40 @@ class CargoController extends Controller
             'cargo_nome' => $cargo->nome,
             'total' => $profissionais->count(),
             'items' => $profissionais->values(),
+        ]);
+    }
+
+    public function estatisticas(Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $profissionais = $cargo->profissionais()->get(['id', 'name', 'ativo']);
+        $profIds = $profissionais->pluck('id');
+
+        $agendamentosMes = Agendamento::whereIn('profissional_id', $profIds)
+            ->where('company_id', $cargo->company_id)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereMonth('data_hora', now()->month)
+            ->whereYear('data_hora', now()->year)
+            ->get(['profissional_id', 'valor']);
+
+        $avaliacoes = Avaliacao::where('avaliacoes.company_id', $cargo->company_id)
+            ->join('agendamentos', 'avaliacoes.agendamento_id', '=', 'agendamentos.id')
+            ->whereIn('agendamentos.profissional_id', $profIds)
+            ->get(['avaliacoes.nota']);
+
+        $mediaAvaliacao = $avaliacoes->count() > 0 ? round($avaliacoes->avg('nota'), 1) : null;
+
+        return response()->json([
+            'cargo_id' => $cargo->id,
+            'cargo_nome' => $cargo->nome,
+            'total_profissionais' => $profissionais->count(),
+            'ativos' => $profissionais->where('ativo', true)->count(),
+            'inativos' => $profissionais->where('ativo', false)->count(),
+            'agendamentos_mes' => $agendamentosMes->count(),
+            'receita_mes' => round((float) $agendamentosMes->sum('valor'), 2),
+            'total_avaliacoes' => $avaliacoes->count(),
+            'media_avaliacao' => $mediaAvaliacao,
         ]);
     }
 
