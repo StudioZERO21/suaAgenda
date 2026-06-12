@@ -10,6 +10,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
+use App\Models\Venda;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -745,6 +746,38 @@ class ClienteController extends Controller
             'media_dias_entre_visitas' => $mediaDias,
             'proxima_visita_prevista' => $proximaPrevista,
             'frequencia_mensal' => $frequenciaMensal,
+        ]);
+    }
+
+    public function compras(Request $request, Cliente $cliente): JsonResponse
+    {
+        $this->authorize('view', $cliente);
+
+        $limite = min((int) $request->input('limite', 10), 50);
+
+        $vendas = Venda::where('company_id', auth()->user()->empresa_id)
+            ->where('cliente_id', $cliente->id)
+            ->with('itens.produto:id,nome,categoria')
+            ->orderByDesc('created_at')
+            ->limit($limite)
+            ->get()
+            ->map(fn (Venda $v) => [
+                'id' => $v->id,
+                'data' => $v->created_at->toDateString(),
+                'total' => (float) $v->total,
+                'metodo_pagamento' => $v->metodo_pagamento,
+                'itens' => $v->itens->map(fn ($item) => [
+                    'produto_nome' => $item->produto?->nome ?? 'Produto removido',
+                    'qtd' => $item->qtd,
+                    'preco_unit' => (float) $item->preco_unit,
+                    'total' => (float) $item->total,
+                ])->values(),
+            ]);
+
+        return response()->json([
+            'total_compras' => $vendas->count(),
+            'total_gasto' => (float) $vendas->sum('total'),
+            'items' => $vendas->values(),
         ]);
     }
 }
