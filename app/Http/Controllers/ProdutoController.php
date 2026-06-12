@@ -357,6 +357,22 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function descricao(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate([
+            'descricao' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $produto->update(['descricao' => $request->input('descricao', '')]);
+
+        return response()->json([
+            'descricao' => $produto->descricao ?? '',
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function detalhe(Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
