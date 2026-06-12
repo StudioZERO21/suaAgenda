@@ -1029,6 +1029,45 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function churn(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresaId = auth()->user()->empresa_id;
+        $inativoDias = max(1, (int) $request->input('inativo_dias', 60));
+        $corte = now()->subDays($inativoDias);
+
+        $totalClientes = Cliente::where('company_id', $empresaId)->count();
+
+        $ultimasVisitas = Agendamento::where('company_id', $empresaId)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->with('cliente:id,name,phone')
+            ->get(['cliente_id', 'data_hora', 'status'])
+            ->groupBy('cliente_id')
+            ->map(fn ($items) => $items->sortByDesc('data_hora')->first());
+
+        $churned = $ultimasVisitas
+            ->filter(fn ($ag) => $ag->data_hora->lt($corte))
+            ->map(fn ($ag) => [
+                'cliente_id' => $ag->cliente_id,
+                'nome' => $ag->cliente?->name ?? 'Cliente removido',
+                'ultima_visita' => $ag->data_hora->toDateString(),
+                'dias_sem_visita' => $ag->data_hora->diffInDays(now()),
+            ])
+            ->sortByDesc('dias_sem_visita')
+            ->values();
+
+        $taxa = $totalClientes > 0 ? round($churned->count() / $totalClientes * 100, 1) : 0.0;
+
+        return response()->json([
+            'inativo_dias' => $inativoDias,
+            'total_clientes' => $totalClientes,
+            'churnados' => $churned->count(),
+            'taxa_churn_pct' => $taxa,
+            'clientes' => $churned,
+        ]);
+    }
+
     public function novosClientes(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
