@@ -392,6 +392,22 @@ class ServicoController extends Controller
         return response()->json(['total' => $agendamentos->count(), 'items' => $agendamentos]);
     }
 
+    public function nome(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('update', $servico);
+
+        $request->validate([
+            'nome' => ['required', 'string', 'max:100'],
+        ]);
+
+        $servico->update(['nome' => $request->input('nome')]);
+
+        return response()->json([
+            'nome' => $servico->nome,
+            'updated_at' => $servico->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
