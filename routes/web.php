@@ -244,6 +244,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('servicos/{servico}/proximos', [ServicoController::class, 'proximos'])->name('servicos.proximos');
     Route::get('servicos/{servico}/tempo-medio', [ServicoController::class, 'tempoMedio'])->name('servicos.tempo-medio');
     Route::get('servicos/{servico}/top-profissionais', [ServicoController::class, 'topProfissionais'])->name('servicos.top-profissionais');
+    Route::get('servicos/{servico}/clientes-unicos', [ServicoController::class, 'clientesUnicos'])->name('servicos.clientes-unicos');
     Route::get('servicos/{servico}/avaliacoes', [ServicoController::class, 'avaliacoes'])->name('servicos.avaliacoes');
     Route::get('profissionais/buscar', [ProfissionalController::class, 'buscar'])->name('profissionais.buscar');
     Route::get('profissionais/sem-cargo', [ProfissionalController::class, 'semCargo'])->name('profissionais.sem-cargo');
