@@ -8,6 +8,7 @@ use App\Http\Requests\StoreCargoRequest;
 use App\Models\Cargo;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
@@ -61,6 +62,22 @@ class CargoController extends Controller
         $cargo->loadCount('profissionais as membros');
 
         return response()->json($this->toJson($cargo->fresh()));
+    }
+
+    public function comissao(Request $request, Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+        abort_if(! auth()->user()->hasRole('admin_empresa'), 403);
+
+        $request->validate(['comissao' => ['required', 'numeric', 'min:0', 'max:100']]);
+
+        $cargo->update(['comissao_pct' => $request->input('comissao')]);
+        $cargo->refresh();
+
+        return response()->json([
+            'comissao' => (float) ($cargo->comissao_pct ?? 0),
+            'updated_at' => $cargo->updated_at->toIso8601String(),
+        ]);
     }
 
     public function destroy(Cargo $cargo): Response
