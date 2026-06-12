@@ -1007,6 +1007,52 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function cargaHoraria(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(365, (int) $request->input('dias', 30)));
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor']);
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->where('data_hora', '>=', now()->subDays($dias)->startOfDay())
+            ->get(['profissional_id', 'duracao', 'valor'])
+            ->groupBy('profissional_id');
+
+        $items = $profissionais->map(function (Profissional $p) use ($agendamentos): array {
+            $ags = $agendamentos->get($p->id, collect());
+            $totalMinutos = $ags->sum('duracao');
+            $horas = round($totalMinutos / 60, 1);
+
+            return [
+                'profissional_id' => $p->id,
+                'profissional_nome' => $p->name,
+                'especialidade' => $p->especialidade ?? '',
+                'cor' => $p->cor ?? '#999999',
+                'total_agendamentos' => $ags->count(),
+                'total_minutos' => $totalMinutos,
+                'total_horas' => $horas,
+                'receita' => round((float) $ags->sum('valor'), 2),
+                'receita_por_hora' => $horas > 0 ? round((float) $ags->sum('valor') / $horas, 2) : null,
+            ];
+        })->sortByDesc('total_horas')->values();
+
+        $totalHoras = round((float) $items->sum('total_horas'), 1);
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'total_profissionais' => $profissionais->count(),
+            'total_horas' => $totalHoras,
+            'items' => $items,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
