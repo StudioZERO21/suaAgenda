@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
+use App\Models\Lancamento;
 use App\Models\Produto;
 use App\Models\Profissional;
 use Illuminate\Http\JsonResponse;
@@ -468,6 +469,53 @@ class DashboardController extends Controller
             'aniversariantes_hoje' => $aniversariantesHoje,
             'em_atendimento' => $emAtendimento,
             'total_alertas' => $pendentes + $estoqueBaixo + $aniversariantesHoje,
+        ]);
+    }
+
+    public function sumarioFinanceiro(): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+
+        if (! $empresa) {
+            return response()->json(['error' => 'Empresa não configurada'], 422);
+        }
+
+        $mesInicio = now()->startOfMonth()->format('Y-m-d');
+        $mesFim = now()->endOfMonth()->format('Y-m-d');
+
+        $receitaAgendamentos = (float) Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereBetween('data_hora', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('valor');
+
+        $lancamentosMes = Lancamento::where('company_id', $empresa)
+            ->whereBetween('data', [$mesInicio, $mesFim])
+            ->get(['tipo', 'valor', 'status', 'data']);
+
+        $receitaLancamentos = (float) $lancamentosMes->where('tipo', 'receita')->where('status', 'pago')->sum('valor');
+        $despesaLancamentos = (float) $lancamentosMes->where('tipo', 'despesa')->where('status', 'pago')->sum('valor');
+        $aReceber = (float) $lancamentosMes->where('tipo', 'receita')->where('status', 'pendente')->sum('valor');
+        $aPagar = (float) $lancamentosMes->where('tipo', 'despesa')->where('status', 'pendente')->sum('valor');
+
+        $inadimplentesCount = Lancamento::where('company_id', $empresa)
+            ->where('status', 'pendente')
+            ->where('data', '<', today()->format('Y-m-d'))
+            ->count();
+
+        $receitaTotal = round($receitaAgendamentos + $receitaLancamentos, 2);
+        $saldo = round($receitaTotal - $despesaLancamentos, 2);
+
+        return response()->json([
+            'mes' => now()->month,
+            'ano' => now()->year,
+            'receita_agendamentos' => round($receitaAgendamentos, 2),
+            'receita_lancamentos' => round($receitaLancamentos, 2),
+            'receita_total' => $receitaTotal,
+            'despesa_total' => round($despesaLancamentos, 2),
+            'saldo' => $saldo,
+            'a_receber' => round($aReceber, 2),
+            'a_pagar' => round($aPagar, 2),
+            'inadimplentes_count' => $inadimplentesCount,
         ]);
     }
 
