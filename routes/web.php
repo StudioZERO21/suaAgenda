@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AdminAuditoriaController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
+use App\Http\Controllers\Admin\AdminSaudeController;
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
 use App\Http\Controllers\Auth\AuthController;
@@ -54,6 +56,9 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('empresas', [AdminEmpresaController::class, 'index'])->name('empresas.index');
     Route::get('empresas/{empresa}', [AdminEmpresaController::class, 'show'])->name('empresas.show');
     Route::patch('empresas/{empresa}/toggle', [AdminEmpresaController::class, 'toggle'])->name('empresas.toggle');
+    Route::get('auditoria', [AdminAuditoriaController::class, 'index'])->name('auditoria.index');
+    Route::get('auditoria/json', [AdminAuditoriaController::class, 'json'])->name('auditoria.json');
+    Route::get('saude', [AdminSaudeController::class, 'index'])->name('saude.index');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {

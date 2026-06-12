@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditavel;
 use App\Support\DefaultRolePermissions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission;
@@ -19,6 +20,8 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class Role extends SpatieRole
 {
+    use Auditavel;
+
     protected static function booted(): void
     {
         // Papéis globais do sistema nascem com seu conjunto default de

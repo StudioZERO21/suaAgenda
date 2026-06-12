@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditavel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Agendamento extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use Auditavel, HasFactory, HasUuids, SoftDeletes;
 
     const STATUS_PENDENTE = 'pendente';
 
