@@ -8,6 +8,7 @@ use App\Http\Requests\StoreServicoRequest;
 use App\Http\Requests\UpdateServicoRequest;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
+use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Carbon\Carbon;
@@ -535,6 +536,53 @@ class ServicoController extends Controller
             'servico_nome' => $servico->nome,
             'total' => $profissionais->count(),
             'items' => $profissionais,
+        ]);
+    }
+
+    public function clientesUnicos(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $limite = min((int) $request->input('limite', 20), 100);
+        $dias = $request->input('dias');
+
+        $clienteIds = $servico->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->whereNotNull('cliente_id')
+            ->distinct('cliente_id')
+            ->pluck('cliente_id');
+
+        $agPorCliente = $servico->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->when($dias !== null, fn ($q) => $q->where('data_hora', '>=', now()->subDays((int) $dias)))
+            ->whereIn('cliente_id', $clienteIds)
+            ->get(['cliente_id', 'valor', 'data_hora'])
+            ->groupBy('cliente_id');
+
+        $clientes = Cliente::whereIn('id', $clienteIds)
+            ->orderBy('name')
+            ->limit($limite)
+            ->get(['id', 'name', 'phone', 'ativo'])
+            ->map(function (Cliente $c) use ($agPorCliente): array {
+                $ags = $agPorCliente->get($c->id, collect());
+
+                return [
+                    'cliente_id' => $c->id,
+                    'cliente_nome' => $c->name,
+                    'phone' => $c->phone ?? '',
+                    'ativo' => (bool) $c->ativo,
+                    'total_agendamentos' => $ags->count(),
+                    'receita_total' => (float) $ags->sum('valor'),
+                    'ultima_visita' => $ags->sortByDesc('data_hora')->first()?->data_hora->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'servico_id' => $servico->id,
+            'servico_nome' => $servico->nome,
+            'total' => $clientes->count(),
+            'items' => $clientes->values(),
         ]);
     }
 
