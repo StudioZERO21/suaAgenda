@@ -70,6 +70,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('agendamentos/{agendamento}/observacao', [AgendamentoController::class, 'observacao'])->name('agendamentos.observacao');
     Route::patch('agendamentos/{agendamento}/valor', [AgendamentoController::class, 'valor'])->name('agendamentos.valor');
     Route::patch('agendamentos/{agendamento}/duracao', [AgendamentoController::class, 'duracao'])->name('agendamentos.duracao');
+    Route::patch('agendamentos/{agendamento}/profissional', [AgendamentoController::class, 'reassignarProfissional'])->name('agendamentos.profissional');
     Route::get('calendario', [CalendarioController::class, 'index'])->name('calendario');
     Route::get('relatorios', [RelatorioController::class, 'index'])->name('relatorios');
     Route::get('relatorios/exportar', [RelatorioController::class, 'exportarCsv'])->name('relatorios.exportar');

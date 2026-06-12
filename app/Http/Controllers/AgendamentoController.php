@@ -704,6 +704,28 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function reassignarProfissional(Request $request, Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate([
+            'profissional_id' => ['required', 'uuid', 'exists:profissionais,id'],
+        ]);
+
+        $profissional = Profissional::where('id', $request->input('profissional_id'))
+            ->where('company_id', auth()->user()->empresa_id)
+            ->where('ativo', true)
+            ->firstOrFail();
+
+        $agendamento->update(['profissional_id' => $profissional->id]);
+
+        return response()->json([
+            'profissional_id' => $agendamento->profissional_id,
+            'profissional_nome' => $profissional->name,
+            'updated_at' => $agendamento->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function destroy(Agendamento $agendamento): RedirectResponse
     {
         $this->authorize('delete', $agendamento);
