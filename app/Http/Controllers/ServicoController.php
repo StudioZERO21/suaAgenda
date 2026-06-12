@@ -477,6 +477,41 @@ class ServicoController extends Controller
         ]);
     }
 
+    public function topProfissionais(Request $request, Servico $servico): JsonResponse
+    {
+        $this->authorize('view', $servico);
+
+        $limite = min((int) $request->input('limite', 10), 30);
+
+        $profissionais = $servico->agendamentos()
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->with('profissional:id,name,cor,especialidade')
+            ->get(['profissional_id', 'valor'])
+            ->groupBy('profissional_id')
+            ->map(function ($items) {
+                $profissional = $items->first()->profissional;
+
+                return [
+                    'profissional_id' => $profissional?->id ?? '',
+                    'profissional_nome' => $profissional?->name ?? 'Sem profissional',
+                    'profissional_cor' => $profissional?->cor ?? '#999999',
+                    'especialidade' => $profissional?->especialidade ?? '',
+                    'total_realizados' => $items->count(),
+                    'receita_total' => (float) $items->sum('valor'),
+                ];
+            })
+            ->sortByDesc('total_realizados')
+            ->take($limite)
+            ->values();
+
+        return response()->json([
+            'servico_id' => $servico->id,
+            'servico_nome' => $servico->nome,
+            'total' => $profissionais->count(),
+            'items' => $profissionais,
+        ]);
+    }
+
     public function destroy(Servico $servico): RedirectResponse
     {
         $this->authorize('delete', $servico);
