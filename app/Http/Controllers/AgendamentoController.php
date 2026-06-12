@@ -293,7 +293,7 @@ class AgendamentoController extends Controller
         $this->authorize('update', $agendamento);
 
         $request->validate([
-            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento'],
+            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento,no_show'],
         ]);
 
         $previousStatus = $agendamento->status;
@@ -360,7 +360,7 @@ class AgendamentoController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['uuid'],
-            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento'],
+            'status' => ['required', 'in:pendente,confirmado,finalizado,cancelado,em_atendimento,no_show'],
         ]);
 
         $updated = Agendamento::where('company_id', auth()->user()->empresa_id)
@@ -871,7 +871,7 @@ class AgendamentoController extends Controller
 
         $agendamentos = Agendamento::where('company_id', $empresa)
             ->where('created_at', '>=', now()->subDays($dias)->startOfDay())
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->get(['created_at', 'data_hora', 'status']);
 
         if ($agendamentos->isEmpty()) {

@@ -110,6 +110,13 @@
 </div>
 @endif
 
+{{-- Política de cancelamento/sinal --}}
+@if(($politica ?? null) && !$isCanceled)
+<div style="background:rgba(212,165,116,.08);border:1px solid rgba(212,165,116,.2);border-radius:10px;padding:12px 16px;text-align:center;margin-bottom:12px">
+    <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.6">{{ $politica }}</p>
+</div>
+@endif
+
 {{-- Ações --}}
 @if($cancelavel && !$isCanceled)
 <form method="POST" action="{{ route('agendamento.cancelar', $token) }}" id="form-cancelar">
@@ -124,6 +131,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         Cancelar meu agendamento
     </button>
+</div>
+@elseif(!$isCanceled && ($motivoBloqueio ?? null) && $ag->data_hora->isFuture())
+<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px 18px;text-align:center;margin-bottom:12px">
+    <p style="font-size:13px;color:#d97706;margin:0;line-height:1.6">{{ $motivoBloqueio }}</p>
 </div>
 @elseif($isCanceled)
 <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:14px 18px;text-align:center;margin-bottom:12px">

@@ -331,7 +331,7 @@ class ClienteController extends Controller
             ->withCount([
                 'agendamentos as total_agendamentos',
                 'agendamentos as recentes' => fn ($q) => $q->where('data_hora', '>=', $desde)
-                    ->whereNotIn('status', ['cancelado']),
+                    ->whereNotIn('status', Agendamento::STATUSES_INATIVOS),
             ])
             ->get();
 

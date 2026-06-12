@@ -80,7 +80,7 @@ class CalendarioController extends Controller
         $query = Agendamento::with(['cliente', 'profissional', 'servico'])
             ->where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio, $fim])
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO]);
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS);
 
         if ($profissionalId) {
             $query->where('profissional_id', $profissionalId);

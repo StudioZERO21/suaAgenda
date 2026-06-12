@@ -22,7 +22,7 @@ class UpdateAgendamentoRequest extends FormRequest
             'data_hora' => ['sometimes', 'date', 'after:now'],
             'duracao' => ['sometimes', 'integer', 'min:15', 'max:480'],
             'valor' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['sometimes', 'in:pendente,confirmado,finalizado,cancelado'],
+            'status' => ['sometimes', 'in:pendente,confirmado,finalizado,cancelado,no_show'],
             'observacao' => ['nullable', 'string', 'max:1000'],
         ];
     }

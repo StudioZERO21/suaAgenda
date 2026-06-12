@@ -14,6 +14,8 @@ use App\Models\Company;
 use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Services\AgendamentoCancelamentoService;
+use App\Services\RegraService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -217,7 +219,7 @@ class AgendamentoPublicoController extends Controller
         return response()->json($slots);
     }
 
-    public function store(StoreAgendamentoPublicoRequest $request, string $slug): RedirectResponse
+    public function store(StoreAgendamentoPublicoRequest $request, string $slug, RegraService $regras): RedirectResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();
 
@@ -225,6 +227,21 @@ class AgendamentoPublicoController extends Controller
             ['company_id' => $company->id, 'phone' => $request->cliente_phone],
             ['name' => $request->cliente_nome, 'email' => $request->cliente_email]
         );
+
+        // Regra no_show: bloqueia agendamento online de cliente faltante recorrente
+        if ($regras->enabled('no_show', $company->id)) {
+            $limite = (int) $regras->param('no_show', 'bloquear_apos', 3, $company->id);
+            $faltas = Agendamento::where('company_id', $company->id)
+                ->where('cliente_id', $cliente->id)
+                ->where('status', Agendamento::STATUS_NO_SHOW)
+                ->count();
+
+            if ($faltas >= $limite) {
+                return back()->withInput()->withErrors([
+                    'cliente_phone' => 'Não foi possível concluir o agendamento online. Entre em contato com o estabelecimento.',
+                ]);
+            }
+        }
 
         $servico = Servico::where('company_id', $company->id)
             ->findOrFail($request->servico_id);
@@ -303,33 +320,35 @@ class AgendamentoPublicoController extends Controller
      * Página pública de status do agendamento (acesso via cancel_token).
      * GET /meu-agendamento/{token}
      */
-    public function meuAgendamento(string $token): View
+    public function meuAgendamento(string $token, AgendamentoCancelamentoService $cancelamento): View
     {
         $ag = Agendamento::with(['servico', 'profissional', 'cliente', 'company', 'avaliacao'])
             ->where('cancel_token', $token)
             ->firstOrFail();
 
         $company = $ag->company;
-        $cancelavel = in_array($ag->status, [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
-            && $ag->data_hora->isFuture();
+        $podeCancelar = $cancelamento->podeCancelar($ag);
+        $cancelavel = $podeCancelar['ok'];
+        $motivoBloqueio = $podeCancelar['motivo'];
+        $politica = $cancelamento->descricaoPolitica($ag->company_id);
 
-        return view('public.meu-agendamento', compact('ag', 'company', 'cancelavel', 'token'));
+        return view('public.meu-agendamento', compact('ag', 'company', 'cancelavel', 'motivoBloqueio', 'politica', 'token'));
     }
 
     /**
-     * Cancela agendamento via token público (sem autenticação).
+     * Cancela agendamento via token público (sem autenticação),
+     * respeitando a política de cancelamento da empresa.
      * POST /meu-agendamento/{token}/cancelar
      */
-    public function cancelarMeuAgendamento(string $token): RedirectResponse
+    public function cancelarMeuAgendamento(string $token, AgendamentoCancelamentoService $cancelamento): RedirectResponse
     {
         $ag = Agendamento::where('cancel_token', $token)->firstOrFail();
 
-        $cancelavel = in_array($ag->status, [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])
-            && $ag->data_hora->isFuture();
+        $podeCancelar = $cancelamento->podeCancelar($ag);
 
-        if (! $cancelavel) {
+        if (! $podeCancelar['ok']) {
             return redirect()->route('agendamento.meu', $token)
-                ->with('erro', 'Este agendamento não pode ser cancelado.');
+                ->with('erro', $podeCancelar['motivo'] ?? 'Este agendamento não pode ser cancelado.');
         }
 
         $ag->update(['status' => Agendamento::STATUS_CANCELADO]);

@@ -128,7 +128,7 @@ class RelatorioController extends Controller
         // Fidelidade: top clientes por agendamentos no período
         $fidelidade = Agendamento::where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->with('cliente:id,name,phone,email')
             ->selectRaw('cliente_id, COUNT(*) as total_visitas, SUM(CASE WHEN status = ? THEN valor ELSE 0 END) as total_gasto, MAX(data_hora) as ultima_visita', [Agendamento::STATUS_FINALIZADO])
             ->groupBy('cliente_id')
@@ -289,7 +289,7 @@ class RelatorioController extends Controller
 
         $rows = Agendamento::where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio->copy()->startOfDay(), $fim->copy()->endOfDay()])
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->with('cliente:id,name,phone,email')
             ->selectRaw('cliente_id, COUNT(*) as total_visitas, SUM(CASE WHEN status = ? THEN valor ELSE 0 END) as total_gasto, MAX(data_hora) as ultima_visita', [Agendamento::STATUS_FINALIZADO])
             ->groupBy('cliente_id')
@@ -373,7 +373,7 @@ class RelatorioController extends Controller
         [$inicio, $fim] = $this->resolverPeriodo($request);
 
         $clientesNoPeriodo = Agendamento::where('company_id', $empresaId)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->pluck('cliente_id')
             ->unique();
@@ -383,7 +383,7 @@ class RelatorioController extends Controller
         $recorrentes = $clientesNoPeriodo->filter(function ($clienteId) use ($empresaId, $inicio): bool {
             return Agendamento::where('company_id', $empresaId)
                 ->where('cliente_id', $clienteId)
-                ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
                 ->where('data_hora', '<', $inicio->startOfDay())
                 ->exists();
         })->count();
@@ -542,7 +542,7 @@ class RelatorioController extends Controller
 
         $rows = Agendamento::where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->with('cliente:id,name,phone')
             ->get(['cliente_id', 'status', 'valor'])
             ->groupBy('cliente_id')
@@ -608,7 +608,7 @@ class RelatorioController extends Controller
 
         $agendamentos = Agendamento::where('company_id', $empresaId)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->get(['data_hora']);
 
         $dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -695,7 +695,7 @@ class RelatorioController extends Controller
         [$inicio, $fim] = $this->resolverPeriodo($request);
 
         $agendamentos = Agendamento::where('company_id', $empresaId)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->get(['data_hora']);
 
@@ -772,7 +772,7 @@ class RelatorioController extends Controller
 
             $ags = Agendamento::where('company_id', $empresaId)
                 ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
-                ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+                ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
                 ->get(['status', 'valor']);
 
             $receita = (float) $ags->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor');
@@ -800,7 +800,7 @@ class RelatorioController extends Controller
         $limite = min((int) $request->input('limite', 10), 50);
 
         $rows = Agendamento::where('company_id', $empresaId)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->with('cliente:id,name,phone,email')
             ->get(['cliente_id', 'status', 'valor'])
@@ -949,7 +949,7 @@ class RelatorioController extends Controller
         [$inicio, $fim] = $this->resolverPeriodo($request);
 
         $agendamentos = Agendamento::where('company_id', $empresaId)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->whereBetween('data_hora', [$inicio->startOfDay(), $fim->copy()->endOfDay()])
             ->get(['data_hora', 'status', 'valor']);
 
@@ -1089,7 +1089,7 @@ class RelatorioController extends Controller
         $totalClientes = Cliente::where('company_id', $empresaId)->count();
 
         $ultimasVisitas = Agendamento::where('company_id', $empresaId)
-            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
             ->with('cliente:id,name,phone')
             ->get(['cliente_id', 'data_hora', 'status'])
             ->groupBy('cliente_id')
