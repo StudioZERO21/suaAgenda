@@ -162,6 +162,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::post('financeiro/lancamentos', [FinanceiroController::class, 'storeLancamento'])->name('financeiro.lancamentos.store');
     Route::put('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'updateLancamento'])->name('financeiro.lancamentos.update');
     Route::patch('financeiro/lancamentos/{lancamento}/status', [FinanceiroController::class, 'statusLancamento'])->name('financeiro.lancamentos.status');
+    Route::patch('financeiro/lancamentos/{lancamento}/categoria', [FinanceiroController::class, 'categoriaLancamento'])->name('financeiro.lancamentos.categoria');
     Route::patch('financeiro/lancamentos/{lancamento}/observacao', [FinanceiroController::class, 'observacaoLancamento'])->name('financeiro.lancamentos.observacao');
     Route::delete('financeiro/lancamentos/{lancamento}', [FinanceiroController::class, 'destroyLancamento'])->name('financeiro.lancamentos.destroy');
     Route::get('site', [SitePublicoController::class, 'index'])->name('site.index');
