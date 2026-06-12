@@ -132,6 +132,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
 
     Route::get('pdv', [PdvController::class, 'index'])->name('pdv');
     Route::get('pdv/resumo', [PdvController::class, 'resumo'])->name('pdv.resumo');
+    Route::get('pdv/vendas/json', [PdvController::class, 'listarVendas'])->name('pdv.vendas.json');
     Route::get('pdv/produtos/buscar', [PdvController::class, 'buscarProdutos'])->name('pdv.produtos.buscar');
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
