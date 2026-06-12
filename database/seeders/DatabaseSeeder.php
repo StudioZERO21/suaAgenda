@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             UserSeeder::class,
             PermissionSeeder::class,
+            RegraCatalogoSeeder::class,
             ServicoSeeder::class,
             ClienteSeeder::class,
             AgendamentoSeeder::class,

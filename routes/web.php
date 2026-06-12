@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminAuditoriaController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\Admin\AdminLgpdController;
+use App\Http\Controllers\Admin\AdminRegraController;
 use App\Http\Controllers\Admin\AdminSaudeController;
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoPublicoController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\BloqueioController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CompanyRegraController;
 use App\Http\Controllers\ConfiguracaoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardFuncionarioController;
@@ -61,6 +63,10 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('auditoria/json', [AdminAuditoriaController::class, 'json'])->name('auditoria.json');
     Route::get('saude', [AdminSaudeController::class, 'index'])->name('saude.index');
     Route::get('lgpd', [AdminLgpdController::class, 'index'])->name('lgpd.index');
+    Route::get('regras', [AdminRegraController::class, 'index'])->name('regras.index');
+    Route::post('regras', [AdminRegraController::class, 'store'])->name('regras.store');
+    Route::put('regras/{regra}', [AdminRegraController::class, 'update'])->name('regras.update');
+    Route::delete('regras/{regra}', [AdminRegraController::class, 'destroy'])->name('regras.destroy');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
@@ -256,6 +262,9 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::patch('clientes/{cliente}/lgpd', [ClienteController::class, 'lgpd'])->name('clientes.lgpd');
     Route::get('clientes/{cliente}/exportar-dados', [ClienteController::class, 'exportarDados'])->name('clientes.exportar-dados');
     Route::post('clientes/{cliente}/anonimizar', [ClienteController::class, 'anonimizar'])->name('clientes.anonimizar');
+
+    Route::get('regras', [CompanyRegraController::class, 'index'])->name('regras.index');
+    Route::put('regras/{codigo}', [CompanyRegraController::class, 'update'])->name('regras.update');
     Route::patch('clientes/{cliente}/observacao', [ClienteController::class, 'observacao'])->name('clientes.observacao');
     Route::patch('clientes/{cliente}/contato', [ClienteController::class, 'contato'])->name('clientes.contato');
     Route::patch('clientes/{cliente}/nascimento', [ClienteController::class, 'nascimento'])->name('clientes.nascimento');
