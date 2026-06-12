@@ -264,6 +264,10 @@ final class SaDemoData
                 ['id' => 'fin_pdv', 'label' => 'Operar PDV'],
                 ['id' => 'fin_export', 'label' => 'Exportar relatórios'],
             ],
+            'Serviços' => [
+                ['id' => 'srv_view', 'label' => 'Ver serviços'],
+                ['id' => 'srv_edit', 'label' => 'Gerenciar serviços'],
+            ],
             'Equipe' => [
                 ['id' => 'stf_view', 'label' => 'Ver lista de funcionários'],
                 ['id' => 'stf_create', 'label' => 'Cadastrar funcionários'],
@@ -277,6 +281,7 @@ final class SaDemoData
                 ['id' => 'cfg_perms', 'label' => 'Editar permissões'],
                 ['id' => 'cfg_api', 'label' => 'Acessar API & Webhooks'],
                 ['id' => 'cfg_site', 'label' => 'Configurar site público'],
+                ['id' => 'cfg_rules', 'label' => 'Configurar regras de negócio'],
             ],
             'Portfólio & Produtos' => [
                 ['id' => 'ptf_view', 'label' => 'Ver portfólio'],
@@ -285,6 +290,23 @@ final class SaDemoData
                 ['id' => 'prd_edit', 'label' => 'Gerenciar produtos'],
             ],
         ];
+    }
+
+    /**
+     * Lista plana de permissões do catálogo ACL: id => label.
+     *
+     * @return array<string, string>
+     */
+    public static function permissionsFlat(): array
+    {
+        $flat = [];
+        foreach (self::aclCatalogo() as $perms) {
+            foreach ($perms as $perm) {
+                $flat[$perm['id']] = $perm['label'];
+            }
+        }
+
+        return $flat;
     }
 
     /**
@@ -313,6 +335,7 @@ final class SaDemoData
                     'cal_view', 'cal_create', 'cal_edit', 'cal_delete', 'cal_move',
                     'cli_view', 'cli_create', 'cli_edit', 'cli_history',
                     'fin_view', 'fin_export', 'stf_view', 'stf_create', 'stf_edit',
+                    'srv_view', 'srv_edit',
                     'prd_view', 'prd_edit', 'ptf_view', 'ptf_edit',
                     'cfg_theme', 'cfg_company', 'cfg_site',
                 ],
@@ -324,7 +347,7 @@ final class SaDemoData
                 'descricao' => 'Agenda própria, clientes atendidos e comissões',
                 'perms' => [
                     'cal_own', 'cal_move', 'cli_view', 'cli_history', 'cli_photos',
-                    'fin_own', 'ptf_view', 'ptf_edit', 'prd_view',
+                    'fin_own', 'srv_view', 'ptf_view', 'ptf_edit', 'prd_view',
                 ],
             ],
             [
@@ -335,7 +358,7 @@ final class SaDemoData
                 'perms' => [
                     'cal_view', 'cal_create', 'cal_edit', 'cal_move',
                     'cli_view', 'cli_create', 'cli_edit', 'cli_history',
-                    'fin_pdv', 'prd_view', 'ptf_view',
+                    'fin_pdv', 'srv_view', 'prd_view', 'ptf_view',
                 ],
             ],
             [

@@ -38,7 +38,7 @@ return new class extends Migration
         Schema::create($tableNames['roles'], static function (Blueprint $table) use ($teams, $columnNames) {
             $table->id(); // role id
             if ($teams || config('permission.testing')) { // permission.testing is a fix for sqlite testing
-                $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable();
+                $table->uuid($columnNames['team_foreign_key'])->nullable();
                 $table->index($columnNames['team_foreign_key'], 'roles_team_foreign_key_index');
             }
             $table->string('name');
@@ -63,15 +63,14 @@ return new class extends Migration
                 ->on($tableNames['permissions'])
                 ->cascadeOnDelete();
             if ($teams) {
-                $table->unsignedBigInteger($columnNames['team_foreign_key']);
+                // company_id nullable e fora da PK: pivot null = atribuição global
+                // (papéis do sistema); cada usuário pertence a uma única empresa.
+                $table->uuid($columnNames['team_foreign_key'])->nullable();
                 $table->index($columnNames['team_foreign_key'], 'model_has_permissions_team_foreign_key_index');
-
-                $table->primary([$columnNames['team_foreign_key'], $pivotPermission, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary');
-            } else {
-                $table->primary([$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary');
             }
+
+            $table->primary([$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
+                'model_has_permissions_permission_model_type_primary');
         });
 
         Schema::create($tableNames['model_has_roles'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole, $teams) {
@@ -86,15 +85,14 @@ return new class extends Migration
                 ->on($tableNames['roles'])
                 ->cascadeOnDelete();
             if ($teams) {
-                $table->unsignedBigInteger($columnNames['team_foreign_key']);
+                // company_id nullable e fora da PK: pivot null = atribuição global
+                // (papéis do sistema); cada usuário pertence a uma única empresa.
+                $table->uuid($columnNames['team_foreign_key'])->nullable();
                 $table->index($columnNames['team_foreign_key'], 'model_has_roles_team_foreign_key_index');
-
-                $table->primary([$columnNames['team_foreign_key'], $pivotRole, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_roles_role_model_type_primary');
-            } else {
-                $table->primary([$pivotRole, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_roles_role_model_type_primary');
             }
+
+            $table->primary([$pivotRole, $columnNames['model_morph_key'], 'model_type'],
+                'model_has_roles_role_model_type_primary');
         });
 
         Schema::create($tableNames['role_has_permissions'], static function (Blueprint $table) use ($tableNames, $pivotRole, $pivotPermission) {

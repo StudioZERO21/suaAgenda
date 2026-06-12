@@ -186,6 +186,11 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('permissoes/usuarios/json', [PermissaoController::class, 'usuariosJson'])->name('permissoes.usuarios.json');
     Route::patch('permissoes/usuarios/{user}/role', [PermissaoController::class, 'assignUserRole'])->name('permissoes.users.role');
     Route::patch('permissoes/usuarios/{user}/profissional', [PermissaoController::class, 'assignUserProfissional'])->name('permissoes.users.profissional');
+    Route::get('permissoes/grupos/json', [PermissaoController::class, 'gruposJson'])->name('permissoes.grupos.json');
+    Route::post('permissoes/grupos', [PermissaoController::class, 'storeGrupo'])->name('permissoes.grupos.store');
+    Route::put('permissoes/grupos/{grupo}', [PermissaoController::class, 'updateGrupo'])->name('permissoes.grupos.update');
+    Route::delete('permissoes/grupos/{grupo}', [PermissaoController::class, 'destroyGrupo'])->name('permissoes.grupos.destroy');
+    Route::patch('permissoes/cargos/{cargo}/grupo', [PermissaoController::class, 'assignCargoGrupo'])->name('permissoes.cargos.grupo');
 
     Route::get('financeiro/categorias', [FinanceiroController::class, 'categorias'])->name('financeiro.categorias');
     Route::get('financeiro/top-categorias', [FinanceiroController::class, 'topCategorias'])->name('financeiro.top-categorias');

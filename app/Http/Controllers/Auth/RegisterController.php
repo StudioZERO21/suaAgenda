@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Company;
 use App\Models\User;
+use App\Services\GrupoAcessoProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,8 @@ class RegisterController extends Controller
             ]);
 
             $user->assignRole('admin_empresa');
+
+            app(GrupoAcessoProvisioner::class)->provision($company);
 
             return $user;
         });
