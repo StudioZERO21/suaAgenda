@@ -357,6 +357,22 @@ class ProdutoController extends Controller
         ]);
     }
 
+    public function nome(Request $request, Produto $produto): JsonResponse
+    {
+        abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate([
+            'nome' => ['required', 'string', 'max:100'],
+        ]);
+
+        $produto->update(['nome' => $request->input('nome')]);
+
+        return response()->json([
+            'nome' => $produto->nome,
+            'updated_at' => $produto->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function descricao(Request $request, Produto $produto): JsonResponse
     {
         abort_if($produto->company_id !== auth()->user()->empresa_id, 403);
