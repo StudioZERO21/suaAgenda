@@ -332,4 +332,36 @@ class PdvController extends Controller
 
         return response()->json($produtos);
     }
+
+    public function maisVendidos(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $limite = min((int) $request->input('limite', 10), 50);
+        $dias = $request->input('dias');
+
+        $itens = VendaItem::whereHas('venda', function ($q) use ($empresa, $dias): void {
+            $q->where('company_id', $empresa)
+                ->when($dias !== null, fn ($q) => $q->where('created_at', '>=', now()->subDays((int) $dias)));
+        })
+            ->with('produto:id,nome,sku,categoria,preco,unidade')
+            ->get(['produto_id', 'qtd', 'preco_unit'])
+            ->groupBy('produto_id')
+            ->map(function ($items) {
+                $produto = $items->first()->produto;
+
+                return [
+                    'produto_id' => $produto?->id ?? '',
+                    'produto_nome' => $produto?->nome ?? 'Produto removido',
+                    'sku' => $produto?->sku ?? '',
+                    'categoria' => $produto?->categoria ?? '',
+                    'total_vendido' => (int) $items->sum('qtd'),
+                    'receita_total' => (float) $items->sum(fn ($i) => $i->qtd * $i->preco_unit),
+                ];
+            })
+            ->sortByDesc('total_vendido')
+            ->take($limite)
+            ->values();
+
+        return response()->json(['total_produtos' => $itens->count(), 'items' => $itens]);
+    }
 }
