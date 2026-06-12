@@ -11,6 +11,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
 use App\Models\Venda;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1153,6 +1154,50 @@ class ClienteController extends Controller
 
         return response()->json([
             'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total' => $items->count(),
+            'items' => $items,
+        ]);
+    }
+
+    public function inativos(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, (int) $request->input('dias', 60));
+        $limite = min((int) $request->input('limite', 50), 200);
+        $corte = now()->subDays($dias);
+
+        $ultimasVisitas = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->whereNotNull('cliente_id')
+            ->selectRaw('cliente_id, MAX(data_hora) as ultima_visita, COUNT(*) as total_visitas')
+            ->groupBy('cliente_id')
+            ->having('ultima_visita', '<', $corte)
+            ->orderBy('ultima_visita')
+            ->limit($limite)
+            ->get();
+
+        $clienteIds = $ultimasVisitas->pluck('cliente_id');
+        $clientes = Cliente::whereIn('id', $clienteIds)->get(['id', 'name', 'phone', 'ativo'])->keyBy('id');
+
+        $items = $ultimasVisitas->map(function ($row) use ($clientes): array {
+            $c = $clientes->get($row->cliente_id);
+            $ultimaVisita = Carbon::parse($row->ultima_visita);
+
+            return [
+                'cliente_id' => $row->cliente_id,
+                'nome' => $c?->name ?? '',
+                'phone' => $c?->phone ?? '',
+                'ativo' => (bool) ($c?->ativo ?? false),
+                'total_visitas' => (int) $row->total_visitas,
+                'ultima_visita' => $row->ultima_visita,
+                'dias_sem_visita' => (int) $ultimaVisita->diffInDays(now()),
+            ];
+        })->values();
+
+        return response()->json([
+            'dias_inatividade' => $dias,
             'total' => $items->count(),
             'items' => $items,
         ]);
