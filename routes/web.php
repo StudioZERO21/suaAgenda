@@ -118,6 +118,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::patch('produtos/{produto}/custo', [ProdutoController::class, 'custo'])->name('produtos.custo');
     Route::patch('produtos/{produto}/estoque-min', [ProdutoController::class, 'estoqueMin'])->name('produtos.estoque-min');
     Route::patch('produtos/{produto}/descricao', [ProdutoController::class, 'descricao'])->name('produtos.descricao');
+    Route::patch('produtos/{produto}/nome', [ProdutoController::class, 'nome'])->name('produtos.nome');
     Route::post('produtos/{produto}/imagens', [ProdutoController::class, 'storeImagem'])->name('produtos.imagens.store');
     Route::delete('produtos/imagens/{imagem}', [ProdutoController::class, 'destroyImagem'])->name('produtos.imagens.destroy');
     Route::patch('produtos/imagens/{imagem}/capa', [ProdutoController::class, 'setCapa'])->name('produtos.imagens.capa');
