@@ -150,6 +150,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('cargos/{cargo}/profissionais', [CargoController::class, 'profissionais'])->name('cargos.profissionais');
     Route::patch('cargos/{cargo}/descricao', [CargoController::class, 'descricao'])->name('cargos.descricao');
     Route::patch('cargos/{cargo}/nome', [CargoController::class, 'nome'])->name('cargos.nome');
+    Route::patch('cargos/{cargo}/nivel', [CargoController::class, 'nivel'])->name('cargos.nivel');
     Route::patch('cargos/{cargo}/comissao', [CargoController::class, 'comissao'])->name('cargos.comissao');
     Route::patch('cargos/{cargo}/cor', [CargoController::class, 'cor'])->name('cargos.cor');
     Route::delete('cargos/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
