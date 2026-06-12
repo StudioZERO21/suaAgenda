@@ -57,6 +57,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('agendamentos/por-servico', [AgendamentoController::class, 'porServico'])->name('agendamentos.por-servico');
     Route::get('agendamentos/por-mes', [AgendamentoController::class, 'porMes'])->name('agendamentos.por-mes');
     Route::get('agendamentos/contagem-por-status', [AgendamentoController::class, 'contagemPorStatus'])->name('agendamentos.contagem-por-status');
+    Route::get('agendamentos/resumo-semana', [AgendamentoController::class, 'resumoSemana'])->name('agendamentos.resumo-semana');
     Route::get('agendamentos/hoje', [AgendamentoController::class, 'hoje'])->name('agendamentos.hoje');
     Route::get('agendamentos/buscar', [AgendamentoController::class, 'buscar'])->name('agendamentos.buscar');
     Route::get('agendamentos/exportar', [AgendamentoController::class, 'exportarCsv'])->name('agendamentos.exportar');

@@ -505,6 +505,45 @@ class AgendamentoController extends Controller
         ]);
     }
 
+    public function resumoSemana(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $semanaInicio = $request->input('inicio')
+            ? Carbon::parse($request->input('inicio'))->startOfDay()
+            : now()->startOfWeek(Carbon::MONDAY);
+        $semanaFim = $semanaInicio->copy()->addDays(6)->endOfDay();
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereBetween('data_hora', [$semanaInicio, $semanaFim])
+            ->get(['data_hora', 'status', 'valor']);
+
+        $dias = collect(range(0, 6))->map(function (int $offset) use ($semanaInicio, $agendamentos): array {
+            $dia = $semanaInicio->copy()->addDays($offset);
+            $deste = $agendamentos->filter(fn (Agendamento $a) => $a->data_hora->isSameDay($dia));
+
+            return [
+                'data' => $dia->format('Y-m-d'),
+                'dia_semana' => $dia->translatedFormat('l'),
+                'total' => $deste->count(),
+                'finalizados' => $deste->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                'cancelados' => $deste->where('status', Agendamento::STATUS_CANCELADO)->count(),
+                'pendentes' => $deste->whereIn('status', [Agendamento::STATUS_PENDENTE, Agendamento::STATUS_CONFIRMADO])->count(),
+                'receita' => (float) $deste->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+            ];
+        });
+
+        return response()->json([
+            'semana_inicio' => $semanaInicio->format('Y-m-d'),
+            'semana_fim' => $semanaFim->format('Y-m-d'),
+            'total_semana' => $agendamentos->count(),
+            'receita_semana' => (float) $agendamentos->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+            'dias' => $dias,
+        ]);
+    }
+
     public function resumoHoje(): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
