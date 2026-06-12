@@ -64,6 +64,22 @@ class CargoController extends Controller
         return response()->json($this->toJson($cargo->fresh()));
     }
 
+    public function cor(Request $request, Cargo $cargo): JsonResponse
+    {
+        abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
+
+        $request->validate([
+            'cor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $cargo->update(['cor' => $request->input('cor')]);
+
+        return response()->json([
+            'cor' => $cargo->cor,
+            'updated_at' => $cargo->updated_at->toIso8601String(),
+        ]);
+    }
+
     public function comissao(Request $request, Cargo $cargo): JsonResponse
     {
         abort_if($cargo->company_id !== auth()->user()->empresa_id, 403);
