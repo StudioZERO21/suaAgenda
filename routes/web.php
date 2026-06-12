@@ -244,6 +244,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::put('profissionais/{profissional}/horarios', [HorarioTrabalhoController::class, 'update'])->name('profissionais.horarios.update');
     Route::get('profissionais/{profissional}/bloqueios', [BloqueioController::class, 'index'])->name('profissionais.bloqueios.index');
     Route::post('profissionais/{profissional}/bloqueios', [BloqueioController::class, 'store'])->name('profissionais.bloqueios.store');
+    Route::patch('bloqueios/{bloqueio}', [BloqueioController::class, 'update'])->name('bloqueios.update');
     Route::delete('bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
 
     Route::get('perfil', [PerfilController::class, 'show'])->name('perfil');
