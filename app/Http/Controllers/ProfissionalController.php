@@ -1007,6 +1007,42 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function semAgendamentoHoje(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $data = $request->input('data') ? Carbon::parse($request->input('data'))->startOfDay() : today();
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'especialidade', 'cor', 'foto_path']);
+
+        $comAgendamento = Agendamento::where('company_id', $empresa)
+            ->whereNotIn('status', [Agendamento::STATUS_CANCELADO])
+            ->whereDate('data_hora', $data)
+            ->pluck('profissional_id')
+            ->unique();
+
+        $semAgendamento = $profissionais->whereNotIn('id', $comAgendamento)->values();
+
+        $items = $semAgendamento->map(fn (Profissional $p) => [
+            'profissional_id' => $p->id,
+            'profissional_nome' => $p->name,
+            'especialidade' => $p->especialidade ?? '',
+            'cor' => $p->cor ?? '#999999',
+        ]);
+
+        return response()->json([
+            'data' => $data->toDateString(),
+            'total_ativos' => $profissionais->count(),
+            'com_agendamento' => $comAgendamento->count(),
+            'sem_agendamento' => $items->count(),
+            'items' => $items->values(),
+        ]);
+    }
+
     public function cargaHoraria(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Profissional::class);

@@ -274,6 +274,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('profissionais/agendamentos-hoje', [ProfissionalController::class, 'agendamentosHoje'])->name('profissionais.agendamentos-hoje');
     Route::get('profissionais/disponivel-agora', [ProfissionalController::class, 'disponivelAgora'])->name('profissionais.disponivel-agora');
     Route::get('profissionais/carga-horaria', [ProfissionalController::class, 'cargaHoraria'])->name('profissionais.carga-horaria');
+    Route::get('profissionais/sem-agendamento-hoje', [ProfissionalController::class, 'semAgendamentoHoje'])->name('profissionais.sem-agendamento-hoje');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
