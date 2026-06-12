@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Lancamento;
 use App\Models\Produto;
@@ -501,6 +502,60 @@ class PdvController extends Controller
             'valor_total' => round((float) $vendas->sum('total'), 2),
             'horas' => $horas->values(),
             'hora_pico' => $horaPico['total_vendas'] > 0 ? $horaPico : null,
+        ]);
+    }
+
+    public function clientesSemCompra(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = max(1, min(180, (int) $request->input('dias', 30)));
+        $limite = min((int) $request->input('limite', 20), 100);
+
+        $desde = now()->subDays($dias)->startOfDay();
+
+        $comAgendamento = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->where('data_hora', '>=', $desde)
+            ->whereNotNull('cliente_id')
+            ->pluck('cliente_id')
+            ->unique();
+
+        $comCompra = Venda::where('company_id', $empresa)
+            ->where('created_at', '>=', $desde)
+            ->whereNotNull('cliente_id')
+            ->pluck('cliente_id')
+            ->unique();
+
+        $semCompraIds = $comAgendamento->diff($comCompra);
+
+        $agPorCliente = Agendamento::where('company_id', $empresa)
+            ->where('status', Agendamento::STATUS_FINALIZADO)
+            ->where('data_hora', '>=', $desde)
+            ->whereIn('cliente_id', $semCompraIds)
+            ->selectRaw('cliente_id, COUNT(*) as visitas, SUM(valor) as receita_servicos, MAX(data_hora) as ultima_visita')
+            ->groupBy('cliente_id')
+            ->orderByDesc('visitas')
+            ->limit($limite)
+            ->get();
+
+        $clientes = Cliente::whereIn('id', $agPorCliente->pluck('cliente_id'))
+            ->get(['id', 'name', 'phone'])
+            ->keyBy('id');
+
+        $items = $agPorCliente->map(fn ($row) => [
+            'cliente_id' => $row->cliente_id,
+            'nome' => $clientes->get($row->cliente_id)?->name ?? '',
+            'phone' => $clientes->get($row->cliente_id)?->phone ?? '',
+            'visitas' => (int) $row->visitas,
+            'receita_servicos' => round((float) $row->receita_servicos, 2),
+            'ultima_visita' => $row->ultima_visita,
+        ])->values();
+
+        return response()->json([
+            'periodo_dias' => $dias,
+            'com_agendamento' => $comAgendamento->count(),
+            'sem_compra' => $semCompraIds->count(),
+            'items' => $items,
         ]);
     }
 }
