@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditavel;
 use App\Support\SaPalettes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use Auditavel, HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'name',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditavel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
+    use Auditavel, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
     protected $fillable = ['name', 'email', 'password', 'empresa_id', 'profissional_id', 'ativo'];
 
