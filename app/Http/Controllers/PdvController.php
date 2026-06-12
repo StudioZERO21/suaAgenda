@@ -591,4 +591,41 @@ class PdvController extends Controller
             'items' => $items,
         ]);
     }
+
+    public function ticketPorDiaSemana(Request $request): JsonResponse
+    {
+        $empresa = auth()->user()->empresa_id;
+        $dias = $request->input('periodo_dias');
+
+        $vendas = Venda::where('company_id', $empresa)
+            ->when($dias !== null, fn ($q) => $q->where('created_at', '>=', now()->subDays((int) $dias)))
+            ->get(['total', 'created_at']);
+
+        $nomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        $serie = collect(range(0, 6))->map(function (int $dow) use ($vendas, $nomes): array {
+            $grupo = $vendas->filter(fn ($v) => (int) Carbon::parse($v->created_at)->format('w') === $dow);
+            $count = $grupo->count();
+            $valorTotal = round((float) $grupo->sum('total'), 2);
+
+            return [
+                'dia_semana' => $dow,
+                'dia_nome' => $nomes[$dow],
+                'total_vendas' => $count,
+                'valor_total' => $valorTotal,
+                'ticket_medio' => $count > 0 ? round($valorTotal / $count, 2) : null,
+            ];
+        })->values();
+
+        $melhorDia = $vendas->count() > 0
+            ? $serie->sortByDesc('total_vendas')->first()['dia_nome']
+            : null;
+
+        return response()->json([
+            'periodo_dias' => $dias !== null ? (int) $dias : null,
+            'total_vendas' => $vendas->count(),
+            'melhor_dia' => $melhorDia,
+            'serie' => $serie,
+        ]);
+    }
 }

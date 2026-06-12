@@ -158,6 +158,7 @@ Route::middleware(['auth', SetTenantMiddleware::class])->group(function () {
     Route::get('pdv/vendas/por-hora', [PdvController::class, 'vendasPorHora'])->name('pdv.vendas.por-hora');
     Route::get('pdv/clientes/sem-compra', [PdvController::class, 'clientesSemCompra'])->name('pdv.clientes.sem-compra');
     Route::get('pdv/evolucao-mensal', [PdvController::class, 'evolucaoMensal'])->name('pdv.evolucao-mensal');
+    Route::get('pdv/ticket-por-dia-semana', [PdvController::class, 'ticketPorDiaSemana'])->name('pdv.ticket-por-dia-semana');
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
