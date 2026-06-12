@@ -448,6 +448,38 @@ class AgendamentoController extends Controller
         return response()->json(['data' => $data, 'total_agendamentos' => $agendamentos->count(), 'servicos' => $grouped]);
     }
 
+    public function porMes(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $ano = (int) $request->input('ano', now()->year);
+
+        $agendamentos = Agendamento::where('company_id', $empresa)
+            ->whereYear('data_hora', $ano)
+            ->get(['data_hora', 'status', 'valor']);
+
+        $meses = collect(range(1, 12))->map(function (int $mes) use ($agendamentos): array {
+            $deste = $agendamentos->filter(fn (Agendamento $a) => $a->data_hora->month === $mes);
+
+            return [
+                'mes' => $mes,
+                'mes_nome' => now()->setMonth($mes)->translatedFormat('M'),
+                'total' => $deste->count(),
+                'finalizados' => $deste->where('status', Agendamento::STATUS_FINALIZADO)->count(),
+                'cancelados' => $deste->where('status', Agendamento::STATUS_CANCELADO)->count(),
+                'receita' => (float) $deste->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+            ];
+        });
+
+        return response()->json([
+            'ano' => $ano,
+            'total_ano' => $agendamentos->count(),
+            'receita_ano' => (float) $agendamentos->where('status', Agendamento::STATUS_FINALIZADO)->sum('valor'),
+            'meses' => $meses,
+        ]);
+    }
+
     public function resumoHoje(): JsonResponse
     {
         $this->authorize('viewAny', Agendamento::class);
