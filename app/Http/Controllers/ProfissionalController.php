@@ -728,6 +728,40 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    public function taxaConfirmacao(Request $request, Profissional $profissional): JsonResponse
+    {
+        $this->authorize('view', $profissional);
+
+        $dias = min((int) $request->input('dias', 30), 365);
+
+        $agendamentos = $profissional->agendamentos()
+            ->where('data_hora', '>=', now()->subDays($dias))
+            ->get(['status']);
+
+        $total = $agendamentos->count();
+        $byStatus = $agendamentos->groupBy('status');
+
+        $finalizados = $byStatus->get(Agendamento::STATUS_FINALIZADO, collect())->count();
+        $cancelados = $byStatus->get(Agendamento::STATUS_CANCELADO, collect())->count();
+        $confirmados = $byStatus->get(Agendamento::STATUS_CONFIRMADO, collect())->count();
+        $pendentes = $byStatus->get(Agendamento::STATUS_PENDENTE, collect())->count();
+        $emAtendimento = $byStatus->get(Agendamento::STATUS_EM_ATENDIMENTO, collect())->count();
+
+        return response()->json([
+            'profissional_id' => $profissional->id,
+            'profissional_nome' => $profissional->name,
+            'periodo_dias' => $dias,
+            'total' => $total,
+            'finalizados' => $finalizados,
+            'confirmados' => $confirmados,
+            'pendentes' => $pendentes,
+            'em_atendimento' => $emAtendimento,
+            'cancelados' => $cancelados,
+            'taxa_conclusao' => $total > 0 ? round($finalizados / $total * 100, 1) : null,
+            'taxa_cancelamento' => $total > 0 ? round($cancelados / $total * 100, 1) : null,
+        ]);
+    }
+
     public function destroy(Profissional $profissional): RedirectResponse
     {
         $this->authorize('delete', $profissional);
