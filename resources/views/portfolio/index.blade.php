@@ -2,6 +2,11 @@
 @section('title', 'Portfólio')
 
 @section('content')
+<style>
+    .pf-gallery { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+    @media (max-width:1080px){ .pf-gallery{ grid-template-columns:repeat(3,1fr); } }
+    @media (max-width:680px){ .pf-gallery{ grid-template-columns:repeat(2,1fr); gap:10px; } }
+</style>
 <x-sa.page x-data="portfolioApp()">
     <x-sa.app-header title="Portfólio" subtitle="Gerencie as fotos dos trabalhos realizados">
         <x-slot:actions>
@@ -46,10 +51,11 @@
             <x-sa.card style="padding:20px">
                 <h3 style="font-family:var(--sa-font-heading);font-size:15px;font-weight:600;color:var(--sa-text1);margin:0 0 16px">Adicionar Fotos</h3>
                 <div style="display:flex;flex-direction:column;gap:14px">
+                    {{-- Área de seleção --}}
                     <div
                         @dragover.prevent="drag = true"
                         @dragleave.prevent="drag = false"
-                        @drop.prevent="handleFileDrop($event)"
+                        @drop.prevent="handleDrop($event)"
                         @click="$refs.fileInput.click()"
                         :style="'border:2px dashed ' + (drag ? 'var(--sa-primary)' : 'var(--sa-border)') + ';border-radius:12px;padding:32px 20px;text-align:center;background:' + (drag ? 'color-mix(in srgb,var(--sa-primary) 5%,transparent)' : 'var(--sa-surface2)') + ';transition:all 200ms;cursor:pointer'">
                         <div style="width:48px;height:48px;border-radius:50%;background:color-mix(in srgb,var(--sa-primary) 10%,transparent);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
@@ -58,41 +64,63 @@
                         <p style="font-size:14px;font-weight:600;color:var(--sa-text1);margin:0 0 4px">Arraste fotos aqui</p>
                         <p style="font-size:12px;color:var(--sa-text3);margin:0 0 12px">ou clique para selecionar</p>
                         <input type="file" accept="image/jpeg,image/png,image/webp" multiple x-ref="fileInput"
-                               @change="uploadFiles($event.target.files)" style="display:none">
+                               @change="selecionar($event.target.files); $event.target.value = ''" style="display:none">
                         <x-sa.btn variant="muted" size="sm" @click.stop="$refs.fileInput.click()"
                                   :icon="'<svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><line x1=\'12\' y1=\'19\' x2=\'12\' y2=\'5\'/><polyline points=\'5 12 12 5 19 12\'/></svg>'">
                             Selecionar arquivos
                         </x-sa.btn>
-                        <p style="font-size:11px;color:var(--sa-text3);margin-top:8px;margin-bottom:0">JPG, PNG, WebP · Máx. 10MB cada · Múltiplos arquivos</p>
+                        <p style="font-size:11px;color:var(--sa-text3);margin-top:8px;margin-bottom:0">JPG, PNG, WebP · Máx. 10MB cada · A foto só é salva após você preencher e clicar em Salvar</p>
                     </div>
-                    <div style="padding:16px;background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border)">
-                        <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:12px">Adicionar foto de demonstração</div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-                            <div>
-                                <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Título</label>
-                                <input type="text" x-model="uploadTitle" placeholder="Ex: Degradê moderno" class="sa-search-input" style="max-width:none;width:100%">
-                            </div>
-                            <div>
-                                <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Categoria</label>
-                                <select x-model="uploadCategory" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);cursor:pointer;outline:none">
-                                    <template x-for="cat in categorias.slice(1)" :key="cat">
-                                        <option :value="cat" x-text="cat"></option>
-                                    </template>
-                                </select>
-                            </div>
+
+                    {{-- Pré-visualização + informações (a imagem só é enviada ao salvar) --}}
+                    <div x-show="pendentes.length > 0" x-cloak style="padding:16px;background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border)">
+                        <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:12px">
+                            Preencha as informações
+                            <span style="color:var(--sa-text3);font-weight:400">(<span x-text="pendentes.length"></span> foto<span x-show="pendentes.length !== 1">s</span> selecionada<span x-show="pendentes.length !== 1">s</span>)</span>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end">
+
+                        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+                            <template x-for="p in pendentes" :key="p.id">
+                                <div style="display:flex;gap:12px;align-items:center">
+                                    <img :src="p.preview" :alt="p.titulo" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--sa-border);flex-shrink:0">
+                                    <div style="flex:1;min-width:0">
+                                        <label style="font-size:12px;font-weight:600;color:var(--sa-text2);display:block;margin-bottom:4px">Título</label>
+                                        <input type="text" x-model="p.titulo" placeholder="Ex: Degradê moderno" class="sa-search-input" style="max-width:none;width:100%">
+                                    </div>
+                                    <button type="button" @click="removerPendente(p.id)" title="Remover"
+                                            style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;color:var(--sa-text3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 150ms"
+                                            onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                                            onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                            <div>
+                                <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Categoria <span style="color:var(--sa-secondary)">*</span></label>
+                                <input type="text" x-model="uploadCategory" list="pf-cat-sugestoes" placeholder="Ex: Corte, Banho &amp; Tosa, Coloração..." class="sa-search-input" style="max-width:none;width:100%">
+                                <datalist id="pf-cat-sugestoes">
+                                    <template x-for="c in sugestoesCategoria" :key="c"><option :value="c"></option></template>
+                                </datalist>
+                            </div>
                             <div>
                                 <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Profissional</label>
                                 <select x-model="uploadProfId" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);cursor:pointer;outline:none">
+                                    <option value="">— Sem profissional —</option>
                                     <template x-for="p in profissionais" :key="p.id">
                                         <option :value="String(p.id)" x-text="p.nome"></option>
                                     </template>
                                 </select>
                             </div>
-                            <x-sa.btn @click="addPhoto()"
-                                      :icon="'<svg width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><line x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'/><line x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'/></svg>'">
-                                Adicionar
+                        </div>
+
+                        <div style="display:flex;gap:10px;justify-content:flex-end">
+                            <x-sa.btn variant="muted" size="sm" @click="pendentes = []">Cancelar</x-sa.btn>
+                            <x-sa.btn size="sm" @click="salvarPendentes()"
+                                      :icon="'<svg width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z\'/><polyline points=\'17 21 17 13 7 13 7 21\'/><polyline points=\'7 3 7 8 15 8\'/></svg>'">
+                                <span x-text="enviando ? 'Salvando...' : 'Salvar no portfólio'"></span>
                             </x-sa.btn>
                         </div>
                     </div>
@@ -128,7 +156,7 @@
                 <div style="font-size:14px">Nenhuma foto encontrada para este filtro</div>
             </div>
         </template>
-        <div x-show="filtered.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+        <div x-show="filtered.length > 0" x-cloak class="pf-gallery">
             <template x-for="photo in filtered" :key="photo.id">
                 <div style="position:relative;border-radius:12px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:4/3"
                      @click="openPhoto(photo)"
@@ -256,7 +284,7 @@
 function portfolioApp() {
     return {
         photos: @json($fotosJson),
-        categorias: @json($categorias),
+        categoriasSugeridas: @json($categorias).filter(c => c !== 'Todos'),
         profissionais: @json($profissionais),
         category: 'Todos',
         profFilter: 'all',
@@ -265,17 +293,33 @@ function portfolioApp() {
         photoModalOpen: false,
         showUpload: false,
         drag: false,
-        uploadTitle: '',
-        uploadCategory: 'Corte',
+        pendentes: [],
+        uploadCategory: '',
         uploadProfId: '',
+        enviando: false,
 
         init() {
             this.$watch('photoModalOpen', val => { if (!val) this.selPhoto = null; });
-            if (this.profissionais.length) this.uploadProfId = String(this.profissionais[0].id);
         },
 
         get featuredCount() {
             return this.photos.filter(p => p.destaque).length;
+        },
+
+        // Apenas categorias que realmente possuem foto com imagem — cada
+        // estabelecimento (salão, barbearia, pet shop...) define as suas.
+        get categorias() {
+            const cats = [...new Set(
+                this.photos.filter(p => p.imagem_url).map(p => p.categoria).filter(Boolean)
+            )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            return ['Todos', ...cats];
+        },
+
+        // Sugestões para o campo de categoria no upload (livres + já usadas).
+        get sugestoesCategoria() {
+            const usadas = this.photos.map(p => p.categoria).filter(Boolean);
+            return [...new Set([...usadas, ...this.categoriasSugeridas])]
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
         },
 
         get filtered() {
@@ -283,7 +327,7 @@ function portfolioApp() {
             return this.photos.filter(p => {
                 if (this.category !== 'Todos' && p.categoria !== this.category) return false;
                 if (this.profFilter !== 'all' && String(p.prof_id) !== this.profFilter) return false;
-                if (q && !p.titulo.toLowerCase().includes(q) && !p.prof.toLowerCase().includes(q)) return false;
+                if (q && !p.titulo.toLowerCase().includes(q) && !(p.prof || '').toLowerCase().includes(q)) return false;
                 return true;
             });
         },
@@ -312,26 +356,56 @@ function portfolioApp() {
             this.selPhoto = null;
         },
 
-        handleFileDrop(e) {
+        handleDrop(e) {
             this.drag = false;
             const files = e.dataTransfer?.files;
-            if (files?.length) this.uploadFiles(files);
+            if (files?.length) this.selecionar(files);
         },
 
-        async uploadFiles(files) {
+        // Apenas prepara a pré-visualização; nada é enviado ainda.
+        selecionar(files) {
             if (!files?.length) return;
-            const csrf = document.querySelector('meta[name=csrf-token]').content;
-            let uploaded = 0;
             for (const file of files) {
-                if (!file.type.startsWith('image/')) continue;
+                if (!file.type.startsWith('image/')) {
+                    this.toast(`${file.name}: não é uma imagem`, 'error');
+                    continue;
+                }
                 if (file.size > 10 * 1024 * 1024) {
                     this.toast(`${file.name}: arquivo maior que 10MB`, 'error');
                     continue;
                 }
+                const id = (window.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+                const reader = new FileReader();
+                reader.onload = e => {
+                    this.pendentes.push({
+                        id, file,
+                        preview: e.target.result,
+                        titulo: file.name.replace(/\.[^.]+$/, ''),
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            this.showUpload = true;
+        },
+
+        removerPendente(id) {
+            this.pendentes = this.pendentes.filter(p => p.id !== id);
+        },
+
+        // Envia as fotos selecionadas só depois das informações preenchidas.
+        async salvarPendentes() {
+            if (this.enviando || !this.pendentes.length) return;
+            if (!this.uploadCategory.trim()) {
+                return this.toast('Informe a categoria antes de salvar', 'error');
+            }
+            this.enviando = true;
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            let ok = 0;
+            for (const p of this.pendentes) {
                 const fd = new FormData();
-                fd.append('arquivo', file);
-                fd.append('titulo', file.name.replace(/\.[^.]+$/, ''));
-                fd.append('categoria', this.uploadCategory);
+                fd.append('arquivo', p.file);
+                fd.append('titulo', (p.titulo || '').trim() || 'Sem título');
+                fd.append('categoria', this.uploadCategory.trim());
                 if (this.uploadProfId) fd.append('profissional_id', this.uploadProfId);
 
                 const res = await fetch('{{ route('portfolio.fotos.store') }}', {
@@ -340,38 +414,17 @@ function portfolioApp() {
                     body: fd,
                 });
                 if (!res.ok) {
-                    this.toast(`Erro ao enviar ${file.name}`, 'error');
+                    this.toast(`Erro ao enviar ${p.titulo}`, 'error');
                     continue;
                 }
-                const data = await res.json();
-                this.photos.unshift(data);
-                uploaded++;
+                this.photos.unshift(await res.json());
+                ok++;
             }
-            if (uploaded > 0) {
-                this.toast(`${uploaded} foto${uploaded > 1 ? 's' : ''} adicionada${uploaded > 1 ? 's' : ''}!`, 'success');
+            this.enviando = false;
+            if (ok > 0) {
+                this.pendentes = [];
+                this.toast(`${ok} foto${ok > 1 ? 's' : ''} adicionada${ok > 1 ? 's' : ''}! Use "Publicar" para exibi-la na página.`, 'success');
             }
-        },
-
-        async addPhoto() {
-            if (!this.uploadTitle.trim()) {
-                return this.toast('Adicione um título para a foto', 'error');
-            }
-            const res = await fetch('{{ route('portfolio.fotos.store') }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                body: JSON.stringify({
-                    titulo: this.uploadTitle.trim(),
-                    categoria: this.uploadCategory,
-                    profissional_id: this.uploadProfId || null,
-                }),
-            });
-            if (!res.ok) {
-                return this.toast('Erro ao adicionar foto', 'error');
-            }
-            const data = await res.json();
-            this.photos.unshift(data);
-            this.uploadTitle = '';
-            this.toast('Foto adicionada ao portfólio!', 'success');
         },
 
         async deletePhoto(id) {
@@ -381,6 +434,7 @@ function portfolioApp() {
             });
             if (res.ok || res.status === 204) {
                 this.photos = this.photos.filter(p => p.id !== id);
+                if (!this.categorias.includes(this.category)) this.category = 'Todos';
                 this.toast('Foto removida', 'error');
             }
         },
