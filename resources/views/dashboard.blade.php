@@ -22,7 +22,15 @@
     .sa-donut-svg { transform:rotate(-90deg); }
     .sa-donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
     .sa-timeline-rail { position:absolute; left:15px; top:8px; bottom:8px; width:2px; background:linear-gradient(to bottom,var(--sa-secondary),var(--sa-border) 80%); border-radius:1px; opacity:.5; }
-    @media (max-width:1080px) { .sa-dash-grid { grid-template-columns:1fr; } .sa-kanban-grid { grid-template-columns:repeat(5,minmax(160px,1fr)); } }
+    @media (max-width:1080px) { .sa-dash-grid { grid-template-columns:1fr; } }
+    /* Kanban: rolagem horizontal com snap em telas estreitas */
+    @media (max-width:900px) {
+        .sa-kanban-grid { display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+        .sa-kanban-col { flex:0 0 78%; max-width:300px; scroll-snap-align:start; }
+    }
+    @media (max-width:768px) {
+        .sa-donut-wrap { flex-direction:column; gap:16px; align-items:center; }
+    }
 </style>
 @endpush
 
