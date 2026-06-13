@@ -191,7 +191,7 @@ class ConfiguracaoController extends Controller
         $company = Company::findOrFail(auth()->user()->empresa_id);
         $this->authorize('view', $company);
 
-        $bookingUrl = route('agendar.show', $company->slug);
+        $bookingUrl = route('vitrine.show', $company->slug);
 
         $svg = QrCode::format('svg')->size(300)->margin(1)->generate($bookingUrl);
 
