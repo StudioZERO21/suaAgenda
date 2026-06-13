@@ -61,9 +61,10 @@ class AgendamentoPublicoController extends Controller
      * Exibe hero, serviços, equipe e depoimentos com dados reais; os botões
      * de ação encaminham para o fluxo de agendamento (rota agendar.show).
      */
-    public function landing(string $slug): View
+    public function landing(string $slug, AgendamentoCancelamentoService $cancelamento): View
     {
         $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
+        $politicaAgendamento = $cancelamento->descricaoPolitica($company->id);
 
         $servicos = Servico::where('company_id', $company->id)
             ->ativo()
@@ -106,7 +107,7 @@ class AgendamentoPublicoController extends Controller
                 'profissional' => $av->agendamento?->profissional?->name ?? '',
             ]);
 
-        return view('public.vitrine', compact('company', 'servicos', 'servicosMap', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal'));
+        return view('public.vitrine', compact('company', 'servicos', 'servicosMap', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal', 'politicaAgendamento'));
     }
 
     /**
@@ -245,8 +246,12 @@ class AgendamentoPublicoController extends Controller
             return back()->withInput()->withErrors(['data_hora' => $valida['motivo']]);
         }
 
+        // Telefone normalizado (só dígitos) para evitar cadastros duplicados
+        // por formatação diferente; a busca no portal já casa ambos os formatos.
+        $phone = preg_replace('/\D/', '', (string) $request->cliente_phone) ?: $request->cliente_phone;
+
         $cliente = Cliente::firstOrCreate(
-            ['company_id' => $company->id, 'phone' => $request->cliente_phone],
+            ['company_id' => $company->id, 'phone' => $phone],
             [
                 'name' => $request->cliente_nome,
                 'email' => $request->cliente_email,
