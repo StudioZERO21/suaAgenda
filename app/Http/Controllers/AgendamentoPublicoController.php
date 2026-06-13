@@ -12,6 +12,7 @@ use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\HorarioTrabalho;
+use App\Models\PortfolioItem;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\AgendamentoCancelamentoService;
@@ -22,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AgendamentoPublicoController extends Controller
@@ -70,6 +72,22 @@ class AgendamentoPublicoController extends Controller
             ],
         ]);
 
+        // Galeria pública: fotos do portfólio que possuem imagem (destaques primeiro).
+        $portfolio = PortfolioItem::where('company_id', $company->id)
+            ->whereNotNull('imagem_path')
+            ->with('profissional:id,name')
+            ->orderByDesc('destaque')
+            ->orderByDesc('created_at')
+            ->limit(24)
+            ->get()
+            ->map(fn (PortfolioItem $item): array => [
+                'titulo' => $item->titulo,
+                'categoria' => $item->categoria,
+                'prof' => $item->profissional?->name,
+                'destaque' => (bool) $item->destaque,
+                'url' => Storage::url($item->imagem_path),
+            ])->values();
+
         $siteCfg = $company->resolvedSettings()['site'] ?? [];
 
         $notaMediaReal = Avaliacao::whereHas('agendamento', fn ($q) => $q->where('company_id', $company->id))->avg('nota');
@@ -90,7 +108,7 @@ class AgendamentoPublicoController extends Controller
                 'profissional' => $av->agendamento?->profissional?->name ?? '',
             ]);
 
-        return view('public.vitrine', compact('company', 'servicos', 'servicosMap', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal', 'politicaAgendamento'));
+        return view('public.vitrine', compact('company', 'servicos', 'servicosMap', 'profissionais', 'portfolio', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal', 'politicaAgendamento'));
     }
 
     /**

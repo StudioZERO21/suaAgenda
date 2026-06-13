@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\PortfolioItem;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,5 +49,45 @@ describe('vitrine_render', function () {
     it('/agendar redireciona para a vitrine com o modal', function () {
         $this->get(route('agendar.show', $this->company->slug))
             ->assertRedirect(route('vitrine.show', ['slug' => $this->company->slug, 'book' => 1]));
+    });
+
+    it('exibe a galeria com as fotos do portfólio que têm imagem', function () {
+        PortfolioItem::create([
+            'company_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'titulo' => 'Degradê moderno', 'categoria' => 'Corte',
+            'destaque' => true, 'imagem_path' => 'portfolio/teste/foto.jpg',
+        ]);
+
+        $this->get(route('vitrine.show', $this->company->slug))
+            ->assertOk()
+            ->assertSee('id="galeria"', false)
+            ->assertSee('Degradê moderno')
+            ->assertSee('vitrineGaleria', false);
+    });
+
+    it('não exibe a galeria quando não há fotos com imagem', function () {
+        // item sem imagem_path não deve aparecer na galeria pública
+        PortfolioItem::create([
+            'company_id' => $this->company->id,
+            'titulo' => 'Sem foto', 'categoria' => 'Corte', 'destaque' => false,
+        ]);
+
+        $this->get(route('vitrine.show', $this->company->slug))
+            ->assertOk()
+            ->assertDontSee('id="galeria"', false);
+    });
+
+    it('respeita o flag show_gallery=false nas configurações do site', function () {
+        PortfolioItem::create([
+            'company_id' => $this->company->id,
+            'titulo' => 'Oculta', 'categoria' => 'Corte',
+            'destaque' => false, 'imagem_path' => 'portfolio/teste/x.jpg',
+        ]);
+        $this->company->update(['settings' => ['site' => ['show_gallery' => false]]]);
+
+        $this->get(route('vitrine.show', $this->company->slug))
+            ->assertOk()
+            ->assertDontSee('id="galeria"', false);
     });
 });
