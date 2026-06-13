@@ -72,8 +72,8 @@
                                     </template>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <template x-for="[cat, perms] in catalogoEntries" :key="cat">
+                            <template x-for="[cat, perms] in catalogoEntries" :key="cat">
+                                <tbody>
                                     <tr @click="toggleCatExpand(cat)" style="cursor:pointer;background:color-mix(in srgb,var(--sa-primary) 4%,transparent)">
                                         <td :colspan="cargos.length + 1" style="padding:8px 14px;font-size:12px;font-weight:700;color:var(--sa-text1);border-bottom:1px solid var(--sa-border);border-top:1px solid var(--sa-border)">
                                             <div style="display:flex;align-items:center;gap:8px">
@@ -97,8 +97,8 @@
                                             </template>
                                         </tr>
                                     </template>
-                                </template>
-                            </tbody>
+                                </tbody>
+                            </template>
                         </table>
                     </div>
                 </div>

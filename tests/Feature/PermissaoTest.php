@@ -52,6 +52,22 @@ describe('permissoes index', function () {
             ->assertOk();
     });
 
+    it('a matriz envolve cada categoria num tbody (x-for de raiz única)', function () {
+        // Regressão: um <template x-for> do Alpine só pode ter UMA raiz. A matriz
+        // tinha duas (o <tr> de categoria + o <template> das permissões), o que
+        // fazia o Alpine descartar as linhas de permissão (página "incompleta").
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        // O template da matriz deve abrir um <tbody> logo em seguida.
+        $pos = strpos($html, 'x-for="[cat, perms] in catalogoEntries" :key="cat"');
+        expect($pos)->not->toBeFalse();
+        $trecho = substr($html, $pos, 200);
+        expect($trecho)->toContain('<tbody>');
+    });
+
     it('usa o overlay de modal centralizado por classe (não display inline)', function () {
         // Garante que os modais não voltem ao padrão quebrado: x-show + display:flex
         // inline (o x-show do Alpine remove o display inline e descentraliza).
