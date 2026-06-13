@@ -41,7 +41,11 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // URL relativa (raiz): o navegador resolve contra a origem atual,
+            // funcionando em qualquer host/porta (localhost:8000, .test, prod)
+            // sem depender de APP_URL estar exatamente igual ao host de acesso.
+            // Para URL absoluta (og:image, e-mail) use url(Storage::url(...)).
+            'url' => env('FILESYSTEM_PUBLIC_URL', '/storage'),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

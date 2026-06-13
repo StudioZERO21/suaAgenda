@@ -343,7 +343,7 @@
     </footer>
 
     {{-- ══ MODAL DE AGENDAMENTO (centralizado) ═══════════════════ --}}
-    <div x-show="aberto" x-cloak @keydown.escape.window="fechar()"
+    <div x-show="aberto" x-cloak x-transition.opacity @keydown.escape.window="fechar()"
          style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px"
          @click.self="fechar()">
         <div style="background:var(--sa-surface);border-radius:18px;width:min(540px, calc(100vw - 24px));max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.28)">

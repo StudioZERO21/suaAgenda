@@ -16,7 +16,8 @@
         $pubMetaTitle = !empty($pubSite['meta_title']) ? $pubSite['meta_title'] : null;
         $pubMetaDesc  = !empty($pubSite['meta_desc'])  ? $pubSite['meta_desc']  : null;
         $pubKeywords  = !empty($pubSite['keywords'])   ? $pubSite['keywords']   : null;
-        $pubOgImage   = !empty($pubSite['og_image'])   ? \Illuminate\Support\Facades\Storage::url($pubSite['og_image']) : null;
+        // og:image precisa ser absoluta para os crawlers; url() usa o host atual.
+        $pubOgImage   = !empty($pubSite['og_image'])   ? url(\Illuminate\Support\Facades\Storage::url($pubSite['og_image'])) : null;
         $pubGa        = !empty($pubSite['google_analytics']) ? $pubSite['google_analytics'] : null;
     @endphp
     <title>{{ $pubMetaTitle ?? (isset($company) ? $company->name.' — Agendamento Online' : 'Agendamento') }}</title>
@@ -47,6 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        [x-cloak] { display: none !important; }
         :root {
             {{-- Whitelist em SaPalettes: seguro emitir sem escape. --}}
             --sa-font-body:    {!! $pubFonts['body_css'] !!};
