@@ -30,6 +30,8 @@ use App\Http\Controllers\PdvController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermissaoController;
 use App\Http\Controllers\PlansController;
+use App\Http\Controllers\Portal\PortalAuthController;
+use App\Http\Controllers\Portal\PortalDashboardController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\ProfissionalController;
@@ -37,6 +39,7 @@ use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
 use App\Http\Middleware\CheckModulePermission;
+use App\Http\Middleware\EnsureClienteDaEmpresa;
 use App\Http\Middleware\SetTenantMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -386,6 +389,22 @@ Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'me
 Route::post('/meu-agendamento/{token}/cancelar', [AgendamentoPublicoController::class, 'cancelarMeuAgendamento'])->name('agendamento.cancelar');
 Route::get('/avaliar/{token}', [AvaliacaoController::class, 'show'])->name('avaliacao.show');
 Route::post('/avaliar/{token}', [AvaliacaoController::class, 'store'])->name('avaliacao.store');
+
+// ── Portal do cliente (magic link, guard 'cliente') ────────────────
+Route::prefix('portal/{slug}')->group(function () {
+    Route::get('entrar', [PortalAuthController::class, 'showLogin'])->name('portal.entrar');
+    Route::post('entrar', [PortalAuthController::class, 'enviarLink'])->middleware('throttle:5,15')->name('portal.enviar-link');
+    Route::get('entrar/{token}', [PortalAuthController::class, 'entrarComToken'])->middleware('throttle:10,15')->name('portal.entrar.token');
+
+    Route::middleware([EnsureClienteDaEmpresa::class])->group(function () {
+        Route::get('/', [PortalDashboardController::class, 'dashboard'])->name('portal.dashboard');
+        Route::post('logout', [PortalAuthController::class, 'logout'])->name('portal.logout');
+        Route::post('agendamentos/{agendamento}/cancelar', [PortalDashboardController::class, 'cancelar'])->name('portal.cancelar');
+        Route::get('dados', [PortalDashboardController::class, 'dados'])->name('portal.dados');
+        Route::get('dados/exportar', [PortalDashboardController::class, 'exportarDados'])->name('portal.dados.exportar');
+        Route::post('dados/consentimento', [PortalDashboardController::class, 'atualizarConsentimento'])->name('portal.dados.consentimento');
+    });
+});
 
 if (app()->isLocal()) {
     Route::post('/dev/login', [DevLoginController::class, 'login'])->name('dev.login');
