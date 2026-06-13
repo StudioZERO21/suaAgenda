@@ -125,6 +125,39 @@ class PortfolioController extends Controller
         return response()->json(['id' => $portfolioItem->id, 'destaque' => $portfolioItem->destaque]);
     }
 
+    /**
+     * Alterna a publicação de uma única foto na galeria pública.
+     * Só fotos com imagem podem ser publicadas.
+     */
+    public function togglePublicado(PortfolioItem $portfolioItem): JsonResponse
+    {
+        abort_if($portfolioItem->company_id !== auth()->user()->empresa_id, 403);
+
+        $novo = ! $portfolioItem->publicado && $portfolioItem->imagem_path !== null;
+        $portfolioItem->update(['publicado' => $novo]);
+
+        return response()->json(['id' => $portfolioItem->id, 'publicado' => $portfolioItem->publicado]);
+    }
+
+    /**
+     * Publica em massa todas as fotos com imagem da empresa (botão
+     * "Publicar na página"). Retorna a lista de ids agora publicados.
+     */
+    public function publicar(): JsonResponse
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        PortfolioItem::where('company_id', $companyId)
+            ->whereNotNull('imagem_path')
+            ->update(['publicado' => true]);
+
+        $ids = PortfolioItem::where('company_id', $companyId)
+            ->where('publicado', true)
+            ->pluck('id');
+
+        return response()->json(['publicados' => $ids, 'total' => $ids->count()]);
+    }
+
     /** @param array<string,string> $colorMap */
     private function itemToJson(PortfolioItem $item, array $colorMap = []): array
     {
@@ -136,6 +169,7 @@ class PortfolioController extends Controller
             'titulo' => $item->titulo,
             'data' => $item->created_at->format('Y-m-d'),
             'destaque' => $item->destaque,
+            'publicado' => $item->publicado,
             'cor' => $colorMap[$item->profissional_id] ?? '#888',
             'tags' => $item->tags ?? [],
             'imagem_url' => $item->imagem_path

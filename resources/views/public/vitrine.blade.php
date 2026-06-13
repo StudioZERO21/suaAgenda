@@ -77,7 +77,9 @@
     .vit-btn--sm { padding: 9px 16px; font-size: 13px; }
     .vit-btn--lg { padding: 14px 28px; font-size: 15px; }
     .vit-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    @media (max-width: 920px) { .vit-grid-3 { grid-template-columns: 1fr; } .vit-section { padding: 0 24px; } }
+    .vit-gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 920px) { .vit-grid-3 { grid-template-columns: 1fr; } .vit-section { padding: 0 24px; } .vit-gallery { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .vit-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
 </style>
 @endpush
 
@@ -266,10 +268,10 @@
             </div>
 
             {{-- Grade de fotos --}}
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+            <div class="vit-gallery">
                 <template x-for="(foto, i) in filtradas" :key="i">
                     <div @click="abrir(foto)"
-                         style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:4/3;transition:box-shadow 220ms ease,transform 220ms ease"
+                         style="position:relative;border-radius:14px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:1/1;transition:box-shadow 220ms ease,transform 220ms ease"
                          onmouseover="this.style.boxShadow='0 12px 32px rgba(0,0,0,.14)';this.style.transform='translateY(-3px)'"
                          onmouseout="this.style.boxShadow='none';this.style.transform='none'">
                         <img :src="foto.url" :alt="foto.titulo" loading="lazy" decoding="async"

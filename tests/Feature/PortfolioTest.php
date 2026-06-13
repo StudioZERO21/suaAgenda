@@ -177,3 +177,80 @@ describe('portfolio crud', function () {
             ->assertNotFound();
     });
 });
+
+describe('portfolio publicação', function () {
+    it('publicar em massa publica todas as fotos com imagem', function () {
+        $comImg1 = PortfolioItem::create([
+            'company_id' => $this->company->id, 'titulo' => 'A', 'categoria' => 'Corte',
+            'imagem_path' => 'portfolio/a.jpg',
+        ]);
+        $comImg2 = PortfolioItem::create([
+            'company_id' => $this->company->id, 'titulo' => 'B', 'categoria' => 'Corte',
+            'imagem_path' => 'portfolio/b.jpg',
+        ]);
+        $semImg = PortfolioItem::create([
+            'company_id' => $this->company->id, 'titulo' => 'C', 'categoria' => 'Corte',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('portfolio.publicar'))
+            ->assertOk()
+            ->assertJson(['total' => 2]);
+
+        expect($comImg1->fresh()->publicado)->toBeTrue()
+            ->and($comImg2->fresh()->publicado)->toBeTrue()
+            ->and($semImg->fresh()->publicado)->toBeFalse();
+    });
+
+    it('togglePublicado publica e despublica uma foto com imagem', function () {
+        $item = PortfolioItem::create([
+            'company_id' => $this->company->id, 'titulo' => 'Foto', 'categoria' => 'Corte',
+            'imagem_path' => 'portfolio/x.jpg',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('portfolio.fotos.publicar', $item))
+            ->assertOk()->assertJson(['publicado' => true]);
+        expect($item->fresh()->publicado)->toBeTrue();
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('portfolio.fotos.publicar', $item))
+            ->assertOk()->assertJson(['publicado' => false]);
+        expect($item->fresh()->publicado)->toBeFalse();
+    });
+
+    it('não publica foto sem imagem', function () {
+        $item = PortfolioItem::create([
+            'company_id' => $this->company->id, 'titulo' => 'Sem img', 'categoria' => 'Corte',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('portfolio.fotos.publicar', $item))
+            ->assertOk()->assertJson(['publicado' => false]);
+
+        expect($item->fresh()->publicado)->toBeFalse();
+    });
+
+    it('não publica foto de outra empresa', function () {
+        $item = PortfolioItem::create([
+            'company_id' => $this->company2->id, 'titulo' => 'Alheio', 'categoria' => 'Corte',
+            'imagem_path' => 'portfolio/y.jpg',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('portfolio.fotos.publicar', $item))
+            ->assertNotFound();
+    });
+
+    it('publicar só afeta a própria empresa', function () {
+        PortfolioItem::create([
+            'company_id' => $this->company2->id, 'titulo' => 'Outra', 'categoria' => 'Corte',
+            'imagem_path' => 'portfolio/z.jpg',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('portfolio.publicar'))
+            ->assertOk()
+            ->assertJson(['total' => 0]);
+    });
+});
