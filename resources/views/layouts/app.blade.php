@@ -66,6 +66,15 @@
         ::selection { background: var(--sa-secondary); color: #fff; }
         [x-cloak] { display: none !important; }
 
+        /* Overlay de modal centralizado. Em classe (não inline) porque o
+           x-show do Alpine remove a propriedade display inline ao exibir,
+           o que apagaria um display:flex inline e quebraria a centralização. */
+        .sa-modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,.5); padding: 20px;
+        }
+
         @keyframes sa-modal-in {
             from { opacity: 0; transform: scale(.96) translateY(-8px); }
             to   { opacity: 1; transform: scale(1) translateY(0); }
