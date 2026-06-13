@@ -12,6 +12,7 @@ use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Services\ImageService;
 use App\Support\SaPalettes;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -215,7 +216,7 @@ class ConfiguracaoController extends Controller
             Storage::disk('public')->delete($company->logo_path);
         }
 
-        $path = $request->file('logo')->store("logos/{$company->id}", 'public');
+        $path = app(ImageService::class)->store($request->file('logo'), "logos/{$company->id}");
         $company->update(['logo_path' => $path]);
 
         return response()->json(['logo_url' => Storage::disk('public')->url($path)]);

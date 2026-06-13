@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSiteRequest;
+use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -103,8 +104,7 @@ class SitePublicoController extends Controller
             Storage::disk('public')->delete($existing);
         }
 
-        $path = $request->file('image')
-            ->store("site_banners/{$companyId}", 'public');
+        $path = app(ImageService::class)->store($request->file('image'), "site_banners/{$companyId}");
 
         $settings = $company->settings ?? [];
         $settings['site']['banner_path'] = $path;
@@ -144,8 +144,7 @@ class SitePublicoController extends Controller
             Storage::disk('public')->delete($existing);
         }
 
-        $path = $request->file('image')
-            ->store("site_og/{$companyId}", 'public');
+        $path = app(ImageService::class)->store($request->file('image'), "site_og/{$companyId}");
 
         $settings = $company->settings ?? [];
         $settings['site']['og_image'] = $path;

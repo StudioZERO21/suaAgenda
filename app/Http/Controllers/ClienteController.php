@@ -11,6 +11,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\ClienteFoto;
 use App\Models\Venda;
+use App\Services\ImageService;
 use App\Services\LgpdService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -805,10 +806,7 @@ class ClienteController extends Controller
         ]);
 
         $companyId = auth()->user()->empresa_id;
-        $path = $request->file('imagem')->store(
-            "cliente_fotos/{$companyId}",
-            'public'
-        );
+        $path = app(ImageService::class)->store($request->file('imagem'), "cliente_fotos/{$companyId}");
 
         $foto = $cliente->fotos()->create([
             'imagem_path' => $path,

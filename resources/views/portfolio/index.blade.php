@@ -128,7 +128,7 @@
                 <div style="font-size:14px">Nenhuma foto encontrada para este filtro</div>
             </div>
         </template>
-        <div x-show="filtered.length > 0" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div x-show="filtered.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
             <template x-for="photo in filtered" :key="photo.id">
                 <div style="position:relative;border-radius:12px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:4/3"
                      @click="openPhoto(photo)"
@@ -136,7 +136,7 @@
                      @mouseleave="$el.querySelector('.photo-overlay').style.opacity = '0'">
                     {{-- Imagem real quando disponível --}}
                     <template x-if="photo.imagem_url">
-                        <img :src="photo.imagem_url" :alt="photo.titulo"
+                        <img :src="photo.imagem_url" :alt="photo.titulo" loading="lazy" decoding="async"
                              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
                     </template>
                     {{-- Placeholder quando sem imagem --}}
@@ -190,10 +190,10 @@
 
         <template x-if="selPhoto">
             <div>
-                <div style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:16px;aspect-ratio:16/10;position:relative;background:var(--sa-surface2);border:1px solid var(--sa-border)">
+                <div style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:16px;aspect-ratio:16/10;position:relative;background:#111;border:1px solid var(--sa-border)">
                     <template x-if="selPhoto.imagem_url">
-                        <img :src="selPhoto.imagem_url" :alt="selPhoto.titulo"
-                             style="width:100%;height:100%;object-fit:cover">
+                        <img :src="selPhoto.imagem_url" :alt="selPhoto.titulo" loading="lazy" decoding="async"
+                             style="width:100%;height:100%;object-fit:contain">
                     </template>
                     <template x-if="!selPhoto.imagem_url">
                         <div style="position:absolute;inset:0">
