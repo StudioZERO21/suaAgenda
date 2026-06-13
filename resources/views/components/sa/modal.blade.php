@@ -10,7 +10,7 @@
 
 <div x-show="{{ $open }}" x-cloak
      @keydown.escape.window="{{ $open }} = false"
-     style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px"
+     class="sa-modal-overlay"
      @click.self="{{ $open }} = false">
     <div style="background:var(--sa-surface);border-radius:16px;width:100%;max-width:{{ $maxW }};max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:sa-modal-in 250ms ease">
         <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">

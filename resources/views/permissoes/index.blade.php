@@ -124,10 +124,12 @@
                                     <p style="font-size:12px;color:var(--sa-text3);margin:0 0 12px;line-height:1.5" x-text="g.descricao"></p>
                                     <div style="margin-bottom:12px">
                                         <template x-for="[cat, perms] in catalogoEntries" :key="g.id + '-' + cat">
-                                            <div x-show="catPermCount(g, cat) > 0" style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--sa-border)">
-                                                <span style="font-size:11px;color:var(--sa-text3)" x-text="cat"></span>
-                                                <span style="font-size:11px;font-weight:600" :style="'color:' + g.cor" x-text="catPermCount(g, cat) + '/' + perms.length"></span>
-                                            </div>
+                                            <template x-if="catPermCount(g, cat) > 0">
+                                                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--sa-border)">
+                                                    <span style="font-size:11px;color:var(--sa-text3)" x-text="cat"></span>
+                                                    <span style="font-size:11px;font-weight:600" :style="'color:' + g.cor" x-text="catPermCount(g, cat) + '/' + perms.length"></span>
+                                                </div>
+                                            </template>
                                         </template>
                                     </div>
                                     <div x-show="assignedRoles(g.id).length > 0" style="margin-bottom:12px">
@@ -285,7 +287,7 @@
     {{-- GroupModal --}}
     <div x-show="groupModalOpen" x-cloak
          @keydown.escape.window="groupModalOpen = false"
-         style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px"
+         class="sa-modal-overlay"
          @click.self="groupModalOpen = false">
         <div style="background:var(--sa-surface);border-radius:16px;width:100%;max-width:820px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:sa-modal-in 250ms ease">
             <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">
@@ -301,12 +303,12 @@
                 <div style="display:flex;flex-direction:column;gap:16px">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                         <div>
-                            <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6">Nome do grupo</label>
+                            <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Nome do grupo</label>
                             <input type="text" x-model="groupForm.nome" placeholder="Ex: Profissional Sênior" required
                                    style="width:100%;padding:9px 12px;font-size:13px;border:1px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);outline:none;box-sizing:border-box">
                         </div>
                         <div>
-                            <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6">Descrição</label>
+                            <label style="font-size:13px;font-weight:600;color:var(--sa-text1);display:block;margin-bottom:6px">Descrição</label>
                             <textarea x-model="groupForm.descricao" rows="1" placeholder="Breve descrição"
                                       style="width:100%;padding:9px 12px;font-size:13px;border:1px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);outline:none;box-sizing:border-box;resize:vertical"></textarea>
                         </div>
@@ -369,7 +371,7 @@
     {{-- AssignModal --}}
     <div x-show="assignModalOpen" x-cloak
          @keydown.escape.window="assignModalOpen = false"
-         style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px"
+         class="sa-modal-overlay"
          @click.self="assignModalOpen = false">
         <div style="background:var(--sa-surface);border-radius:16px;width:100%;max-width:460px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:sa-modal-in 250ms ease">
             <div style="padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0">

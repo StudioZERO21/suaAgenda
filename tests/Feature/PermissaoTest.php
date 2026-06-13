@@ -52,6 +52,18 @@ describe('permissoes index', function () {
             ->assertOk();
     });
 
+    it('usa o overlay de modal centralizado por classe (não display inline)', function () {
+        // Garante que os modais não voltem ao padrão quebrado: x-show + display:flex
+        // inline (o x-show do Alpine remove o display inline e descentraliza).
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        // Os dois modais (grupo e atribuição) usam a classe.
+        expect(substr_count($html, 'sa-modal-overlay'))->toBeGreaterThanOrEqual(2);
+    });
+
     it('gestor não pode acessar permissões (sem cfg_perms)', function () {
         $this->actingAs($this->gestor)
             ->get(route('permissoes.index'))
