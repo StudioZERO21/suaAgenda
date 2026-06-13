@@ -23,6 +23,15 @@
     $dispUrl      = route('vitrine.disponibilidade', $company->slug);
     $bookBase     = route('agendar.show', $company->slug);
 
+    $fotoUrl = fn ($path) => $path ? \Illuminate\Support\Facades\Storage::url($path) : null;
+    $profsJs = $profissionais->map(fn ($p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'foto' => $p->foto_path ? \Illuminate\Support\Facades\Storage::url($p->foto_path) : null,
+        'cor' => $colorFor($p->name),
+        'especialidade' => $p->especialidade ?? 'Profissional',
+    ])->values();
+
     $descricoesServico = [
         'Corte personalizado com técnicas modernas e acabamento impecável.',
         'Modelagem e acabamento com produtos premium.',
@@ -72,7 +81,13 @@
 @endpush
 
 @section('content')
-<div style="min-height:100vh;background:var(--sa-bg)">
+<div style="min-height:100vh;background:var(--sa-bg)" x-data="vitrineBooking()">
+
+    @if($errors->any())
+    <div style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid rgba(239,68,68,.3);border-left:4px solid #ef4444;border-radius:10px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-width:calc(100vw - 32px)">
+        <span style="font-size:13px;color:#dc2626;font-weight:600">{{ $errors->first() }}</span>
+    </div>
+    @endif
 
     {{-- ── NAVBAR ───────────────────────────────────────────── --}}
     <nav style="background:rgba(10,10,10,.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);padding:0 clamp(20px,4vw,48px);display:flex;align-items:center;height:68px;position:sticky;top:0;z-index:100">
@@ -90,7 +105,7 @@
             <a href="#equipe" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Equipe</a>
             <a href="#contato" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Contato</a>
             <a href="{{ route('portal.entrar', $company->slug) }}" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Minha Área</a>
-            <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--sm" style="margin-left:8px">Agendar Agora</a>
+            <a href="{{ $bookUrl }}" @click.prevent="abrir()" class="vit-btn vit-btn--primary vit-btn--sm" style="margin-left:8px">Agendar Agora</a>
         </div>
     </nav>
 
@@ -113,7 +128,7 @@
                 {{ $vitSub }}
             </p>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--lg">{{ $vitCtaText }}</a>
+                <a href="{{ $bookUrl }}" @click.prevent="abrir()" class="vit-btn vit-btn--primary vit-btn--lg">{{ $vitCtaText }}</a>
                 @if($vitCtaSec)
                 <a href="{{ preg_match('/^\(?\d/', $vitCtaSec) ? 'tel:'.preg_replace('/\D/', '', $vitCtaSec) : $vitCtaSec }}"
                    style="display:flex;align-items:center;gap:8px;background:transparent;border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:12px 24px;color:#fff;font-size:15px;font-weight:600;text-decoration:none">
@@ -166,7 +181,7 @@
                     <p style="font-size:13px;color:var(--sa-text3);margin:0 0 20px;line-height:1.6">{{ $svc->descricao ?? $descricoesServico[$i % count($descricoesServico)] }}</p>
                     <div style="display:flex;align-items:center;justify-content:space-between">
                         <span style="font-family:var(--sa-font-heading);font-size:24px;font-weight:800;color:var(--sa-secondary)">{{ $svc->precoFormatado() }}</span>
-                        <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--sm">Agendar</a>
+                        <a href="{{ $bookUrl }}" @click.prevent="abrirServico('{{ $svc->id }}')" class="vit-btn vit-btn--primary vit-btn--sm">Agendar</a>
                     </div>
                 </div>
                 @endforeach
@@ -177,37 +192,47 @@
 
         {{-- ── EQUIPE ───────────────────────────────────────── --}}
         @if($showTeam && $profissionais->isNotEmpty())
-        <div id="equipe" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px" x-data="equipeApp()">
+        <div id="equipe" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px">
             <div style="text-align:center;margin-bottom:48px">
                 <p class="vit-kicker">Quem faz acontecer</p>
                 <h2 class="vit-h2" style="margin:0">Nossa Equipe</h2>
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px">
                 @foreach($profissionais as $prof)
-                @php $cor = $colorFor($prof->name); @endphp
+                @php $cor = $colorFor($prof->name); $foto = $fotoUrl($prof->foto_path); @endphp
                 <div class="vit-card" style="overflow:hidden">
-                    <div style="position:relative;height:220px;background:{{ $cor }}18;display:flex;align-items:center;justify-content:center">
-                        <div style="width:96px;height:96px;border-radius:50%;background:{{ $cor }};color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--sa-font-heading);font-size:34px;font-weight:700">
-                            {{ strtoupper(mb_substr($prof->name, 0, 1)) }}
+                    <div style="position:relative;height:240px;background:linear-gradient(160deg,{{ $cor }}22,{{ $cor }}0a)">
+                        @if($foto)
+                        <img src="{{ $foto }}" alt="{{ $prof->name }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+                        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 45%)"></div>
+                        @else
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+                            <div style="width:104px;height:104px;border-radius:50%;background:{{ $cor }};color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--sa-font-heading);font-size:38px;font-weight:700;box-shadow:0 8px 24px {{ $cor }}55">
+                                {{ strtoupper(mb_substr($prof->name, 0, 1)) }}
+                            </div>
                         </div>
-                        <div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px">
+                        @endif
+                        <div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px)">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="#fbbf24" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                             <span style="font-size:12px;font-weight:700;color:#fff">4.9</span>
                         </div>
+                        @if($foto)
+                        <div style="position:absolute;left:18px;bottom:14px">
+                            <h3 style="font-family:var(--sa-font-heading);font-size:19px;font-weight:700;color:#fff;margin:0;text-shadow:0 1px 4px rgba(0,0,0,.4)">{{ $prof->name }}</h3>
+                            <p style="font-size:12px;color:rgba(255,255,255,.85);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:2px 0 0">{{ $prof->especialidade ?? 'Profissional' }}</p>
+                        </div>
+                        @endif
                     </div>
                     <div style="padding:24px">
+                        @unless($foto)
                         <h3 style="font-family:var(--sa-font-heading);font-size:18px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">{{ $prof->name }}</h3>
                         <p style="font-size:12px;color:var(--sa-secondary);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px">{{ $prof->especialidade ?? 'Profissional' }}</p>
+                        @endunless
                         <p style="font-size:13px;color:var(--sa-text3);line-height:1.7;margin:0 0 20px">
                             {{ $prof->agendamentos_count }} atendimento{{ $prof->agendamentos_count === 1 ? '' : 's' }} realizados. Profissional dedicado a entregar o melhor resultado.
                         </p>
-                        @if($prof->especialidade)
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
-                            <span style="font-size:11px;font-weight:600;color:var(--sa-secondary);background:color-mix(in srgb,var(--sa-secondary) 12%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 30%,transparent);border-radius:20px;padding:3px 10px">{{ $prof->especialidade }}</span>
-                        </div>
-                        @endif
                         <button type="button" class="vit-btn vit-btn--primary vit-btn--sm" style="width:100%"
-                                @click="abrir('{{ $prof->id }}', @js($prof->name), '{{ $cor }}')">
+                                @click="abrirProfissional('{{ $prof->id }}')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             Ver Horários
                         </button>
@@ -215,131 +240,7 @@
                 </div>
                 @endforeach
             </div>
-
-            {{-- ── MODAL: Horários do profissional ───────────────── --}}
-            <div x-show="aberto" x-cloak @keydown.escape.window="fechar()"
-                 style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px"
-                 @click.self="fechar()">
-                <div style="background:var(--sa-surface);border-radius:16px;width:min(560px, calc(100vw - 24px));max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25);padding:24px 26px">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px">
-                        <div style="display:flex;align-items:center;gap:12px;min-width:0">
-                            <div :style="`width:44px;height:44px;border-radius:50%;background:${cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`"
-                                 x-text="profNome.charAt(0).toUpperCase()"></div>
-                            <div style="min-width:0">
-                                <div style="font-family:var(--sa-font-heading);font-size:17px;font-weight:700;color:var(--sa-text1)" x-text="profNome"></div>
-                                <div style="font-size:12px;color:var(--sa-text3)">Escolha o serviço e o horário</div>
-                            </div>
-                        </div>
-                        <button type="button" @click="fechar()" style="background:none;border:none;cursor:pointer;color:var(--sa-text3);padding:4px;flex-shrink:0">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                    </div>
-
-                    {{-- Serviço --}}
-                    <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">Serviço</label>
-                    <select x-model="servicoSel" @change="buscar()"
-                            style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;font-family:var(--sa-font-body);color:var(--sa-text1);background:var(--sa-surface);outline:none;cursor:pointer;margin-bottom:18px">
-                        <template x-for="s in servicosDoProf" :key="s.id">
-                            <option :value="s.id" x-text="s.nome + ' — ' + s.preco"></option>
-                        </template>
-                    </select>
-
-                    {{-- Abas de dia --}}
-                    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px">
-                        <template x-for="(d, i) in dias" :key="d.iso">
-                            <button type="button" @click="diaSel = d.iso; buscar()"
-                                    :style="diaSel === d.iso ? 'border-color:var(--sa-secondary);background:var(--sa-secondary);color:#fff' : 'border-color:var(--sa-border);background:var(--sa-surface);color:var(--sa-text1)'"
-                                    style="padding:9px 14px;border-radius:10px;border:1.5px solid;min-width:62px;flex-shrink:0;cursor:pointer;text-align:center;transition:all 180ms">
-                                <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.7" x-text="i === 0 ? 'Hoje' : d.weekday"></div>
-                                <div style="font-family:var(--sa-font-heading);font-size:18px;font-weight:700;line-height:1.1" x-text="d.day"></div>
-                            </button>
-                        </template>
-                    </div>
-
-                    {{-- Estado / contador --}}
-                    <div x-show="!carregando" x-cloak style="margin-bottom:14px">
-                        <div :style="livres > 0 ? 'background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#059669' : 'background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);color:#dc2626'"
-                             style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid">
-                            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
-                            <span style="font-size:13px;font-weight:600" x-text="livres > 0 ? (livres + ' horários disponíveis') : 'Sem horários neste dia'"></span>
-                        </div>
-                    </div>
-
-                    {{-- Slots --}}
-                    <div x-show="!carregando" x-cloak style="display:flex;flex-wrap:wrap;gap:10px">
-                        <template x-for="slot in slots" :key="slot.hora">
-                            <button type="button" x-show="slot.disponivel" @click="ir(slot.hora)"
-                                    :style="`background:color-mix(in srgb,${cor} 10%,transparent);color:${cor};border:1.5px solid color-mix(in srgb,${cor} 35%,transparent)`"
-                                    style="padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sa-font-body);transition:filter 150ms"
-                                    @mouseenter="$el.style.filter='brightness(1.12)'" @mouseleave="$el.style.filter='none'"
-                                    x-text="slot.hora"></button>
-                        </template>
-                    </div>
-
-                    <div x-show="carregando" x-cloak style="text-align:center;padding:24px;color:var(--sa-text3);font-size:14px">Buscando horários…</div>
-                </div>
-            </div>
         </div>
-        <script>
-        function equipeApp() {
-            const SERVICOS = @json($servicosMap);
-            const semana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-            return {
-                aberto: false,
-                profId: null, profNome: '', cor: 'var(--sa-primary)',
-                servicosDoProf: [], servicoSel: '',
-                dias: [], diaSel: '',
-                slots: [], carregando: false,
-                get livres() { return this.slots.filter(s => s.disponivel).length; },
-
-                gerarDias() {
-                    const dias = [];
-                    for (let i = 0; i < 14; i++) {
-                        const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + i);
-                        dias.push({
-                            iso: d.toISOString().split('T')[0],
-                            weekday: semana[d.getDay()],
-                            day: String(d.getDate()).padStart(2,'0'),
-                        });
-                    }
-                    this.dias = dias;
-                },
-
-                abrir(profId, nome, cor) {
-                    this.profId = profId; this.profNome = nome; this.cor = cor;
-                    this.servicosDoProf = Object.entries(SERVICOS)
-                        .filter(([, s]) => s.profissionais.includes(profId))
-                        .map(([id, s]) => ({ id, nome: s.nome, preco: s.preco }));
-                    this.servicoSel = this.servicosDoProf[0]?.id ?? '';
-                    if (!this.dias.length) this.gerarDias();
-                    this.diaSel = this.dias[0].iso;
-                    this.slots = [];
-                    this.aberto = true;
-                    if (this.servicoSel) this.buscar();
-                },
-
-                fechar() { this.aberto = false; },
-
-                async buscar() {
-                    if (!this.servicoSel || !this.diaSel) { this.slots = []; return; }
-                    this.carregando = true; this.slots = [];
-                    try {
-                        const r = await fetch(`{{ $dispUrl }}?servico_id=${this.servicoSel}&data=${this.diaSel}`);
-                        if (r.ok) {
-                            const rows = await r.json();
-                            const row = rows.find(x => x.profissional.id === this.profId);
-                            this.slots = row ? row.slots : [];
-                        }
-                    } catch (e) { this.slots = []; }
-                    this.carregando = false;
-                },
-
-                ir(hora) {
-                    window.location = `{{ $bookBase }}?servico_id=${this.servicoSel}&profissional_id=${this.profId}&data=${this.diaSel}&hora=${hora}`;
-                },
-            };
-        }
-        </script>
         @endif
 
         {{-- ── DEPOIMENTOS ──────────────────────────────────── --}}
@@ -382,7 +283,7 @@
             <h2 style="font-family:var(--sa-font-heading);font-size:clamp(30px,5vw,42px);font-weight:800;color:#fff;margin:0 0 18px;line-height:1.1">Agende seu horário hoje mesmo</h2>
             <p style="font-size:16px;color:rgba(255,255,255,.55);margin:0 0 36px;line-height:1.7">Confirmação imediata. Sem filas, sem espera.</p>
             <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-                <a href="{{ $bookUrl }}" class="vit-btn vit-btn--primary vit-btn--lg">Agendar Agora</a>
+                <a href="{{ $bookUrl }}" @click.prevent="abrir()" class="vit-btn vit-btn--primary vit-btn--lg">Agendar Agora</a>
                 <a href="tel:{{ preg_replace('/\D/', '', $telefone) }}" style="display:flex;align-items:center;gap:8px;background:transparent;border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:14px 28px;color:#fff;font-size:15px;font-weight:600;text-decoration:none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     Ligar Agora
@@ -440,7 +341,331 @@
             <span style="font-size:11px;color:rgba(255,255,255,.15)">{{ $vitFooter ?? 'Powered by suaAgenda.pro' }}</span>
         </div>
     </footer>
+
+    {{-- ══ MODAL DE AGENDAMENTO (centralizado) ═══════════════════ --}}
+    <div x-show="aberto" x-cloak @keydown.escape.window="fechar()"
+         style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px"
+         @click.self="fechar()">
+        <div style="background:var(--sa-surface);border-radius:18px;width:min(540px, calc(100vw - 24px));max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.28)">
+            {{-- Header --}}
+            <div style="display:flex;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--sa-border);position:sticky;top:0;background:var(--sa-surface);z-index:2">
+                <button type="button" x-show="podeVoltar" @click="voltar()"
+                        style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:8px;background:transparent;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div style="flex:1;min-width:0">
+                    <div style="font-family:var(--sa-font-heading);font-size:17px;font-weight:700;color:var(--sa-text1)" x-text="tituloEtapa"></div>
+                    <div style="font-size:12px;color:var(--sa-text3)" x-text="subtituloEtapa"></div>
+                </div>
+                <button type="button" @click="fechar()" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div style="padding:22px 24px 26px">
+                {{-- ETAPA: SERVIÇO --}}
+                <div x-show="step === 'servico'" style="display:flex;flex-direction:column;gap:12px">
+                    <template x-for="s in servicos" :key="s.id">
+                        <button type="button" @click="escolherServico(s.id)"
+                                style="display:flex;align-items:center;gap:14px;width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;text-align:left;transition:all 150ms"
+                                @mouseenter="$el.style.borderColor='var(--sa-primary)'" @mouseleave="$el.style.borderColor='var(--sa-border)'">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="s.nome"></div>
+                            </div>
+                            <div style="font-size:14px;font-weight:700;color:var(--sa-secondary);flex-shrink:0" x-text="s.preco"></div>
+                        </button>
+                    </template>
+                </div>
+
+                {{-- ETAPA: PROFISSIONAL --}}
+                <div x-show="step === 'profissional'" style="display:flex;flex-direction:column;gap:12px">
+                    <template x-for="p in profsDoServico" :key="p.id">
+                        <button type="button" @click="escolherProfissional(p.id)"
+                                style="display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;text-align:left;transition:all 150ms"
+                                @mouseenter="$el.style.borderColor='var(--sa-primary)'" @mouseleave="$el.style.borderColor='var(--sa-border)'">
+                            <template x-if="p.foto">
+                                <img :src="p.foto" :alt="p.name" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                            </template>
+                            <template x-if="!p.foto">
+                                <div :style="`width:48px;height:48px;border-radius:50%;background:${p.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`" x-text="p.name.charAt(0).toUpperCase()"></div>
+                            </template>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="p.name"></div>
+                                <div style="font-size:12px;color:var(--sa-text3)" x-text="p.especialidade"></div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </template>
+                </div>
+
+                {{-- ETAPA: HORÁRIO --}}
+                <div x-show="step === 'horario'">
+                    {{-- Card do profissional --}}
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--sa-surface2);border-radius:12px">
+                        <template x-if="prof && prof.foto">
+                            <img :src="prof.foto" :alt="prof.name" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                        </template>
+                        <template x-if="prof && !prof.foto">
+                            <div :style="`width:44px;height:44px;border-radius:50%;background:${prof.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`" x-text="prof.name.charAt(0).toUpperCase()"></div>
+                        </template>
+                        <div style="min-width:0">
+                            <div style="font-size:14px;font-weight:700;color:var(--sa-text1)" x-text="prof?.name"></div>
+                            <div style="font-size:12px;color:var(--sa-text3)" x-text="servicoNome"></div>
+                        </div>
+                    </div>
+
+                    {{-- Abas de dia --}}
+                    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px">
+                        <template x-for="(d, i) in dias" :key="d.iso">
+                            <button type="button" @click="diaSel = d.iso; buscar()"
+                                    :style="diaSel === d.iso ? 'border-color:var(--sa-secondary);background:var(--sa-secondary);color:#fff' : 'border-color:var(--sa-border);background:var(--sa-surface);color:var(--sa-text1)'"
+                                    style="padding:9px 14px;border-radius:10px;border:1.5px solid;min-width:62px;flex-shrink:0;cursor:pointer;text-align:center;transition:all 180ms">
+                                <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.7" x-text="i === 0 ? 'Hoje' : d.weekday"></div>
+                                <div style="font-family:var(--sa-font-heading);font-size:18px;font-weight:700;line-height:1.1" x-text="d.day"></div>
+                            </button>
+                        </template>
+                    </div>
+
+                    <div x-show="!carregando" style="margin-bottom:14px">
+                        <div :style="livres > 0 ? 'background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#059669' : 'background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);color:#dc2626'"
+                             style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid">
+                            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
+                            <span style="font-size:13px;font-weight:600" x-text="livres > 0 ? (livres + ' horários disponíveis') : 'Sem horários neste dia'"></span>
+                        </div>
+                    </div>
+
+                    <div x-show="!carregando">
+                        <template x-for="grupo in slotsAgrupados" :key="grupo.label">
+                            <div style="margin-bottom:16px">
+                                <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px" x-text="grupo.label"></div>
+                                <div style="display:flex;flex-wrap:wrap;gap:10px">
+                                    <template x-for="slot in grupo.slots" :key="slot.hora">
+                                        <button type="button" @click="escolherHorario(slot.hora)"
+                                                :style="`background:color-mix(in srgb,${prof?.cor || 'var(--sa-primary)'} 10%,transparent);color:${prof?.cor || 'var(--sa-primary)'};border:1.5px solid color-mix(in srgb,${prof?.cor || 'var(--sa-primary)'} 35%,transparent)`"
+                                                style="padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sa-font-body);transition:filter 150ms"
+                                                @mouseenter="$el.style.filter='brightness(1.12)'" @mouseleave="$el.style.filter='none'"
+                                                x-text="slot.hora"></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div x-show="carregando" style="text-align:center;padding:24px;color:var(--sa-text3);font-size:14px">Buscando horários…</div>
+                </div>
+
+                {{-- ETAPA: DADOS --}}
+                <div x-show="step === 'dados'">
+                    <div style="background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 20%,transparent);border-radius:10px;padding:14px 16px;margin-bottom:18px">
+                        <div style="font-size:13px;color:var(--sa-text2);display:flex;flex-direction:column;gap:4px">
+                            <span style="font-weight:600;color:var(--sa-text1)" x-text="servicoNome"></span>
+                            <span style="color:var(--sa-text3)" x-text="prof?.name"></span>
+                            <span style="font-weight:600;color:var(--sa-secondary)" x-text="dataExtenso + ' às ' + horario"></span>
+                        </div>
+                    </div>
+
+                    @if($politicaAgendamento ?? null)
+                    <div style="background:var(--sa-surface2);border:1px solid var(--sa-border);border-radius:10px;padding:12px 14px;margin-bottom:18px">
+                        <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.6">{{ $politicaAgendamento }}</p>
+                    </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('agendar.store', $company->slug) }}" @submit="enviando = true" style="display:flex;flex-direction:column;gap:16px">
+                        @csrf
+                        <input type="hidden" name="servico_id" :value="servicoId">
+                        <input type="hidden" name="profissional_id" :value="profId">
+                        <input type="hidden" name="data_hora" :value="diaSel + ' ' + horario">
+
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">Nome completo <span style="color:var(--sa-secondary)">*</span></label>
+                            <input type="text" name="cliente_nome" required
+                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
+                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">WhatsApp / Telefone <span style="color:var(--sa-secondary)">*</span></label>
+                            <input type="tel" name="cliente_phone" required placeholder="(11) 99999-9999"
+                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
+                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">E-mail (opcional)</label>
+                            <input type="email" name="cliente_email"
+                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
+                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                        </div>
+                        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+                            <input type="checkbox" name="consent" value="1" required style="margin-top:2px;accent-color:var(--sa-primary);flex-shrink:0">
+                            <span style="font-size:12px;color:var(--sa-text3);line-height:1.6">Concordo com o uso dos meus dados para o agendamento e autorizo o contato via WhatsApp/e-mail.</span>
+                        </label>
+                        <button type="submit" :disabled="enviando" :style="enviando ? 'opacity:.6;cursor:not-allowed' : ''"
+                                style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
+                                onmouseover="if(!this.disabled)this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span x-text="enviando ? 'Enviando…' : 'Confirmar agendamento'"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@push('scripts')
+<script>
+function vitrineBooking() {
+    const SERVICOS = @json($servicosMap);
+    const PROFS = @json($profsJs);
+    const semana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const dispUrl = '{{ $dispUrl }}';
+
+    return {
+        aberto: false,
+        step: 'servico',
+        servicoId: '', servicoNome: '',
+        profId: '',
+        dias: [], diaSel: '',
+        slots: [], carregando: false,
+        horario: '', dataExtenso: '',
+        enviando: false,
+
+        get servicos() {
+            return Object.entries(SERVICOS).map(([id, s]) => ({ id, nome: s.nome, preco: s.preco }));
+        },
+        get profsDoServico() {
+            const ids = SERVICOS[this.servicoId]?.profissionais ?? [];
+            return PROFS.filter(p => ids.includes(p.id));
+        },
+        get prof() {
+            return PROFS.find(p => p.id === this.profId) ?? null;
+        },
+        get livres() {
+            return this.slots.filter(s => s.disponivel).length;
+        },
+        get slotsAgrupados() {
+            const livres = this.slots.filter(s => s.disponivel);
+            const grupos = [
+                { label: 'Manhã', min: 0, max: 12 },
+                { label: 'Tarde', min: 12, max: 18 },
+                { label: 'Noite', min: 18, max: 24 },
+            ];
+            return grupos
+                .map(g => ({ label: g.label, slots: livres.filter(s => { const h = parseInt(s.hora.split(':')[0], 10); return h >= g.min && h < g.max; }) }))
+                .filter(g => g.slots.length > 0);
+        },
+        get podeVoltar() {
+            return this.step === 'profissional' || this.step === 'horario' || this.step === 'dados';
+        },
+        get tituloEtapa() {
+            return {
+                servico: 'Escolha o serviço',
+                profissional: 'Escolha o profissional',
+                horario: 'Escolha o horário',
+                dados: 'Seus dados',
+            }[this.step] ?? 'Agendar';
+        },
+        get subtituloEtapa() {
+            if (this.step === 'profissional') return this.servicoNome;
+            if (this.step === 'horario') return this.servicoNome;
+            return '{{ $company->name }}';
+        },
+
+        gerarDias() {
+            const dias = [];
+            for (let i = 0; i < 14; i++) {
+                const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i);
+                dias.push({
+                    iso: d.toISOString().split('T')[0],
+                    weekday: semana[d.getDay()],
+                    day: String(d.getDate()).padStart(2, '0'),
+                });
+            }
+            this.dias = dias;
+            this.diaSel = dias[0].iso;
+        },
+
+        reset() {
+            this.step = 'servico';
+            this.servicoId = ''; this.servicoNome = '';
+            this.profId = ''; this.horario = ''; this.slots = [];
+            this.enviando = false;
+            this.gerarDias();
+        },
+
+        abrir() { this.reset(); this.aberto = true; },
+
+        abrirServico(id) {
+            this.reset();
+            this.escolherServico(id);
+            this.aberto = true;
+        },
+
+        abrirProfissional(id) {
+            this.reset();
+            this.profId = id;
+            // Serviços que este profissional realiza
+            const servs = this.servicos.filter(s => (SERVICOS[s.id]?.profissionais ?? []).includes(id));
+            if (servs.length === 1) {
+                this.servicoId = servs[0].id;
+                this.servicoNome = servs[0].nome;
+                this.step = 'horario';
+                this.buscar();
+            } else {
+                this.step = 'servico';
+            }
+            this.aberto = true;
+        },
+
+        escolherServico(id) {
+            this.servicoId = id;
+            this.servicoNome = SERVICOS[id]?.nome ?? '';
+            if (this.profId && (SERVICOS[id]?.profissionais ?? []).includes(this.profId)) {
+                this.step = 'horario';
+                this.buscar();
+            } else {
+                this.profId = '';
+                this.step = 'profissional';
+            }
+        },
+
+        escolherProfissional(id) {
+            this.profId = id;
+            this.step = 'horario';
+            this.buscar();
+        },
+
+        escolherHorario(hora) {
+            this.horario = hora;
+            const [y, m, d] = this.diaSel.split('-');
+            this.dataExtenso = `${d}/${m}/${y}`;
+            this.step = 'dados';
+        },
+
+        voltar() {
+            if (this.step === 'dados') this.step = 'horario';
+            else if (this.step === 'horario') this.step = this.profsDoServico.length ? 'profissional' : 'servico';
+            else if (this.step === 'profissional') this.step = 'servico';
+        },
+
+        fechar() { this.aberto = false; },
+
+        async buscar() {
+            if (!this.servicoId || !this.diaSel || !this.profId) { this.slots = []; return; }
+            this.carregando = true; this.slots = [];
+            try {
+                const r = await fetch(`${dispUrl}?servico_id=${this.servicoId}&data=${this.diaSel}`);
+                if (r.ok) {
+                    const rows = await r.json();
+                    const row = rows.find(x => x.profissional.id === this.profId);
+                    this.slots = row ? row.slots : [];
+                }
+            } catch (e) { this.slots = []; }
+            this.carregando = false;
+        },
+    };
+}
+</script>
+@endpush
 
 @push('styles')
 <style>
