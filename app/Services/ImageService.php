@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Otimização de imagens no upload (GD): redimensiona o maior lado para no
- * máximo {maxSide}px e recomprime, reduzindo o espaço em disco sem perda
- * visível de qualidade. Preserva o formato (e a transparência de PNG/WebP).
+ * Otimização de imagens (GD): redimensiona o maior lado para no máximo
+ * {maxSide}px e recomprime, reduzindo o espaço em disco sem perda visível
+ * de qualidade. Preserva o formato (e a transparência de PNG/WebP).
  */
 class ImageService
 {
@@ -21,22 +21,20 @@ class ImageService
     ) {}
 
     /**
-     * Otimiza e armazena a imagem no disco indicado, retornando o caminho.
-     * Se o GD não estiver disponível ou o arquivo não for imagem suportada,
-     * faz fallback para o armazenamento normal (sem otimizar).
+     * Otimiza e armazena a imagem enviada, retornando o caminho.
+     * Faz fallback para o armazenamento normal se não for processável.
      */
     public function store(UploadedFile $file, string $dir, string $disk = 'public'): string
     {
         $dir = trim($dir, '/');
 
-        $binary = $this->optimize($file);
+        $binary = $this->optimizeBinary((string) file_get_contents($file->getRealPath()));
 
         if ($binary === null) {
-            // Fallback seguro: guarda o original.
             return $file->store($dir, $disk);
         }
 
-        [$ext] = $this->targetFormat($file);
+        $ext = $this->extensionFor((string) file_get_contents($file->getRealPath()));
         $path = $dir.'/'.Str::uuid()->toString().'.'.$ext;
 
         Storage::disk($disk)->put($path, $binary);
@@ -45,24 +43,65 @@ class ImageService
     }
 
     /**
-     * Gera o binário otimizado (ou null se não for possível processar).
+     * Reprocessa um arquivo já existente no disco, sobrescrevendo no mesmo
+     * caminho. Só regrava se o resultado for menor que o original (evita
+     * crescer ou degradar imagens já otimizadas — idempotente na prática).
+     *
+     * @return array{status:string, antes:int, depois:int}
      */
+    public function reprocessar(string $path, string $disk = 'public'): array
+    {
+        $store = Storage::disk($disk);
+
+        if (! $store->exists($path)) {
+            return ['status' => 'ausente', 'antes' => 0, 'depois' => 0];
+        }
+
+        $original = (string) $store->get($path);
+        $antes = strlen($original);
+
+        $otimizado = $this->optimizeBinary($original);
+
+        if ($otimizado === null) {
+            return ['status' => 'ignorado', 'antes' => $antes, 'depois' => $antes];
+        }
+
+        $depois = strlen($otimizado);
+
+        if ($depois >= $antes) {
+            return ['status' => 'ja-otimizado', 'antes' => $antes, 'depois' => $antes];
+        }
+
+        $store->put($path, $otimizado);
+
+        return ['status' => 'otimizado', 'antes' => $antes, 'depois' => $depois];
+    }
+
     public function optimize(UploadedFile $file): ?string
     {
-        if (! function_exists('imagecreatetruecolor')) {
+        return $this->optimizeBinary((string) file_get_contents($file->getRealPath()));
+    }
+
+    /**
+     * Núcleo: recebe o binário da imagem e devolve o binário otimizado
+     * (ou null se não for possível processar com o GD).
+     */
+    public function optimizeBinary(string $contents): ?string
+    {
+        if (! function_exists('imagecreatefromstring')) {
             return null;
         }
 
-        $info = @getimagesize($file->getRealPath());
+        $info = @getimagesizefromstring($contents);
         if ($info === false) {
             return null;
         }
 
         [$width, $height] = $info;
-        $mime = $info['mime'] ?? $file->getMimeType();
+        $mime = $info['mime'] ?? 'image/jpeg';
 
-        $src = $this->createFromFile($file->getRealPath(), $mime);
-        if ($src === null) {
+        $src = @imagecreatefromstring($contents);
+        if (! $src) {
             return null;
         }
 
@@ -73,7 +112,6 @@ class ImageService
 
         $dst = imagecreatetruecolor($novoW, $novoH);
 
-        // Preserva transparência (PNG/WebP).
         if (in_array($mime, ['image/png', 'image/webp'], true)) {
             imagealphablending($dst, false);
             imagesavealpha($dst, true);
@@ -84,8 +122,7 @@ class ImageService
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $novoW, $novoH, $width, $height);
 
         ob_start();
-        [, $writer] = $this->targetFormat(null, $mime);
-        $writer($dst);
+        $this->writer($mime)($dst);
         $binary = ob_get_clean();
 
         imagedestroy($src);
@@ -94,31 +131,25 @@ class ImageService
         return $binary !== false ? $binary : null;
     }
 
-    /**
-     * @return array{0:string,1:callable} [extensão, escritor GD]
-     */
-    private function targetFormat(?UploadedFile $file, ?string $mime = null): array
+    private function extensionFor(string $contents): string
     {
-        $mime ??= $file?->getMimeType();
+        $info = @getimagesizefromstring($contents);
 
-        return match ($mime) {
-            'image/png' => ['png', fn ($img) => imagepng($img, null, 6)],
-            'image/webp' => ['webp', fn ($img) => imagewebp($img, null, $this->quality)],
-            'image/gif' => ['gif', fn ($img) => imagegif($img)],
-            default => ['jpg', fn ($img) => imagejpeg($img, null, $this->quality)],
+        return match ($info['mime'] ?? null) {
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => 'jpg',
         };
     }
 
-    private function createFromFile(string $path, string $mime): ?\GdImage
+    private function writer(string $mime): callable
     {
-        $img = match ($mime) {
-            'image/png' => @imagecreatefrompng($path),
-            'image/webp' => @imagecreatefromwebp($path),
-            'image/gif' => @imagecreatefromgif($path),
-            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($path),
-            default => false,
+        return match ($mime) {
+            'image/png' => fn ($img) => imagepng($img, null, 6),
+            'image/webp' => fn ($img) => imagewebp($img, null, $this->quality),
+            'image/gif' => fn ($img) => imagegif($img),
+            default => fn ($img) => imagejpeg($img, null, $this->quality),
         };
-
-        return $img ?: null;
     }
 }
