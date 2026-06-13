@@ -41,6 +41,7 @@ class StoreAgendamentoPublicoRequest extends FormRequest
             'cliente_phone' => ['required', 'string', 'max:20'],
             'cliente_email' => ['nullable', 'email', 'max:150'],
             'observacao' => ['nullable', 'string', 'max:500'],
+            'consent' => ['accepted'],
         ];
     }
 
@@ -49,6 +50,7 @@ class StoreAgendamentoPublicoRequest extends FormRequest
         return [
             'profissional_id.exists' => 'Profissional inválido para este estabelecimento.',
             'servico_id.exists' => 'Serviço inválido para este estabelecimento.',
+            'consent.accepted' => 'É necessário concordar com o uso dos seus dados para agendar.',
         ];
     }
 }

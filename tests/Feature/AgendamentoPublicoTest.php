@@ -89,6 +89,12 @@ describe('agendamento_publico', function () {
     });
 
     it('cria agendamento público com dados do cliente', function () {
+        HorarioTrabalho::create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'dia_semana' => (int) now()->addDay()->format('w'),
+            'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
+        ]);
         $dataHora = now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s');
 
         $response = $this->post(route('agendar.store', $this->company->slug), [
@@ -98,6 +104,7 @@ describe('agendamento_publico', function () {
             'cliente_nome' => 'Maria Silva',
             'cliente_phone' => '11999999999',
             'cliente_email' => 'maria@exemplo.com',
+            'consent' => 1,
         ]);
 
         $response->assertRedirect();
@@ -200,6 +207,12 @@ describe('agendamento_publico', function () {
     });
 
     it('confirm_required=false (padrão) cria agendamento com status confirmado automaticamente', function () {
+        HorarioTrabalho::create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'dia_semana' => (int) now()->addDay()->format('w'),
+            'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
+        ]);
         $this->post(route('agendar.store', $this->company->slug), [
             'servico_id' => $this->servico->id,
             'profissional_id' => $this->profissional->id,
@@ -207,6 +220,7 @@ describe('agendamento_publico', function () {
             'cliente_nome' => 'Auto Confirmado',
             'cliente_phone' => '11988888888',
             'cliente_email' => 'auto@teste.com',
+            'consent' => 1,
         ]);
 
         $ag = Agendamento::where('company_id', $this->company->id)->first();
@@ -218,12 +232,19 @@ describe('agendamento_publico', function () {
         $settings['advanced']['confirm_required'] = true;
         $this->company->update(['settings' => $settings]);
 
+        HorarioTrabalho::create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'dia_semana' => (int) now()->addDay()->format('w'),
+            'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
+        ]);
         $this->post(route('agendar.store', $this->company->slug), [
             'servico_id' => $this->servico->id,
             'profissional_id' => $this->profissional->id,
             'data_hora' => now()->addDay()->setTime(11, 0)->format('Y-m-d H:i:s'),
             'cliente_nome' => 'Pendente',
             'cliente_phone' => '11977777777',
+            'consent' => 1,
         ]);
 
         $ag = Agendamento::where('company_id', $this->company->id)->first();

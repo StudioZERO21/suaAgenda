@@ -66,43 +66,15 @@ describe('vitrine_landing', function () {
 });
 
 describe('minhas_reservas', function () {
-    it('exibe página sem reservas quando sem telefone', function () {
+    // Busca por telefone aposentada (expunha agenda de qualquer cliente):
+    // agora redireciona para o portal autenticado por link mágico.
+    it('redireciona para o portal autenticado', function () {
         $this->get(route('vitrine.minhas-reservas', $this->company->slug))
-            ->assertOk()
-            ->assertViewIs('public.minhas-reservas');
+            ->assertRedirect(route('portal.entrar', $this->company->slug));
     });
 
-    it('exibe reservas do cliente quando telefone é informado', function () {
-        $cliente = Cliente::create([
-            'company_id' => $this->company->id, 'name' => 'Maria', 'phone' => '11999990088',
-        ]);
-
-        Agendamento::create([
-            'company_id' => $this->company->id,
-            'profissional_id' => $this->profissional->id,
-            'servico_id' => $this->servico->id,
-            'cliente_id' => $cliente->id,
-            'data_hora' => now()->addDays(2),
-            'duracao' => 30,
-            'status' => Agendamento::STATUS_CONFIRMADO,
-            'cancel_token' => Agendamento::generateCancelToken(),
-        ]);
-
-        $response = $this->get(route('vitrine.minhas-reservas', $this->company->slug).'?phone=11999990088');
-        $response->assertOk();
-        $agendamentos = $response->viewData('agendamentos');
-        expect($agendamentos->count())->toBe(1);
-    });
-
-    it('retorna lista vazia para telefone sem cadastro', function () {
-        $response = $this->get(route('vitrine.minhas-reservas', $this->company->slug).'?phone=11000000000');
-        $response->assertOk();
-        $agendamentos = $response->viewData('agendamentos');
-        expect($agendamentos)->toBeEmpty();
-    });
-
-    it('retorna 404 para slug inexistente', function () {
-        $this->get(route('vitrine.minhas-reservas', 'slug-falso'))
-            ->assertNotFound();
+    it('ignora telefone na query e ainda redireciona ao portal', function () {
+        $this->get(route('vitrine.minhas-reservas', $this->company->slug).'?phone=11999990088')
+            ->assertRedirect(route('portal.entrar', $this->company->slug));
     });
 });

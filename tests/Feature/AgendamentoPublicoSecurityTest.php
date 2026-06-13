@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,6 +42,14 @@ beforeEach(function () {
     $this->profissionalOutraEmpresa = Profissional::create([
         'company_id' => $this->outraEmpresa->id,
         'name' => 'Bruno', 'especialidade' => 'Barbeiro', 'ativo' => true,
+    ]);
+
+    $this->profissional->servicos()->attach($this->servico->id);
+    HorarioTrabalho::create([
+        'empresa_id' => $this->company->id,
+        'profissional_id' => $this->profissional->id,
+        'dia_semana' => (int) now()->addDay()->format('w'),
+        'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
     ]);
 });
 
@@ -100,6 +109,7 @@ describe('agendamento_publico_seguranca', function () {
             'data_hora' => now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s'),
             'cliente_nome' => 'Maria Silva',
             'cliente_phone' => '11999999999',
+            'consent' => 1,
         ])->assertSessionDoesntHaveErrors()->assertRedirect();
 
         expect(Agendamento::where('company_id', $this->company->id)->count())->toBe(1);
