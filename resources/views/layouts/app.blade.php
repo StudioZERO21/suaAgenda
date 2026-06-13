@@ -520,6 +520,21 @@
             .sa-app-header { padding: 16px 16px 0; }
             .sa-page-body { padding: 16px 16px 0 !important; }
             .hide-mobile { display: none; }
+            /* Modais ocupam quase a largura da tela, com folga lateral */
+            .sa-modal, [class*="modal"] > div { max-width: calc(100vw - 24px) !important; }
+        }
+        /* ── Extra-small (≤374px): aperta paddings e tipografia ─── */
+        @media (max-width: 374px) {
+            .sa-app-header { padding: 14px 12px 0; }
+            .sa-page-body { padding: 14px 12px 0 !important; }
+            .sa-topbar { padding: 8px 12px !important; }
+            .sa-app-header__title { font-size: 19px !important; }
+            .sa-grid-4 { gap: 12px; }
+        }
+        /* Tabelas largas: rolagem horizontal em telas estreitas */
+        @media (max-width: 768px) {
+            .sa-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .sa-table-scroll > table { min-width: 560px; }
         }
 
         /* ── Mobile overlay & drawer ──────────────────────────── */
