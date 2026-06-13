@@ -18,6 +18,7 @@
     $showStats    = ($cfg['show_stats']        ?? true)  !== false;
     $showServices = ($cfg['show_services']     ?? true)  !== false;
     $showTeam     = ($cfg['show_team']         ?? true)  !== false;
+    $showGallery  = ($cfg['show_gallery']      ?? true)  !== false;
     $showTestimon = ($cfg['show_testimonials'] ?? true)  !== false;
     $showBookCta  = ($cfg['show_booking_cta']  ?? true)  !== false;
     $dispUrl      = route('vitrine.disponibilidade', $company->slug);
@@ -103,6 +104,9 @@
         <div style="display:flex;gap:28px;align-items:center">
             <a href="#servicos" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Serviços</a>
             <a href="#equipe" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Equipe</a>
+            @if($showGallery && $portfolio->isNotEmpty())
+            <a href="#galeria" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Galeria</a>
+            @endif
             <a href="#contato" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Contato</a>
             <a href="{{ route('portal.entrar', $company->slug) }}" class="vit-nav-link" style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;font-weight:500">Minha Área</a>
             <a href="{{ $bookUrl }}" @click.prevent="abrir()" class="vit-btn vit-btn--primary vit-btn--sm" style="margin-left:8px">Agendar Agora</a>
@@ -243,6 +247,67 @@
         </div>
         @endif
 
+        {{-- ── GALERIA ──────────────────────────────────────── --}}
+        @if($showGallery && $portfolio->isNotEmpty())
+        <div id="galeria" class="vit-section" style="margin-bottom:80px;scroll-margin-top:80px"
+             x-data="vitrineGaleria(@js($portfolio))">
+            <div style="text-align:center;margin-bottom:40px">
+                <p class="vit-kicker">Nossos trabalhos</p>
+                <h2 class="vit-h2" style="margin:0">Galeria</h2>
+            </div>
+
+            {{-- Filtros por categoria --}}
+            <div x-show="categorias.length > 1" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:28px">
+                <template x-for="cat in categorias" :key="cat">
+                    <button type="button" @click="categoria = cat"
+                            :style="'padding:7px 16px;border-radius:20px;border:1.5px solid '+(categoria===cat?'var(--sa-secondary)':'var(--sa-border)')+';background:'+(categoria===cat?'var(--sa-secondary)':'transparent')+';color:'+(categoria===cat?'#fff':'var(--sa-text2)')+';font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body);transition:all 160ms'"
+                            x-text="cat"></button>
+                </template>
+            </div>
+
+            {{-- Grade de fotos --}}
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+                <template x-for="(foto, i) in filtradas" :key="i">
+                    <div @click="abrir(foto)"
+                         style="position:relative;border-radius:16px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:4/3;transition:box-shadow 220ms ease,transform 220ms ease"
+                         onmouseover="this.style.boxShadow='0 12px 32px rgba(0,0,0,.14)';this.style.transform='translateY(-3px)'"
+                         onmouseout="this.style.boxShadow='none';this.style.transform='none'">
+                        <img :src="foto.url" :alt="foto.titulo" loading="lazy" decoding="async"
+                             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+                        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 58%);pointer-events:none"></div>
+                        <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 14px">
+                            <div style="font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)" x-text="foto.titulo"></div>
+                            <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px"
+                                 x-text="[foto.prof, foto.categoria].filter(Boolean).join(' · ')"></div>
+                        </div>
+                        <template x-if="foto.destaque">
+                            <div style="position:absolute;top:10px;left:10px;background:var(--sa-secondary);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#fff">★ Destaque</div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            {{-- Lightbox centralizado --}}
+            <div x-show="lightbox" x-cloak @keydown.escape.window="lightbox=false" @click="lightbox=false"
+                 x-transition.opacity
+                 style="position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px">
+                <div @click.stop style="max-width:min(900px,92vw);max-height:90vh;display:flex;flex-direction:column;gap:14px">
+                    <img :src="sel.url" :alt="sel.titulo"
+                         style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:12px;background:#111">
+                    <div style="text-align:center">
+                        <div style="font-family:var(--sa-font-heading);font-size:16px;font-weight:700;color:#fff" x-text="sel.titulo"></div>
+                        <div style="font-size:13px;color:rgba(255,255,255,.65);margin-top:2px"
+                             x-text="[sel.prof, sel.categoria].filter(Boolean).join(' · ')"></div>
+                    </div>
+                </div>
+                <button type="button" @click="lightbox=false" aria-label="Fechar"
+                        style="position:absolute;top:20px;right:24px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+        @endif
+
         {{-- ── DEPOIMENTOS ──────────────────────────────────── --}}
         @if($showTestimon)
         <div class="vit-section" style="margin-bottom:20px">
@@ -320,6 +385,9 @@
                 <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px">Links</div>
                 <a href="#servicos" style="display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:10px;text-decoration:none">Serviços</a>
                 <a href="#equipe" style="display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:10px;text-decoration:none">Nossa Equipe</a>
+                @if($showGallery && $portfolio->isNotEmpty())
+                <a href="#galeria" style="display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:10px;text-decoration:none">Galeria</a>
+                @endif
                 <a href="{{ $bookUrl }}" style="display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:10px;text-decoration:none">Agendamento</a>
             </div>
             <div>
@@ -513,6 +581,29 @@
 
 @push('scripts')
 <script>
+function vitrineGaleria(fotos) {
+    return {
+        fotos: fotos || [],
+        categoria: 'Todos',
+        lightbox: false,
+        sel: {},
+
+        get categorias() {
+            const cats = [...new Set(this.fotos.map(f => f.categoria).filter(Boolean))].sort();
+            return ['Todos', ...cats];
+        },
+        get filtradas() {
+            return this.categoria === 'Todos'
+                ? this.fotos
+                : this.fotos.filter(f => f.categoria === this.categoria);
+        },
+        abrir(foto) {
+            this.sel = foto;
+            this.lightbox = true;
+        },
+    };
+}
+
 function vitrineBooking() {
     const SERVICOS = @json($servicosMap);
     const PROFS = @json($profsJs);
