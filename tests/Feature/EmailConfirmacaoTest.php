@@ -6,6 +6,7 @@ use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
+use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Role;
 use App\Models\Servico;
@@ -30,6 +31,14 @@ beforeEach(function () {
     $this->servico = Servico::create([
         'company_id' => $this->company->id, 'nome' => 'Corte',
         'duracao_minutos' => 30, 'preco' => 50.00, 'cor' => '#1a1a1a', 'ativo' => true,
+    ]);
+
+    $this->prof->servicos()->attach($this->servico->id);
+    HorarioTrabalho::create([
+        'empresa_id' => $this->company->id,
+        'profissional_id' => $this->prof->id,
+        'dia_semana' => (int) now()->addDay()->format('w'),
+        'hora_inicio' => '08:00', 'hora_fim' => '20:00', 'ativo' => true,
     ]);
 });
 
@@ -85,6 +94,7 @@ describe('email_confirmacao', function () {
             'profissional_id' => $this->prof->id,
             'servico_id' => $this->servico->id,
             'data_hora' => now()->addDay()->setTime(14, 0)->format('Y-m-d H:i'),
+            'consent' => 1,
         ])->assertRedirect();
 
         Mail::assertQueued(AgendamentoConfirmado::class, fn ($mail) => $mail->hasTo('carla@example.com'));

@@ -381,7 +381,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
 Route::get('/vitrine/{slug}', [AgendamentoPublicoController::class, 'landing'])->name('vitrine.show');
 Route::get('/vitrine/{slug}/disponibilidade', [AgendamentoPublicoController::class, 'disponibilidade'])->name('vitrine.disponibilidade');
 Route::get('/agendar/{slug}', [AgendamentoPublicoController::class, 'show'])->name('agendar.show');
-Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->name('agendar.store');
+Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->middleware('throttle:8,1')->name('agendar.store');
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');

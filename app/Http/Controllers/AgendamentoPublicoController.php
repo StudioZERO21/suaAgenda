@@ -15,6 +15,7 @@ use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\AgendamentoCancelamentoService;
+use App\Services\AgendamentoDisponibilidadeService;
 use App\Services\RegraService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -25,9 +26,10 @@ use Illuminate\View\View;
 
 class AgendamentoPublicoController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $slug, AgendamentoCancelamentoService $cancelamento): View
     {
         $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
+        $politica = $cancelamento->descricaoPolitica($company->id);
 
         $servicos = Servico::where('company_id', $company->id)
             ->ativo()
@@ -50,7 +52,7 @@ class AgendamentoPublicoController extends Controller
             ],
         ]);
 
-        return view('public.agendar', compact('company', 'servicos', 'profissionais', 'servicosMap'));
+        return view('public.agendar', compact('company', 'servicos', 'profissionais', 'servicosMap', 'politica'));
     }
 
     /**
@@ -65,6 +67,7 @@ class AgendamentoPublicoController extends Controller
 
         $servicos = Servico::where('company_id', $company->id)
             ->ativo()
+            ->with('profissionais:id')
             ->orderBy('nome')
             ->get();
 
@@ -73,6 +76,15 @@ class AgendamentoPublicoController extends Controller
             ->withCount('agendamentos')
             ->orderBy('name')
             ->get();
+
+        // Mapa serviço→{nome,preco,profissionais[]} para o modal "Ver Horários".
+        $servicosMap = $servicos->mapWithKeys(fn (Servico $s) => [
+            $s->id => [
+                'nome' => $s->nome,
+                'preco' => $s->precoFormatado(),
+                'profissionais' => $s->profissionais->pluck('id')->values()->toArray(),
+            ],
+        ]);
 
         $siteCfg = $company->resolvedSettings()['site'] ?? [];
 
@@ -94,7 +106,7 @@ class AgendamentoPublicoController extends Controller
                 'profissional' => $av->agendamento?->profissional?->name ?? '',
             ]);
 
-        return view('public.vitrine', compact('company', 'servicos', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal'));
+        return view('public.vitrine', compact('company', 'servicos', 'servicosMap', 'profissionais', 'siteCfg', 'avaliacoesPublicas', 'notaMediaReal', 'totalAvaliacoesReal'));
     }
 
     /**
@@ -103,7 +115,7 @@ class AgendamentoPublicoController extends Controller
      *
      * GET /vitrine/{slug}/disponibilidade?servico_id=X&data=Y
      */
-    public function disponibilidade(string $slug, Request $request): JsonResponse
+    public function disponibilidade(string $slug, Request $request, AgendamentoDisponibilidadeService $disponibilidade): JsonResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();
 
@@ -118,6 +130,7 @@ class AgendamentoPublicoController extends Controller
         $data = Carbon::parse($request->data)->startOfDay();
         $diaSemana = (int) $data->format('w');
         $duracao = $servico->duracao_minutos;
+        $agora = now();
 
         $profissionaisIds = $servico->profissionais()->pluck('profissionais.id');
         $profissionais = Profissional::where('company_id', $company->id)
@@ -126,16 +139,11 @@ class AgendamentoPublicoController extends Controller
             ->orderBy('name')
             ->get();
 
-        $ocupadosPorProf = Agendamento::whereIn('profissional_id', $profissionais->pluck('id'))
-            ->whereDate('data_hora', $data)
-            ->whereIn('status', ['pendente', 'confirmado', 'em_atendimento'])
-            ->get()
-            ->groupBy('profissional_id')
-            ->map(fn ($ags) => $ags->map(fn ($ag) => $ag->data_hora->format('H:i'))->values());
+        $result = $profissionais->map(function (Profissional $prof) use ($data, $diaSemana, $duracao, $agora, $disponibilidade) {
+            $vazio = ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
 
-        $result = $profissionais->map(function (Profissional $prof) use ($data, $diaSemana, $duracao, $ocupadosPorProf) {
             if (BloqueioAgenda::blockedOn($prof->id, $data->format('Y-m-d'))) {
-                return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
+                return $vazio;
             }
 
             $horario = HorarioTrabalho::where('profissional_id', $prof->id)
@@ -144,18 +152,18 @@ class AgendamentoPublicoController extends Controller
                 ->first();
 
             if (! $horario) {
-                return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
+                return $vazio;
             }
 
             $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
             $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
-            $ocupados = $ocupadosPorProf->get($prof->id, collect());
 
             $slots = [];
             $current = $inicio->copy();
             while ($current->copy()->addMinutes($duracao)->lte($fim)) {
-                $hora = $current->format('H:i');
-                $slots[] = ['hora' => $hora, 'disponivel' => ! $ocupados->contains($hora)];
+                $livre = $current->gt($agora)
+                    && ! $disponibilidade->temConflito($prof->id, $current, $duracao);
+                $slots[] = ['hora' => $current->format('H:i'), 'disponivel' => $livre];
                 $current->addMinutes($duracao);
             }
 
@@ -165,7 +173,7 @@ class AgendamentoPublicoController extends Controller
         return response()->json($result->values());
     }
 
-    public function slots(string $slug, Request $request): JsonResponse
+    public function slots(string $slug, Request $request, AgendamentoDisponibilidadeService $disponibilidade): JsonResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();
 
@@ -200,33 +208,62 @@ class AgendamentoPublicoController extends Controller
         $duracao = $servico->duracao_minutos;
         $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
         $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
-
-        $ocupados = Agendamento::where('profissional_id', $profissional->id)
-            ->whereDate('data_hora', $data)
-            ->whereIn('status', ['pendente', 'confirmado'])
-            ->get()
-            ->map(fn ($ag) => $ag->data_hora->format('H:i'));
+        $agora = now();
 
         $slots = [];
         $current = $inicio->copy();
 
         while ($current->copy()->addMinutes($duracao)->lte($fim)) {
-            $hora = $current->format('H:i');
-            $slots[] = ['hora' => $hora, 'disponivel' => ! $ocupados->contains($hora)];
+            // Considera sobreposição de duração (não só hora exata) e descarta horários passados.
+            $disponivel = $current->gt($agora)
+                && ! $disponibilidade->temConflito($profissional->id, $current, $duracao);
+
+            $slots[] = ['hora' => $current->format('H:i'), 'disponivel' => $disponivel];
             $current->addMinutes($duracao);
         }
 
         return response()->json($slots);
     }
 
-    public function store(StoreAgendamentoPublicoRequest $request, string $slug, RegraService $regras): RedirectResponse
-    {
+    public function store(
+        StoreAgendamentoPublicoRequest $request,
+        string $slug,
+        RegraService $regras,
+        AgendamentoDisponibilidadeService $disponibilidade
+    ): RedirectResponse {
         $company = Company::where('slug', $slug)->firstOrFail();
+
+        $servico = Servico::where('company_id', $company->id)
+            ->findOrFail($request->servico_id);
+
+        // Revalida o horário no servidor — o front só sugere; a agenda do
+        // profissional (expediente, bloqueio, sobreposição) é a fonte da verdade.
+        $inicio = Carbon::parse($request->data_hora);
+        $valida = $disponibilidade->validar($request->profissional_id, $servico, $inicio);
+
+        if (! $valida['ok']) {
+            return back()->withInput()->withErrors(['data_hora' => $valida['motivo']]);
+        }
 
         $cliente = Cliente::firstOrCreate(
             ['company_id' => $company->id, 'phone' => $request->cliente_phone],
-            ['name' => $request->cliente_nome, 'email' => $request->cliente_email]
+            [
+                'name' => $request->cliente_nome,
+                'email' => $request->cliente_email,
+                'lgpd_consent' => true,
+                'lgpd_consent_at' => now(),
+                'lgpd_consent_ip' => $request->ip(),
+            ]
         );
+
+        // Cliente recorrente sem consentimento registrado: grava agora (deu opt-in no form)
+        if (! $cliente->lgpd_consent) {
+            $cliente->update([
+                'lgpd_consent' => true,
+                'lgpd_consent_at' => now(),
+                'lgpd_consent_ip' => $request->ip(),
+            ]);
+        }
 
         // Regra no_show: bloqueia agendamento online de cliente faltante recorrente
         if ($regras->enabled('no_show', $company->id)) {
@@ -242,9 +279,6 @@ class AgendamentoPublicoController extends Controller
                 ]);
             }
         }
-
-        $servico = Servico::where('company_id', $company->id)
-            ->findOrFail($request->servico_id);
 
         $agendamento = Agendamento::create([
             'company_id' => $company->id,
@@ -282,38 +316,13 @@ class AgendamentoPublicoController extends Controller
     }
 
     /**
-     * Portal público do cliente — busca agendamentos pelo telefone.
-     * GET /vitrine/{slug}/minhas-reservas?phone=XXX
+     * Aposentado: a busca por telefone (sem autenticação) expunha agenda de
+     * qualquer cliente. Redireciona para o portal autenticado por link mágico.
+     * GET /vitrine/{slug}/minhas-reservas
      */
-    public function minhasReservas(string $slug, Request $request): View
+    public function minhasReservas(string $slug): RedirectResponse
     {
-        $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
-
-        $phone = $request->query('phone', '');
-        $agendamentos = collect();
-        $cliente = null;
-
-        if ($phone !== '') {
-            $phoneClean = preg_replace('/\D/', '', $phone);
-
-            $cliente = Cliente::where('company_id', $company->id)
-                ->where(function ($q) use ($phoneClean, $phone) {
-                    $q->where('phone', $phone)
-                        ->orWhere('phone', $phoneClean)
-                        ->orWhereRaw('REPLACE(REPLACE(REPLACE(REPLACE(phone," ",""),"(",""),")",""),"-","") = ?', [$phoneClean]);
-                })
-                ->first();
-
-            if ($cliente) {
-                $agendamentos = Agendamento::with(['servico', 'profissional'])
-                    ->where('cliente_id', $cliente->id)
-                    ->orderByDesc('data_hora')
-                    ->limit(20)
-                    ->get();
-            }
-        }
-
-        return view('public.minhas-reservas', compact('company', 'phone', 'cliente', 'agendamentos'));
+        return redirect()->route('portal.entrar', $slug);
     }
 
     /**

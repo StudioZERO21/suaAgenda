@@ -10,6 +10,9 @@
         $pubHeading  = $pubSettings['heading_font'] ?? 'poppins';
         $pubBody     = $pubSettings['body_font'] ?? 'inter';
         $pubFonts    = SaPalettes::resolveFonts($pubHeading, $pubBody);
+        $pubPalette  = $pubSettings['theme_palette'] ?? 'A';
+        $pubDark     = (bool) ($pubSettings['dark_mode'] ?? false);
+        $pubThemeVars = SaPalettes::cssVariables($pubPalette, $pubDark);
         $pubMetaTitle = !empty($pubSite['meta_title']) ? $pubSite['meta_title'] : null;
         $pubMetaDesc  = !empty($pubSite['meta_desc'])  ? $pubSite['meta_desc']  : null;
         $pubKeywords  = !empty($pubSite['keywords'])   ? $pubSite['keywords']   : null;
@@ -48,18 +51,8 @@
             {{-- Whitelist em SaPalettes: seguro emitir sem escape. --}}
             --sa-font-body:    {!! $pubFonts['body_css'] !!};
             --sa-font-heading: {!! $pubFonts['heading_css'] !!};
-            --sa-primary:     #1a1a1a;
-            --sa-primary-l:   #2d2d2d;
-            --sa-secondary:   #d4a574;
-            --sa-secondary-l: #e6c299;
-            --sa-bg:          #f5f5f5;
-            --sa-surface:     #ffffff;
-            --sa-surface2:    #fafafa;
-            --sa-text1:       #1a1a1a;
-            --sa-text2:       #5a5a5a;
-            --sa-text3:       #999999;
-            --sa-border:      #e2e2e2;
-            --sa-border2:     #d0d0d0;
+            {{-- Tema (paleta + dark) selecionado pela empresa no painel. --}}
+            {!! $pubThemeVars !!};
         }
         body {
             font-family: var(--sa-font-body);

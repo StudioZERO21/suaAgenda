@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
+use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,6 +58,12 @@ function makeAgendamento(array $attrs = []): Agendamento
 describe('cancel_token', function () {
     it('gera cancel_token ao criar agendamento via fluxo público', function () {
         $this->profissional->servicos()->attach($this->servico->id);
+        HorarioTrabalho::create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'dia_semana' => (int) now()->addDay()->format('w'),
+            'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
+        ]);
 
         $response = $this->post(route('agendar.store', $this->company->slug), [
             'servico_id' => $this->servico->id,
@@ -64,6 +71,7 @@ describe('cancel_token', function () {
             'data_hora' => now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s'),
             'cliente_nome' => 'Maria',
             'cliente_phone' => '11999990002',
+            'consent' => 1,
         ]);
 
         $response->assertRedirect();

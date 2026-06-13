@@ -6,6 +6,7 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\CompanyRegra;
+use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\RegraCatalogo;
 use App\Models\Role;
@@ -44,6 +45,14 @@ beforeEach(function () {
 
     $this->cliente = Cliente::create([
         'company_id' => $this->company->id, 'name' => 'Maria', 'phone' => '11999990000',
+    ]);
+
+    $this->profissional->servicos()->attach($this->servico->id);
+    HorarioTrabalho::create([
+        'empresa_id' => $this->company->id,
+        'profissional_id' => $this->profissional->id,
+        'dia_semana' => (int) now()->addDay()->format('w'),
+        'hora_inicio' => '08:00', 'hora_fim' => '18:00', 'ativo' => true,
     ]);
 });
 
@@ -134,6 +143,7 @@ describe('regra_no_show', function () {
             'data_hora' => now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s'),
             'cliente_nome' => 'Maria',
             'cliente_phone' => '11999990000',
+            'consent' => 1,
         ])->assertSessionHasErrors('cliente_phone');
     });
 
@@ -147,6 +157,7 @@ describe('regra_no_show', function () {
             'data_hora' => now()->addDay()->setTime(10, 0)->format('Y-m-d H:i:s'),
             'cliente_nome' => 'Maria',
             'cliente_phone' => '11999990000',
+            'consent' => 1,
         ])->assertSessionDoesntHaveErrors()->assertRedirect();
     });
 
