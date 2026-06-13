@@ -14,12 +14,13 @@ class PortfolioItem extends Model
 {
     use BelongsToCompany, HasUuids, SoftDeletes;
 
-    protected $fillable = ['company_id', 'profissional_id', 'titulo', 'categoria', 'destaque', 'tags', 'imagem_path'];
+    protected $fillable = ['company_id', 'profissional_id', 'titulo', 'categoria', 'destaque', 'publicado', 'tags', 'imagem_path'];
 
     protected function casts(): array
     {
         return [
             'destaque' => 'boolean',
+            'publicado' => 'boolean',
             'tags' => 'array',
         ];
     }

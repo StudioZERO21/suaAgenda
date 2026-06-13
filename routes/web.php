@@ -246,6 +246,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::post('portfolio/fotos', [PortfolioController::class, 'store'])->name('portfolio.fotos.store');
     Route::delete('portfolio/fotos/{portfolioItem}', [PortfolioController::class, 'destroy'])->name('portfolio.fotos.destroy');
     Route::patch('portfolio/fotos/{portfolioItem}/toggle', [PortfolioController::class, 'toggleFeatured'])->name('portfolio.fotos.toggle');
+    Route::patch('portfolio/fotos/{portfolioItem}/publicar', [PortfolioController::class, 'togglePublicado'])->name('portfolio.fotos.publicar');
+    Route::post('portfolio/publicar', [PortfolioController::class, 'publicar'])->name('portfolio.publicar');
     Route::get('clientes/buscar', [ClienteController::class, 'buscar'])->name('clientes.buscar');
     Route::get('clientes/aniversariantes', [ClienteController::class, 'aniversariantes'])->name('clientes.aniversariantes');
     Route::get('clientes/recentes', [ClienteController::class, 'recentes'])->name('clientes.recentes');

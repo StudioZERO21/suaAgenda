@@ -128,7 +128,7 @@
                 <div style="font-size:14px">Nenhuma foto encontrada para este filtro</div>
             </div>
         </template>
-        <div x-show="filtered.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        <div x-show="filtered.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
             <template x-for="photo in filtered" :key="photo.id">
                 <div style="position:relative;border-radius:12px;overflow:hidden;cursor:pointer;background:var(--sa-surface2);border:1px solid var(--sa-border);aspect-ratio:4/3"
                      @click="openPhoto(photo)"
@@ -165,6 +165,12 @@
                         <div style="font-size:10px;color:rgba(255,255,255,.6)" x-text="photo.prof + ' · ' + photo.categoria"></div>
                     </div>
                     <div x-show="photo.destaque" style="position:absolute;top:8px;left:8px;background:var(--sa-secondary);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff">★ Destaque</div>
+                    {{-- Estado de publicação --}}
+                    <div x-show="photo.imagem_url" style="position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff"
+                         :style="photo.publicado ? 'background:rgba(16,185,129,.92)' : 'background:rgba(0,0,0,.6)'">
+                        <span style="width:5px;height:5px;border-radius:50%;background:currentColor"></span>
+                        <span x-text="photo.publicado ? 'No ar' : 'Oculta'"></span>
+                    </div>
                     <div class="photo-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity 180ms;display:flex;align-items:center;justify-content:center;pointer-events:none">
                         <div style="font-size:12px;color:#fff;font-weight:600">Ver detalhes</div>
                     </div>
@@ -185,6 +191,12 @@
                       :icon="'<svg width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><polygon points=\'12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\'/></svg>'">
                 <span x-text="selPhoto?.destaque ? 'Remover destaque' : 'Marcar como destaque'"></span>
             </x-sa.btn>
+            <template x-if="selPhoto?.imagem_url">
+                <x-sa.btn variant="secondary" size="sm" @click="togglePublicado(selPhoto.id); closePhoto()"
+                          :icon="'<svg width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/><line x1=\'2\' y1=\'12\' x2=\'22\' y2=\'12\'/><path d=\'M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z\'/></svg>'">
+                    <span x-text="selPhoto?.publicado ? 'Remover da página' : 'Publicar na página'"></span>
+                </x-sa.btn>
+            </template>
             <x-sa.btn size="sm" @click="closePhoto()">Fechar</x-sa.btn>
         </x-slot:footer>
 
@@ -386,8 +398,29 @@ function portfolioApp() {
             }
         },
 
-        publish() {
-            this.toast('Portfólio público atualizado!', 'success');
+        async togglePublicado(id) {
+            const res = await fetch(`/portfolio/fotos/${id}/publicar`, {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            this.photos = this.photos.map(p => p.id === id ? { ...p, publicado: data.publicado } : p);
+            this.toast(data.publicado ? 'Foto publicada na página' : 'Foto removida da página', data.publicado ? 'success' : 'info');
+        },
+
+        async publish() {
+            const res = await fetch('{{ route('portfolio.publicar') }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            });
+            if (!res.ok) {
+                return this.toast('Erro ao publicar o portfólio', 'error');
+            }
+            const data = await res.json();
+            const ids = data.publicados || [];
+            this.photos = this.photos.map(p => ({ ...p, publicado: ids.includes(p.id) }));
+            this.toast(`${data.total} foto${data.total !== 1 ? 's' : ''} publicada${data.total !== 1 ? 's' : ''} na página!`, 'success');
         },
     };
 }

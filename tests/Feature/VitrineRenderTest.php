@@ -51,12 +51,12 @@ describe('vitrine_render', function () {
             ->assertRedirect(route('vitrine.show', ['slug' => $this->company->slug, 'book' => 1]));
     });
 
-    it('exibe a galeria com as fotos do portfólio que têm imagem', function () {
+    it('exibe a galeria com as fotos publicadas que têm imagem', function () {
         PortfolioItem::create([
             'company_id' => $this->company->id,
             'profissional_id' => $this->profissional->id,
             'titulo' => 'Degradê moderno', 'categoria' => 'Corte',
-            'destaque' => true, 'imagem_path' => 'portfolio/teste/foto.jpg',
+            'destaque' => true, 'publicado' => true, 'imagem_path' => 'portfolio/teste/foto.jpg',
         ]);
 
         $this->get(route('vitrine.show', $this->company->slug))
@@ -66,11 +66,23 @@ describe('vitrine_render', function () {
             ->assertSee('vitrineGaleria', false);
     });
 
-    it('não exibe a galeria quando não há fotos com imagem', function () {
-        // item sem imagem_path não deve aparecer na galeria pública
+    it('não exibe na galeria fotos não publicadas', function () {
         PortfolioItem::create([
             'company_id' => $this->company->id,
-            'titulo' => 'Sem foto', 'categoria' => 'Corte', 'destaque' => false,
+            'titulo' => 'Rascunho', 'categoria' => 'Corte',
+            'publicado' => false, 'imagem_path' => 'portfolio/teste/draft.jpg',
+        ]);
+
+        $this->get(route('vitrine.show', $this->company->slug))
+            ->assertOk()
+            ->assertDontSee('id="galeria"', false)
+            ->assertDontSee('Rascunho');
+    });
+
+    it('não exibe a galeria quando não há fotos com imagem', function () {
+        PortfolioItem::create([
+            'company_id' => $this->company->id,
+            'titulo' => 'Sem foto', 'categoria' => 'Corte', 'publicado' => true,
         ]);
 
         $this->get(route('vitrine.show', $this->company->slug))
@@ -82,7 +94,7 @@ describe('vitrine_render', function () {
         PortfolioItem::create([
             'company_id' => $this->company->id,
             'titulo' => 'Oculta', 'categoria' => 'Corte',
-            'destaque' => false, 'imagem_path' => 'portfolio/teste/x.jpg',
+            'publicado' => true, 'imagem_path' => 'portfolio/teste/x.jpg',
         ]);
         $this->company->update(['settings' => ['site' => ['show_gallery' => false]]]);
 

@@ -72,8 +72,9 @@ class AgendamentoPublicoController extends Controller
             ],
         ]);
 
-        // Galeria pública: fotos do portfólio que possuem imagem (destaques primeiro).
+        // Galeria pública: fotos do portfólio publicadas e com imagem (destaques primeiro).
         $portfolio = PortfolioItem::where('company_id', $company->id)
+            ->where('publicado', true)
             ->whereNotNull('imagem_path')
             ->with('profissional:id,name')
             ->orderByDesc('destaque')
