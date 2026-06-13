@@ -81,7 +81,7 @@
 @endpush
 
 @section('content')
-<div style="min-height:100vh;background:var(--sa-bg)" x-data="vitrineBooking()">
+<div style="min-height:100vh;background:var(--sa-bg)" x-data="vitrineBooking()" x-init="init()">
 
     @if($errors->any())
     <div style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid rgba(239,68,68,.3);border-left:4px solid #ef4444;border-radius:10px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-width:calc(100vw - 32px)">
@@ -590,6 +590,20 @@ function vitrineBooking() {
             this.profId = ''; this.horario = ''; this.slots = [];
             this.enviando = false;
             this.gerarDias();
+        },
+
+        init() {
+            const p = new URLSearchParams(window.location.search);
+            if (!p.has('book')) return;
+            const servico = p.get('servico_id');
+            const prof = p.get('profissional_id');
+            if (prof && PROFS.some(x => x.id === prof)) {
+                this.abrirProfissional(prof);
+            } else if (servico && SERVICOS[servico]) {
+                this.abrirServico(servico);
+            } else {
+                this.abrir();
+            }
         },
 
         abrir() { this.reset(); this.aberto = true; },

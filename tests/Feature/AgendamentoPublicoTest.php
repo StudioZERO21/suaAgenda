@@ -38,21 +38,23 @@ beforeEach(function () {
 });
 
 describe('agendamento_publico', function () {
-    it('exibe página pública de agendamento pelo slug', function () {
+    it('redireciona /agendar para a vitrine com o modal aberto', function () {
         $this->get(route('agendar.show', $this->company->slug))
-            ->assertOk()
-            ->assertViewIs('public.agendar')
-            ->assertSee($this->company->name)
-            ->assertSee($this->servico->nome);
+            ->assertRedirect(route('vitrine.show', ['slug' => $this->company->slug, 'book' => 1]));
     });
 
-    it('retorna 404 para empresa inexistente', function () {
-        $this->get(route('agendar.show', 'slug-inexistente'))->assertNotFound();
+    it('repassa pré-seleção de serviço/profissional no redirect', function () {
+        $this->get(route('agendar.show', $this->company->slug).'?servico_id='.$this->servico->id)
+            ->assertRedirect(route('vitrine.show', ['slug' => $this->company->slug, 'book' => 1, 'servico_id' => $this->servico->id]));
     });
 
-    it('retorna 404 para empresa inativa', function () {
+    it('vitrine retorna 404 para empresa inexistente', function () {
+        $this->get(route('vitrine.show', 'slug-inexistente'))->assertNotFound();
+    });
+
+    it('vitrine retorna 404 para empresa inativa', function () {
         $this->company->update(['ativo' => false]);
-        $this->get(route('agendar.show', $this->company->slug))->assertNotFound();
+        $this->get(route('vitrine.show', $this->company->slug))->assertNotFound();
     });
 
     it('slots retorna vazio sem horário configurado', function () {

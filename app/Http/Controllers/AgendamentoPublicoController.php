@@ -26,33 +26,16 @@ use Illuminate\View\View;
 
 class AgendamentoPublicoController extends Controller
 {
-    public function show(string $slug, AgendamentoCancelamentoService $cancelamento): View
+    /**
+     * O agendamento agora acontece num modal na própria vitrine — esta rota
+     * apenas redireciona para a vitrine com o modal aberto (?book=1),
+     * repassando eventuais parâmetros de pré-seleção.
+     */
+    public function show(string $slug, Request $request): RedirectResponse
     {
-        $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
-        $politica = $cancelamento->descricaoPolitica($company->id);
+        $prefill = array_filter($request->only(['servico_id', 'profissional_id', 'data', 'hora']));
 
-        $servicos = Servico::where('company_id', $company->id)
-            ->ativo()
-            ->with('profissionais:id')
-            ->orderBy('nome')
-            ->get();
-
-        $profissionais = Profissional::where('company_id', $company->id)
-            ->ativo()
-            ->orderBy('name')
-            ->get();
-
-        $servicosMap = $servicos->mapWithKeys(fn ($s) => [
-            $s->id => [
-                'nome' => $s->nome,
-                'duracao_minutos' => $s->duracao_minutos,
-                'preco' => (float) $s->preco,
-                'cor' => $s->cor,
-                'profissionais' => $s->profissionais->pluck('id')->values()->toArray(),
-            ],
-        ]);
-
-        return view('public.agendar', compact('company', 'servicos', 'profissionais', 'servicosMap', 'politica'));
+        return redirect()->route('vitrine.show', array_merge(['slug' => $slug, 'book' => 1], $prefill));
     }
 
     /**

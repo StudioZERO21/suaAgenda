@@ -37,12 +37,16 @@ describe('vitrine_render', function () {
             ->assertSee('Carlos');
     });
 
-    it('renderiza a página de agendamento sem caracteres quebrados', function () {
-        $this->get(route('agendar.show', $this->company->slug))
+    it('a vitrine inclui o modal de agendamento (sem caracteres quebrados)', function () {
+        $this->get(route('vitrine.show', $this->company->slug))
             ->assertOk()
-            ->assertViewIs('public.agendar')
-            ->assertSee('Serviço')
-            ->assertSee('Horário')
+            ->assertSee('Escolha o serviço')
+            ->assertSee('Confirmar agendamento')
             ->assertDontSee('�');
+    });
+
+    it('/agendar redireciona para a vitrine com o modal', function () {
+        $this->get(route('agendar.show', $this->company->slug))
+            ->assertRedirect(route('vitrine.show', ['slug' => $this->company->slug, 'book' => 1]));
     });
 });

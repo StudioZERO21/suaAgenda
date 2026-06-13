@@ -178,7 +178,7 @@
                                     <span style="padding:10px 12px;font-size:12px;color:var(--sa-text3);border-right:1px solid var(--sa-border);white-space:nowrap">{{ url('/agendar') }}/</span>
                                     <input type="text" name="slug" value="{{ old('slug', $company->slug) }}" style="flex:1;padding:10px 12px;border:none;background:var(--sa-surface);font-size:13px;outline:none" pattern="[a-z0-9-]+">
                                 </div>
-                                <x-sa.btn type="button" variant="muted" size="sm" onclick="navigator.clipboard.writeText('{{ route('agendar.show', $company->slug) }}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Link copiado!',showConfirmButton:false,timer:2000})">Copiar</x-sa.btn>
+                                <x-sa.btn type="button" variant="muted" size="sm" onclick="navigator.clipboard.writeText('{{ route('vitrine.show', $company->slug) }}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Link copiado!',showConfirmButton:false,timer:2000})">Copiar</x-sa.btn>
                             </div>
                             <p style="font-size:12px;color:var(--sa-text3);margin-top:6px">Este é o link que seus clientes usarão para agendar online.</p>
                         </div>
@@ -201,10 +201,10 @@
                         <div>
                             <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Compartilhar</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap">
-                                <a href="https://wa.me/?text={{ urlencode(route('agendar.show', $company->slug)) }}" target="_blank" rel="noopener"
+                                <a href="https://wa.me/?text={{ urlencode(route('vitrine.show', $company->slug)) }}" target="_blank" rel="noopener"
                                    style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;border:1.5px solid #25D36620;background:#25D36610;color:#25D366;font-size:13px;font-weight:600;text-decoration:none">WhatsApp</a>
-                                <x-sa.btn type="button" variant="muted" size="sm" onclick="navigator.clipboard.writeText('{{ route('agendar.show', $company->slug) }}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Link copiado!',showConfirmButton:false,timer:2000})">Copiar link</x-sa.btn>
-                                <x-sa.btn href="{{ route('agendar.show', $company->slug) }}" target="_blank" variant="ghost" size="sm">Abrir página</x-sa.btn>
+                                <x-sa.btn type="button" variant="muted" size="sm" onclick="navigator.clipboard.writeText('{{ route('vitrine.show', $company->slug) }}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Link copiado!',showConfirmButton:false,timer:2000})">Copiar link</x-sa.btn>
+                                <x-sa.btn href="{{ route('vitrine.show', $company->slug) }}" target="_blank" variant="ghost" size="sm">Abrir página</x-sa.btn>
                             </div>
                         </div>
                     </div>
