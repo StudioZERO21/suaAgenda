@@ -81,6 +81,7 @@ class AgendamentoPublicoController extends Controller
             ->orderByDesc('created_at')
             ->limit(24)
             ->get()
+            ->filter(fn (PortfolioItem $item): bool => Storage::disk('public')->exists($item->imagem_path))
             ->map(fn (PortfolioItem $item): array => [
                 'titulo' => $item->titulo,
                 'categoria' => $item->categoria,

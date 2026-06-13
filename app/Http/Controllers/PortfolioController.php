@@ -71,6 +71,7 @@ class PortfolioController extends Controller
                 'titulo' => $data['titulo'] ?? 'Sem título',
                 'categoria' => $data['categoria'],
                 'destaque' => false,
+                'publicado' => true, // foto com imagem já aparece na página; pode ser ocultada depois
                 'tags' => $data['tags'] ?? [],
                 'imagem_path' => $path,
             ]);

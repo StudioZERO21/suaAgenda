@@ -8,6 +8,8 @@ use App\Models\Profissional;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -175,6 +177,35 @@ describe('portfolio crud', function () {
         $this->actingAs($this->admin)
             ->patchJson(route('portfolio.fotos.toggle', $item))
             ->assertNotFound();
+    });
+});
+
+describe('portfolio upload', function () {
+    it('foto enviada com imagem já entra publicada', function () {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin)
+            ->post(route('portfolio.fotos.store'), [
+                'arquivo' => UploadedFile::fake()->image('trabalho.jpg', 800, 600),
+                'titulo' => 'Trabalho novo',
+                'categoria' => 'Corte',
+            ])
+            ->assertStatus(201)
+            ->assertJson(['publicado' => true]);
+
+        $item = PortfolioItem::where('company_id', $this->company->id)->first();
+        expect($item->publicado)->toBeTrue()
+            ->and($item->imagem_path)->not->toBeNull();
+        Storage::disk('public')->assertExists($item->imagem_path);
+    });
+
+    it('foto sem imagem (demonstração) não entra publicada', function () {
+        $this->actingAs($this->admin)
+            ->postJson(route('portfolio.fotos.store'), [
+                'titulo' => 'Sem imagem', 'categoria' => 'Corte',
+            ])
+            ->assertStatus(201)
+            ->assertJson(['publicado' => false]);
     });
 });
 

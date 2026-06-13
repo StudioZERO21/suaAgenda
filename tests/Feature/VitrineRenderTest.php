@@ -7,10 +7,13 @@ use App\Models\PortfolioItem;
 use App\Models\Profissional;
 use App\Models\Servico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Storage::fake('public');
+
     $this->company = Company::create([
         'name' => 'Barbearia Vitrine', 'slug' => 'barbearia-vitrine',
         'plano' => 'trial', 'ativo' => true,
@@ -52,6 +55,7 @@ describe('vitrine_render', function () {
     });
 
     it('exibe a galeria com as fotos publicadas que têm imagem', function () {
+        Storage::disk('public')->put('portfolio/teste/foto.jpg', 'fake');
         PortfolioItem::create([
             'company_id' => $this->company->id,
             'profissional_id' => $this->profissional->id,
@@ -79,6 +83,19 @@ describe('vitrine_render', function () {
             ->assertDontSee('Rascunho');
     });
 
+    it('não exibe na galeria fotos cujo arquivo não existe mais', function () {
+        PortfolioItem::create([
+            'company_id' => $this->company->id,
+            'titulo' => 'Arquivo sumido', 'categoria' => 'Corte',
+            'publicado' => true, 'imagem_path' => 'portfolio/teste/inexistente.jpg',
+        ]);
+
+        $this->get(route('vitrine.show', $this->company->slug))
+            ->assertOk()
+            ->assertDontSee('id="galeria"', false)
+            ->assertDontSee('Arquivo sumido');
+    });
+
     it('não exibe a galeria quando não há fotos com imagem', function () {
         PortfolioItem::create([
             'company_id' => $this->company->id,
@@ -91,6 +108,7 @@ describe('vitrine_render', function () {
     });
 
     it('respeita o flag show_gallery=false nas configurações do site', function () {
+        Storage::disk('public')->put('portfolio/teste/x.jpg', 'fake');
         PortfolioItem::create([
             'company_id' => $this->company->id,
             'titulo' => 'Oculta', 'categoria' => 'Corte',

@@ -423,7 +423,7 @@ function portfolioApp() {
             this.enviando = false;
             if (ok > 0) {
                 this.pendentes = [];
-                this.toast(`${ok} foto${ok > 1 ? 's' : ''} adicionada${ok > 1 ? 's' : ''}! Use "Publicar" para exibi-la na página.`, 'success');
+                this.toast(`${ok} foto${ok > 1 ? 's' : ''} adicionada${ok > 1 ? 's' : ''} e publicada${ok > 1 ? 's' : ''} na página!`, 'success');
             }
         },
 
