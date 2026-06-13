@@ -80,6 +80,97 @@ describe('permissoes index', function () {
         expect(substr_count($html, 'sa-modal-overlay'))->toBeGreaterThanOrEqual(2);
     });
 
+    it('abas verticais usam classes CSS (não :style que apaga border:none)', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-vtab"');
+        expect($html)->toContain('sa-vtab--active');
+        expect($html)->not->toContain(':style="tabStyle(');
+    });
+
+    it('matriz usa template x-for em th/td (Alpine não renderiza x-for direto em células)', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('<template x-for="role in cargos"');
+        expect($html)->toContain('<template x-for="perm in perms"');
+        expect($html)->not->toContain('<th x-for="role in cargos"');
+        expect($html)->not->toContain('<td x-for="role in cargos"');
+    });
+
+    it('grupos ACL usam grid com template oculto (cards não empilham)', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-acl-groups-grid"');
+        expect($html)->toContain('class="sa-acl-group-card"');
+        expect($html)->toContain('.sa-acl-groups-grid > template { display: none; }');
+    });
+
+    it('modal de grupo usa grid CSS com template oculto (perm cards visíveis)', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-group-modal"');
+        expect($html)->toContain('class="sa-group-modal__perms-grid"');
+        expect($html)->toContain('.sa-group-modal__perms-grid > template { display: none; }');
+        expect($html)->toContain('.sa-group-modal__cat-card > template { display: none; }');
+    });
+
+    it('cargos e grupos usam lista com template oculto e barra colorida', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-role-assign-list"');
+        expect($html)->toContain('class="sa-role-assign-row"');
+        expect($html)->toContain('.sa-role-assign-list > template { display: none; }');
+        expect($html)->toContain('roleBarStyle(role.id)');
+        expect($html)->toContain('class="sa-assign-modal"');
+    });
+
+    it('badges de grupo ACL usam pill com borda colorida (template)', function () {
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-grupo-badge"');
+        expect($html)->toContain('grupoBadgeStyle(');
+        expect($html)->toContain('border: 1px solid var(--grupo-badge-color');
+    });
+
+    it('aba usuarios exibe somente funcionarios em modo leitura', function () {
+        $cliente = User::factory()->create([
+            'empresa_id' => $this->company->id,
+            'name' => 'Maria Cliente',
+            'email' => 'maria@cliente.test',
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('permissoes.index'))
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toContain('class="sa-funcionario-list"');
+        expect($html)->toContain('funcionarios:');
+        expect($html)->toContain('userPermPreview(f)');
+        expect($html)->not->toContain('changeUserRole');
+        expect($html)->not->toContain('changeUserProfissional');
+        expect($html)->not->toContain('maria@cliente.test');
+        expect($html)->not->toContain('<select x-model="u.role"');
+    });
+
     it('gestor não pode acessar permissões (sem cfg_perms)', function () {
         $this->actingAs($this->gestor)
             ->get(route('permissoes.index'))

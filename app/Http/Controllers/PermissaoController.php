@@ -10,6 +10,7 @@ use App\Models\Cargo;
 use App\Models\Profissional;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\DefaultRolePermissions;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,16 @@ use Spatie\Permission\PermissionRegistrar;
 
 class PermissaoController extends Controller
 {
+    /** Papéis globais que identificam funcionários com acesso ao painel. */
+    private const STAFF_ROLES = ['admin_empresa', 'gestor', 'analista'];
+
+    /** Rótulos amigáveis das funções do painel. */
+    private const FUNCAO_LABELS = [
+        'admin_empresa' => 'Administrador',
+        'gestor' => 'Gestor',
+        'analista' => 'Analista',
+    ];
+
     public function index(): View
     {
         $companyId = auth()->user()->empresa_id;
@@ -41,31 +52,14 @@ class PermissaoController extends Controller
             ->pluck('grupo_acesso_id', 'id')
             ->all();
 
-        $users = User::where('empresa_id', $companyId)
-            ->with('roles')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $u): array => [
-                'id' => $u->id,
-                'name' => $u->name,
-                'email' => $u->email,
-                'ativo' => (bool) $u->ativo,
-                'role' => $u->roles->whereNull('company_id')->first()?->name ?? '',
-                'profissional_id' => $u->profissional_id ?? '',
-            ]);
-
-        $profissionais = Profissional::where('company_id', $companyId)
-            ->ativo()
-            ->orderBy('name')
-            ->get(['id', 'name', 'especialidade']);
+        $users = $this->funcionariosPayload($companyId);
 
         return view('permissoes.index', [
             'catalogo' => SaDemoData::aclCatalogo(),
             'gruposJson' => $this->gruposPayload($companyId),
             'cargosJson' => $cargos,
             'roleGroupsJson' => (object) $roleGroups,
-            'usersJson' => $users,
-            'profissionaisJson' => $profissionais,
+            'funcionariosJson' => $users,
         ]);
     }
 
@@ -264,6 +258,93 @@ class PermissaoController extends Controller
             'descricao' => $role->descricao ?? '',
             'is_system' => (bool) $role->is_system,
             'perms' => $role->permissions->pluck('name')->values()->all(),
+        ];
+    }
+
+    /**
+     * Lista funcionários da empresa (exclui clientes sem função de painel).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function funcionariosPayload(?string $companyId): array
+    {
+        return User::where('empresa_id', $companyId)
+            ->with([
+                'roles.permissions',
+                'profissional.cargo',
+            ])
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $user): bool => $this->isFuncionario($user))
+            ->map(fn (User $user): array => $this->funcionarioToJson($user))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Funcionário = função de painel, vínculo profissional ou grupo ACL da empresa.
+     */
+    private function isFuncionario(User $user): bool
+    {
+        if ($user->profissional_id !== null) {
+            return true;
+        }
+
+        $globalRole = $user->roles->whereNull('company_id')->first()?->name;
+
+        if ($globalRole !== null && in_array($globalRole, self::STAFF_ROLES, true)) {
+            return true;
+        }
+
+        return $user->roles->whereNotNull('company_id')->isNotEmpty();
+    }
+
+    /**
+     * Payload read-only para a aba Usuários & Funções.
+     *
+     * @return array<string, mixed>
+     */
+    private function funcionarioToJson(User $user): array
+    {
+        $globalRole = $user->roles->whereNull('company_id')->first();
+        $grupoAcl = $user->roles->whereNotNull('company_id')->first();
+        $funcaoSlug = $globalRole?->name ?? '';
+        $funcaoLabel = self::FUNCAO_LABELS[$funcaoSlug] ?? '';
+
+        $perms = $user->getAllPermissions()->pluck('name')->sort()->values()->all();
+
+        if ($perms === [] && $funcaoSlug !== '') {
+            $perms = DefaultRolePermissions::for($funcaoSlug) ?? [];
+        }
+
+        if ($grupoAcl !== null) {
+            $grupo = [
+                'nome' => $grupoAcl->name,
+                'cor' => $grupoAcl->cor ?? '#6366f1',
+                'descricao' => $grupoAcl->descricao ?? '',
+            ];
+        } elseif ($funcaoSlug === 'admin_empresa') {
+            $grupo = ['nome' => 'Acesso Total', 'cor' => '#ef4444', 'descricao' => 'Função Administrador'];
+        } elseif ($funcaoSlug === 'gestor') {
+            $grupo = ['nome' => 'Gestão Operacional', 'cor' => '#f59e0b', 'descricao' => 'Função Gestor'];
+        } elseif ($funcaoSlug === 'analista') {
+            $grupo = ['nome' => 'Analista', 'cor' => '#64748b', 'descricao' => 'Função Analista'];
+        } else {
+            $grupo = ['nome' => 'Sem grupo ACL', 'cor' => '#64748b', 'descricao' => ''];
+        }
+
+        $cargo = $user->profissional?->cargo;
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'ativo' => (bool) $user->ativo,
+            'funcao' => $funcaoLabel,
+            'funcao_slug' => $funcaoSlug,
+            'grupo' => array_merge($grupo, ['perms' => $perms]),
+            'cargo' => $cargo ? ['nome' => $cargo->nome, 'cor' => $cargo->cor] : null,
+            'profissional' => $user->profissional ? ['nome' => $user->profissional->name] : null,
         ];
     }
 }
