@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PortfolioItem;
 use App\Models\Profissional;
+use App\Services\ImageService;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -62,7 +63,7 @@ class PortfolioController extends Controller
                 'tags.*' => ['string', 'max:50'],
             ]);
 
-            $path = $request->file('arquivo')->store("portfolio/{$companyId}", 'public');
+            $path = app(ImageService::class)->store($request->file('arquivo'), "portfolio/{$companyId}");
 
             $item = PortfolioItem::create([
                 'company_id' => $companyId,

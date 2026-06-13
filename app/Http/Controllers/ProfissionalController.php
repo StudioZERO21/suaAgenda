@@ -15,6 +15,7 @@ use App\Models\HorarioTrabalho;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Models\Venda;
+use App\Services\ImageService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -200,7 +201,7 @@ class ProfissionalController extends Controller
             Storage::disk('public')->delete($profissional->foto_path);
         }
 
-        $path = $request->file('foto')->store("profissionais/{$companyId}", 'public');
+        $path = app(ImageService::class)->store($request->file('foto'), "profissionais/{$companyId}");
 
         $profissional->update(['foto_path' => $path]);
 

@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateProdutoRequest;
 use App\Models\Produto;
 use App\Models\ProdutoImagem;
 use App\Models\VendaItem;
+use App\Services\ImageService;
 use App\Support\SaDemoData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -227,7 +228,7 @@ class ProdutoController extends Controller
         ]);
 
         $companyId = auth()->user()->empresa_id;
-        $path = $request->file('imagem')->store("produto_imagens/{$companyId}", 'public');
+        $path = app(ImageService::class)->store($request->file('imagem'), "produto_imagens/{$companyId}");
 
         $isFirstImage = $produto->imagens()->count() === 0;
 
