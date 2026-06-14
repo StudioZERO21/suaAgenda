@@ -62,6 +62,12 @@ Route::post('/webhooks/asaas', WebhookAsaasController::class)
     ->name('webhooks.asaas')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
+// ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
+Route::middleware('auth')->group(function () {
+    Route::view('/assinatura/suspensa', 'billing.suspended')->name('billing.suspended');
+    Route::view('/assinatura/cancelada', 'billing.cancelled')->name('billing.cancelled');
+});
+
 // ── Painel Super Admin (visão global do SaaS) ──────────────────────
 Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
