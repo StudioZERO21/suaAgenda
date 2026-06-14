@@ -13,6 +13,8 @@ use App\Models\Company;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\ImageService;
+use App\Services\Pagamento\GatewayFactory;
+use App\Services\WhatsAppService;
 use App\Support\CompanyHours;
 use App\Support\SaPalettes;
 use App\Support\SaServiceIcons;
@@ -198,6 +200,94 @@ class ConfiguracaoController extends Controller
         return redirect()
             ->route('configuracoes.empresa', ['tab' => $request->input('tab', 'dados')])
             ->with('success', 'Configurações da empresa salvas com sucesso!');
+    }
+
+    /**
+     * Salva configurações de integrações (WhatsApp + gateway de pagamento).
+     */
+    public function updateIntegracoes(Request $request): RedirectResponse
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('update', $company);
+
+        $current = $company->resolvedSettings();
+
+        $wa = [
+            'ativo' => $request->boolean('whatsapp_ativo'),
+            'twilio_sid' => trim((string) $request->input('twilio_sid', '')),
+            'twilio_token' => trim((string) $request->input('twilio_token', '')),
+            'twilio_numero' => trim((string) $request->input('twilio_numero', '')),
+        ];
+
+        $gateway = $request->input('gateway', 'nenhum');
+
+        $integrations = [
+            'whatsapp' => $wa,
+            'gateway' => $gateway,
+            'mercadopago' => [
+                'access_token' => trim((string) $request->input('mp_access_token', '')),
+            ],
+            'asaas' => [
+                'api_key' => trim((string) $request->input('asaas_api_key', '')),
+                'ambiente' => $request->input('asaas_ambiente', 'sandbox'),
+            ],
+            'stripe' => [
+                'publishable_key' => trim((string) $request->input('stripe_publishable_key', '')),
+                'secret_key' => trim((string) $request->input('stripe_secret_key', '')),
+            ],
+        ];
+
+        $settings = $current;
+        $settings['integrations'] = $integrations;
+
+        $company->settings = $settings;
+        $company->save();
+
+        return redirect()
+            ->route('configuracoes', ['tab' => 'integracoes'])
+            ->with('success', 'Configurações de integrações salvas!');
+    }
+
+    /**
+     * Testa credenciais Twilio do WhatsApp.
+     */
+    public function testWhatsApp(Request $request): JsonResponse
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('update', $company);
+
+        $config = [
+            'twilio_sid' => trim((string) $request->input('twilio_sid', '')),
+            'twilio_token' => trim((string) $request->input('twilio_token', '')),
+            'twilio_numero' => trim((string) $request->input('twilio_numero', '')),
+        ];
+
+        $result = WhatsAppService::testarCredenciais($config);
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
+    /**
+     * Testa credenciais do gateway de pagamento ativo.
+     */
+    public function testGateway(Request $request): JsonResponse
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('update', $company);
+
+        $integrations = [
+            'gateway' => $request->input('gateway', 'nenhum'),
+            'mercadopago' => ['access_token' => $request->input('mp_access_token', '')],
+            'asaas' => [
+                'api_key' => $request->input('asaas_api_key', ''),
+                'ambiente' => $request->input('asaas_ambiente', 'sandbox'),
+            ],
+            'stripe' => ['secret_key' => $request->input('stripe_secret_key', '')],
+        ];
+
+        $result = GatewayFactory::testar($integrations);
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
     }
 
     public function qrCode(): Response

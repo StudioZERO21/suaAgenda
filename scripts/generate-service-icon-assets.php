@@ -7,7 +7,6 @@ declare(strict_types=1);
  * Para substituir por ícones do Flaticon: baixe SVG preto, renomeie para {key}.svg e salve na mesma pasta.
  * Executar: php scripts/generate-service-icon-assets.php
  */
-
 $dir = dirname(__DIR__).'/public/assets/icons/servicos';
 
 if (! is_dir($dir) && ! mkdir($dir, 0755, true) && ! is_dir($dir)) {

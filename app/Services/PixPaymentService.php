@@ -37,7 +37,7 @@ final class PixPaymentService
         }
 
         try {
-            $payload = (new StaticPayload())
+            $payload = (new StaticPayload)
                 ->setAmount(max($amount, 0.01))
                 ->setTid($tid)
                 ->setDescription('Venda PDV')

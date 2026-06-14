@@ -8,7 +8,6 @@ use App\Models\Profissional;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\NavMenu;
-use App\Support\UserPermissions;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

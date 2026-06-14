@@ -124,8 +124,15 @@
         'contatos' => ['label' => 'Contatos', 'icon' => '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/>'],
         'api' => ['label' => 'API & Webhooks', 'icon' => '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'],
         'notificacoes' => ['label' => 'Notificações', 'icon' => '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>'],
+        'integracoes' => ['label' => 'Integrações', 'icon' => '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><path d="M9 6h6"/>'],
         'icones' => ['label' => 'Catálogo de Ícones', 'icon' => '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/>'],
     ];
+    $integrations = $settings['integrations'] ?? [];
+    $intWa        = $integrations['whatsapp'] ?? [];
+    $intGateway   = $integrations['gateway'] ?? 'nenhum';
+    $intMp        = $integrations['mercadopago'] ?? [];
+    $intAsaas     = $integrations['asaas'] ?? [];
+    $intStripe    = $integrations['stripe'] ?? [];
     $notif = $settings['notifications'];
     $sec = $settings['security'];
     $contacts = $settings['contacts'];
@@ -147,7 +154,7 @@
     <x-sa.app-header title="Configurações" subtitle="Personalize seu sistema suaAgenda.pro">
         @can('update', $company)
         <x-slot:actions>
-            <x-sa.btn type="submit" x-show="tab !== 'icones'" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : 'form-preferencias'">
+            <x-sa.btn type="submit" x-show="tab !== 'icones'" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : (tab === 'integracoes' ? 'form-integracoes' : 'form-preferencias')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
                 Salvar
             </x-sa.btn>
@@ -587,6 +594,208 @@
                             </div>
                             @endforeach
                         </x-sa.card>
+                    </div>
+                    @can('update', $company)
+                    </form>
+                    @endcan
+
+                    {{-- INTEGRAÇÕES --}}
+                    @can('update', $company)
+                    <form method="POST" action="{{ route('configuracoes.integracoes') }}" id="form-integracoes" x-data="{
+                        gateway: '{{ $intGateway }}',
+                        waAtivo: {{ ($intWa['ativo'] ?? false) ? 'true' : 'false' }},
+                        twilioAberto: {{ (($intWa['twilio_sid'] ?? '') !== '') ? 'true' : 'false' }},
+                        testWa: null, testWaLoading: false,
+                        testGw: null, testGwLoading: false,
+                        async testarWa() {
+                            this.testWaLoading = true; this.testWa = null;
+                            const fd = new FormData(document.getElementById('form-integracoes'));
+                            try {
+                                const r = await fetch('{{ route('configuracoes.integracoes.testar.whatsapp') }}', {
+                                    method:'POST', body: fd,
+                                    headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept:'application/json'},
+                                });
+                                const j = await r.json();
+                                this.testWa = j;
+                            } catch(e) { this.testWa = {ok:false, erro:'Erro de rede'}; }
+                            this.testWaLoading = false;
+                        },
+                        async testarGateway() {
+                            this.testGwLoading = true; this.testGw = null;
+                            const fd = new FormData(document.getElementById('form-integracoes'));
+                            try {
+                                const r = await fetch('{{ route('configuracoes.integracoes.testar.gateway') }}', {
+                                    method:'POST', body: fd,
+                                    headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept:'application/json'},
+                                });
+                                const j = await r.json();
+                                this.testGw = j;
+                            } catch(e) { this.testGw = {ok:false, erro:'Erro de rede'}; }
+                            this.testGwLoading = false;
+                        },
+                    }">
+                    @csrf @method('PUT')
+                    @endcan
+
+                    <div x-show="tab === 'integracoes'" x-cloak class="sa-tab-panel">
+
+                        {{-- ── WHATSAPP ─────────────────────────────────── --}}
+                        <x-sa.card padding="22px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:12px">
+                                <div>
+                                    <h3 style="font-size:15px;font-weight:600;margin:0 0 3px;font-family:var(--sa-font-heading)">WhatsApp</h3>
+                                    <p style="font-size:13px;color:var(--sa-text3);margin:0">Notificações automáticas via Twilio. O botão de contato da vitrine usa o número da empresa.</p>
+                                </div>
+                                @can('update', $company)
+                                <button type="button" x-on:click="waAtivo=!waAtivo" :class="waAtivo ? 'is-on' : ''" class="sa-toggle" style="flex-shrink:0">
+                                    <div class="sa-toggle__knob"></div>
+                                </button>
+                                <input type="hidden" name="whatsapp_ativo" :value="waAtivo ? '1' : '0'">
+                                @endcan
+                            </div>
+
+                            <div x-show="waAtivo" style="margin-top:16px;display:flex;flex-direction:column;gap:14px">
+
+                                {{-- Toggle para expandir credenciais Twilio --}}
+                                <button type="button" x-on:click="twilioAberto=!twilioAberto"
+                                    style="display:flex;align-items:center;gap:8px;background:var(--sa-surface2);border:1px solid var(--sa-border);border-radius:9px;padding:10px 14px;cursor:pointer;font-size:13px;color:var(--sa-text2);font-weight:600;width:100%;text-align:left;font-family:var(--sa-font-body)">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    Credenciais Twilio (envio automático)
+                                    <svg x-bind:style="twilioAberto ? 'transform:rotate(180deg)' : ''" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;transition:transform 200ms"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+
+                                <div x-show="twilioAberto" style="display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--sa-border);border-radius:9px;background:var(--sa-surface2)">
+                                    <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.6">
+                                        Necessário para enviar mensagens automáticas (lembretes, confirmações). Obtenha em
+                                        <a href="https://www.twilio.com" target="_blank" rel="noopener" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">twilio.com</a>.
+                                    </p>
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                                        <div>
+                                            <label class="sa-field-label">Account SID</label>
+                                            <input type="text" name="twilio_sid" value="{{ old('twilio_sid', $intWa['twilio_sid'] ?? '') }}" class="sa-inp" placeholder="ACxxxxxxxx" autocomplete="off">
+                                        </div>
+                                        <div>
+                                            <label class="sa-field-label">Auth Token</label>
+                                            <input type="password" name="twilio_token" value="{{ old('twilio_token', $intWa['twilio_token'] ?? '') }}" class="sa-inp" placeholder="••••••••••••••••" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="sa-field-label">Número Twilio <span style="font-size:11px;color:var(--sa-text3);font-weight:400">(só dígitos, ex: 14155552671)</span></label>
+                                        <input type="text" name="twilio_numero" value="{{ old('twilio_numero', $intWa['twilio_numero'] ?? '') }}" class="sa-inp" placeholder="14155552671" autocomplete="off">
+                                    </div>
+
+                                    @can('update', $company)
+                                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                                        <button type="button" x-on:click="testarWa()" :disabled="testWaLoading"
+                                            style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body);transition:border-color 160ms"
+                                            onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                                            onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/></svg>
+                                            <span x-text="testWaLoading ? 'Testando…' : 'Testar conexão'"></span>
+                                        </button>
+                                        <div x-show="testWa !== null" style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+                                            <span x-show="testWa?.ok" style="color:#059669">✓ <span x-text="testWa?.nome"></span></span>
+                                            <span x-show="!testWa?.ok" style="color:#dc2626">✗ <span x-text="testWa?.erro"></span></span>
+                                        </div>
+                                    </div>
+                                    @endcan
+                                </div>
+
+                                {{-- Info: botão da vitrine --}}
+                                <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;border:1px solid rgba(37,211,102,.25);background:rgba(37,211,102,.06)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.988 0C5.373 0 .017 5.34.017 11.937c0 2.104.55 4.082 1.508 5.803L.017 24l6.428-1.677c1.656.898 3.55 1.42 5.566 1.42h.005C18.6 23.743 24 18.404 24 11.806 24 5.341 18.604 0 11.988 0z"/></svg>
+                                    <span style="font-size:12px;color:var(--sa-text2)">O botão <strong>WhatsApp</strong> na vitrine pública usa o número cadastrado em <a href="{{ route('configuracoes.empresa') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">Configurações da Empresa</a>.</span>
+                                </div>
+                            </div>
+                        </x-sa.card>
+
+                        {{-- ── MEIOS DE PAGAMENTO ───────────────────────── --}}
+                        <x-sa.card padding="22px" x-data="{}" x-bind:data-gw="gateway">
+                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px;font-family:var(--sa-font-heading)">Meios de Pagamento</h3>
+                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 18px;line-height:1.6">Configure um gateway para gerar links de pagamento no PDV. O cliente recebe o link e paga online.</p>
+
+                            {{-- Seleção do gateway --}}
+                            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+                                @foreach([
+                                    'nenhum'      => ['Nenhum',       '#999',    '<path d="M18 6L6 18M6 6l12 12"/>'],
+                                    'mercadopago' => ['Mercado Pago', '#009ee3', '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
+                                    'asaas'       => ['Asaas',        '#00c2a8', '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>'],
+                                    'stripe'      => ['Stripe',       '#6772e5', '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
+                                ] as $gw => [$label, $cor, $icon])
+                                <button type="button" x-on:click="gateway='{{ $gw }}'"
+                                    :style="gateway==='{{ $gw }}' ? 'border-color:{{ $cor }};background:{{ $cor }}14;color:{{ $cor }};font-weight:700' : ''"
+                                    style="padding:11px 8px;border-radius:10px;border:2px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--sa-text2);transition:all 160ms;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--sa-font-body)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">{!! $icon !!}</svg>
+                                    {{ $label }}
+                                </button>
+                                @endforeach
+                            </div>
+                            <input type="hidden" name="gateway" :value="gateway">
+
+                            {{-- Mercado Pago --}}
+                            <div x-show="gateway === 'mercadopago'" style="display:flex;flex-direction:column;gap:12px">
+                                <div style="padding:10px 14px;border-radius:9px;background:rgba(0,158,227,.06);border:1px solid rgba(0,158,227,.2);font-size:12px;color:var(--sa-text2);line-height:1.6">
+                                    Obtenha o Access Token em <strong>mercadopago.com.br → Configurações → Credenciais</strong>. Use o token de <em>produção</em> após testar.
+                                </div>
+                                <div>
+                                    <label class="sa-field-label">Access Token</label>
+                                    <input type="password" name="mp_access_token" value="{{ old('mp_access_token', $intMp['access_token'] ?? '') }}" class="sa-inp" placeholder="APP_USR-xxxxxxxxxxxx" autocomplete="off">
+                                </div>
+                            </div>
+
+                            {{-- Asaas --}}
+                            <div x-show="gateway === 'asaas'" style="display:flex;flex-direction:column;gap:12px">
+                                <div style="padding:10px 14px;border-radius:9px;background:rgba(0,194,168,.06);border:1px solid rgba(0,194,168,.2);font-size:12px;color:var(--sa-text2);line-height:1.6">
+                                    Obtenha a API Key em <strong>app.asaas.com → Configurações → Integrações → API Key</strong>. Comece em Sandbox e mude para Produção.
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end">
+                                    <div>
+                                        <label class="sa-field-label">API Key</label>
+                                        <input type="password" name="asaas_api_key" value="{{ old('asaas_api_key', $intAsaas['api_key'] ?? '') }}" class="sa-inp" placeholder="\$aact_xxxxxxxxxxxx" autocomplete="off">
+                                    </div>
+                                    <div>
+                                        <label class="sa-field-label">Ambiente</label>
+                                        <select name="asaas_ambiente" style="padding:10px 32px 10px 12px;border:1.5px solid var(--sa-border);border-radius:9px;font-size:14px;background:var(--sa-surface);color:var(--sa-text1);font-family:var(--sa-font-body);appearance:none;background-image:url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e&quot;);background-repeat:no-repeat;background-position:right 10px center;background-size:14px;cursor:pointer">
+                                            <option value="sandbox" {{ ($intAsaas['ambiente'] ?? 'sandbox') === 'sandbox' ? 'selected' : '' }}>Sandbox (testes)</option>
+                                            <option value="producao" {{ ($intAsaas['ambiente'] ?? 'sandbox') === 'producao' ? 'selected' : '' }}>Produção</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Stripe --}}
+                            <div x-show="gateway === 'stripe'" style="display:flex;flex-direction:column;gap:12px">
+                                <div style="padding:10px 14px;border-radius:9px;background:rgba(103,114,229,.06);border:1px solid rgba(103,114,229,.2);font-size:12px;color:var(--sa-text2);line-height:1.6">
+                                    Obtenha as chaves em <strong>dashboard.stripe.com → Developers → API Keys</strong>. Chaves <em>pk_live_</em> e <em>sk_live_</em> para produção.
+                                </div>
+                                <div>
+                                    <label class="sa-field-label">Publishable Key <span style="color:var(--sa-text3);font-weight:400">(pública)</span></label>
+                                    <input type="text" name="stripe_publishable_key" value="{{ old('stripe_publishable_key', $intStripe['publishable_key'] ?? '') }}" class="sa-inp" placeholder="pk_live_xxxxxxxxxxxx" autocomplete="off">
+                                </div>
+                                <div>
+                                    <label class="sa-field-label">Secret Key <span style="color:var(--sa-text3);font-weight:400">(secreta)</span></label>
+                                    <input type="password" name="stripe_secret_key" value="{{ old('stripe_secret_key', $intStripe['secret_key'] ?? '') }}" class="sa-inp" placeholder="sk_live_xxxxxxxxxxxx" autocomplete="off">
+                                </div>
+                            </div>
+
+                            {{-- Botão testar gateway --}}
+                            @can('update', $company)
+                            <div x-show="gateway !== 'nenhum'" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--sa-border)">
+                                <button type="button" x-on:click="testarGateway()" :disabled="testGwLoading"
+                                    style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body);transition:border-color 160ms"
+                                    onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span x-text="testGwLoading ? 'Verificando…' : 'Verificar conexão'"></span>
+                                </button>
+                                <div x-show="testGw !== null" style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+                                    <span x-show="testGw?.ok" style="color:#059669">✓ <span x-text="testGw?.nome"></span></span>
+                                    <span x-show="!testGw?.ok" style="color:#dc2626">✗ <span x-text="testGw?.erro"></span></span>
+                                </div>
+                            </div>
+                            @endcan
+                        </x-sa.card>
+
                     </div>
                     @can('update', $company)
                     </form>

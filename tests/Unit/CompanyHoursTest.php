@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\CompanyHours;
+use Carbon\Carbon;
 
 describe('CompanyHours', function () {
     it('normaliza formato legado com domingo', function () {
@@ -58,7 +59,7 @@ describe('CompanyHours', function () {
     it('retorna expediente quando dia está aberto', function () {
         $exp = CompanyHours::expedienteNaData([
             'hours' => ['seg' => ['status' => 'aberto', 'open' => '09:00', 'close' => '18:00']],
-        ], \Carbon\Carbon::parse('2026-06-15'));
+        ], Carbon::parse('2026-06-15'));
 
         expect($exp)->toBe(['inicio' => '09:00', 'fim' => '18:00']);
     });
@@ -67,7 +68,7 @@ describe('CompanyHours', function () {
         $exp = CompanyHours::expedienteNaData([
             'hours' => ['seg' => ['status' => 'aberto', 'open' => '09:00', 'close' => '18:00']],
             'closure' => ['active' => true, 'status' => 'ferias', 'return_date' => '2026-07-01'],
-        ], \Carbon\Carbon::parse('2026-06-15'));
+        ], Carbon::parse('2026-06-15'));
 
         expect($exp)->toBeNull();
     });

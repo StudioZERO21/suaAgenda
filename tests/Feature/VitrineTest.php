@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Company;
 use App\Models\Profissional;

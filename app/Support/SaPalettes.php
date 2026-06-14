@@ -252,6 +252,18 @@ final class SaPalettes
                 'pix_key_type' => 'random',
                 'pix_city' => '',
             ],
+            'integrations' => [
+                'whatsapp' => [
+                    'ativo' => false,
+                    'twilio_sid' => '',
+                    'twilio_token' => '',
+                    'twilio_numero' => '',
+                ],
+                'gateway' => 'nenhum',
+                'mercadopago' => ['access_token' => ''],
+                'asaas' => ['api_key' => '', 'ambiente' => 'sandbox'],
+                'stripe' => ['publishable_key' => '', 'secret_key' => ''],
+            ],
         ];
     }
 
