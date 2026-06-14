@@ -68,7 +68,7 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">WhatsApp</label>
-                    <input type="text" name="phone" value="{{ old('phone') }}" placeholder="(11) 99999-0000"
+                    <input type="tel" name="phone" value="{{ old('phone') ? \App\Support\PhoneFormatter::format(old('phone')) : '' }}" data-sa-phone-mask maxlength="15" placeholder="(11) 99999-0000"
                            style="width:100%;padding:10px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms,outline 180ms"
                            onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'" onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
                 </div>

@@ -39,13 +39,56 @@ class PlansController extends Controller
         $diaAtual = now()->day;
         $diasRestantes = $diasNoMes - $diaAtual;
 
+        $smsLimite = $currentPlan?->sms_mensal ?? 0;
+
         $usage = [
-            'whatsapp' => ['usado' => $whatsappUsado, 'limite' => $currentPlan?->whatsapp_mensal ?? 50, 'cor' => '#10b981', 'label' => 'WhatsApp'],
-            'sms' => ['usado' => 0, 'limite' => 0, 'cor' => '#6366f1', 'label' => 'SMS'],
-            'email' => ['usado' => $emailUsado, 'limite' => -1, 'cor' => 'var(--sa-secondary)', 'label' => 'E-mail'],
+            'whatsapp' => [
+                'usado' => $whatsappUsado,
+                'limite' => $currentPlan?->whatsapp_mensal ?? 50,
+                'cor' => '#10b981',
+                'label' => 'WhatsApp',
+            ],
+            'sms' => [
+                'usado' => 0,
+                'limite' => $smsLimite,
+                'cor' => '#6366f1',
+                'label' => 'SMS',
+            ],
+            'email' => [
+                'usado' => $emailUsado,
+                'limite' => -1,
+                'cor' => 'var(--sa-secondary)',
+                'label' => 'E-mail',
+            ],
         ];
 
-        return view('planos.index', compact('plans', 'company', 'currentPlan', 'usage', 'diasRestantes', 'mesAtual'));
+        $emTrial = $company?->emTrial() ?? false;
+        $trialExpirado = $company?->trial_ends_at !== null && $company->trial_ends_at->isPast();
+
+        $proximaCobranca = $emTrial
+            ? $company->trial_ends_at?->translatedFormat('d/m/Y')
+            : now()->addMonth()->startOfMonth()->translatedFormat('d/m/Y');
+
+        $statusAssinatura = match (true) {
+            $emTrial => ['label' => 'Período de teste', 'color' => 'var(--sa-secondary)', 'sub' => 'Trial ativo até '.$company->trial_ends_at?->translatedFormat('d/m/Y')],
+            $trialExpirado || $company?->plano === 'trial' => ['label' => 'Trial expirado', 'color' => '#ef4444', 'sub' => 'Escolha um plano para continuar'],
+            default => ['label' => '✓ Ativo (pago)', 'color' => '#10b981', 'sub' => 'Cliente desde '.$company?->created_at?->translatedFormat('M/Y')],
+        };
+
+        $clienteDesde = $company?->created_at?->translatedFormat('M/Y');
+
+        return view('planos.index', compact(
+            'plans',
+            'company',
+            'currentPlan',
+            'usage',
+            'diasRestantes',
+            'mesAtual',
+            'proximaCobranca',
+            'statusAssinatura',
+            'clienteDesde',
+            'emTrial',
+        ));
     }
 
     public function update(Request $request): RedirectResponse

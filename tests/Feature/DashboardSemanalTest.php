@@ -136,3 +136,38 @@ describe('clientes_exportar_csv', function () {
         expect($content)->not->toContain('Pedro Secreto');
     });
 });
+
+describe('clientes_exportar_pdf', function () {
+    it('exporta PDF com content-type correto', function () {
+        $response = $this->actingAs($this->user)->get(route('clientes.exportar.pdf'));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+        expect(str_starts_with($response->getContent(), '%PDF'))->toBeTrue();
+    });
+
+    it('inclui cliente no PDF', function () {
+        Cliente::create([
+            'company_id' => $this->company->id,
+            'name' => 'João PDF Teste',
+            'phone' => '11900000003',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('clientes.exportar.pdf'));
+
+        $response->assertOk();
+        expect($response->getContent())->not->toBeEmpty();
+    });
+
+    it('não expõe clientes de outra empresa no PDF', function () {
+        $outra = Company::create(['name' => 'Outra PDF', 'slug' => 'outra-pdf', 'plano' => 'trial', 'ativo' => true]);
+        Cliente::create(['company_id' => $outra->id, 'name' => 'Cliente Oculto PDF', 'phone' => '11900000004']);
+
+        $html = view('clientes.export-pdf', [
+            'clientes' => Cliente::where('company_id', $this->company->id)->withCount('agendamentos')->with(['agendamentos' => fn ($q) => $q->latest('data_hora')->limit(1)])->get(),
+            'company' => $this->company,
+        ])->render();
+
+        expect($html)->not->toContain('Cliente Oculto PDF');
+    });
+});

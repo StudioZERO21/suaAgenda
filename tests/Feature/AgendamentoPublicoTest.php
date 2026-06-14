@@ -137,6 +137,76 @@ describe('agendamento_publico', function () {
         expect($slots['slots'])->toBeEmpty();
     });
 
+    it('slots usa horário da empresa quando profissional não tem expediente próprio', function () {
+        $diaSemana = (int) now()->addDay()->format('w');
+        $dayKey = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][$diaSemana];
+        $hours = [];
+        foreach (['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as $key) {
+            $hours[$key] = ['status' => 'fechado', 'open' => '08:00', 'close' => '18:00'];
+        }
+        $hours[$dayKey] = ['status' => 'aberto', 'open' => '09:00', 'close' => '17:00'];
+
+        $this->company->update([
+            'settings' => array_merge($this->company->settings ?? [], ['hours' => $hours]),
+        ]);
+
+        $data = now()->addDay()->format('Y-m-d');
+        $response = $this->getJson(route('agendar.slots', $this->company->slug).'?'.http_build_query([
+            'profissional_id' => $this->profissional->id,
+            'servico_id' => $this->servico->id,
+            'data' => $data,
+        ]));
+
+        $response->assertOk();
+        expect($response->json())->not->toBeEmpty();
+        expect(collect($response->json())->contains(fn ($s) => $s['disponivel'] === true))->toBeTrue();
+    });
+
+    it('dias retorna somente dias de funcionamento do profissional', function () {
+        $horasFechadas = [];
+        foreach (['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as $dia) {
+            $horasFechadas[$dia] = ['status' => 'fechado', 'open' => '08:00', 'close' => '18:00'];
+        }
+        $this->company->update(['settings' => ['hours' => $horasFechadas]]);
+
+        $proximaSegunda = now()->startOfDay();
+        while ((int) $proximaSegunda->format('w') !== 1) {
+            $proximaSegunda->addDay();
+        }
+
+        HorarioTrabalho::create([
+            'empresa_id' => $this->company->id,
+            'profissional_id' => $this->profissional->id,
+            'dia_semana' => 1,
+            'hora_inicio' => '08:00',
+            'hora_fim' => '12:00',
+            'ativo' => true,
+        ]);
+
+        $response = $this->getJson(route('agendar.dias', $this->company->slug).'?'.http_build_query([
+            'profissional_id' => $this->profissional->id,
+        ]));
+
+        $response->assertOk();
+        $dias = $response->json();
+        expect($dias)->not->toBeEmpty();
+        expect($dias[0])->toBe($proximaSegunda->format('Y-m-d'));
+    });
+
+    it('dias retorna vazio sem expediente configurado', function () {
+        $horasFechadas = [];
+        foreach (['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as $dia) {
+            $horasFechadas[$dia] = ['status' => 'fechado', 'open' => '08:00', 'close' => '18:00'];
+        }
+        $this->company->update(['settings' => ['hours' => $horasFechadas]]);
+
+        $this->getJson(route('agendar.dias', $this->company->slug).'?'.http_build_query([
+            'profissional_id' => $this->profissional->id,
+        ]))
+            ->assertOk()
+            ->assertJson([]);
+    });
+
     it('disponibilidade retorna slots quando há horário configurado', function () {
         $diaSemana = (int) now()->addDay()->format('w');
         HorarioTrabalho::create([

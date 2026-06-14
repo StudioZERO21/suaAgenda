@@ -6,16 +6,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Cliente;
+use App\Models\Company;
 use App\Models\Lancamento;
 use App\Models\Produto;
+use App\Models\ProdutoImagem;
 use App\Models\Servico;
 use App\Models\Venda;
 use App\Models\VendaItem;
+use App\Services\PixPaymentService;
+use App\Support\SaServiceIcons;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -25,8 +30,12 @@ class PdvController extends Controller
     {
         $companyId = auth()->user()->empresa_id;
 
+        $featuredIds = $this->featuredProductIds($companyId, 9);
+        $featuredRank = array_flip($featuredIds);
+
         $produtosJs = Produto::where('company_id', $companyId)
             ->where('ativo', true)
+            ->with(['imagens' => fn ($q) => $q->orderByDesc('is_capa')->orderBy('ordem')])
             ->orderBy('nome')
             ->get()
             ->map(fn (Produto $p): array => [
@@ -36,6 +45,9 @@ class PdvController extends Controller
                 'price' => (float) $p->preco,
                 'stock' => $p->estoque,
                 'type' => 'product',
+                'photoUrl' => $this->produtoPhotoUrl($p),
+                'featured' => array_key_exists($p->id, $featuredRank),
+                'featuredRank' => $featuredRank[$p->id] ?? 999,
             ])
             ->values()
             ->all();
@@ -51,6 +63,8 @@ class PdvController extends Controller
                 'price' => (float) $s->preco,
                 'duration' => $s->duracao_minutos,
                 'color' => $s->cor ?? '#6366f1',
+                'icone' => $s->icone ?? 'servico_generico',
+                'iconUrl' => SaServiceIcons::assetUrl($s->icone ?? 'servico_generico'),
                 'type' => 'service',
                 'stock' => null,
             ])
@@ -60,7 +74,31 @@ class PdvController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes'));
+        $company = Company::findOrFail($companyId);
+        $payments = $company->resolvedSettings()['payments'] ?? [];
+        $paymentConfig = [
+            'pix_configured' => trim((string) ($payments['pix_key'] ?? '')) !== '',
+            'empresa_config_url' => route('configuracoes.empresa', ['tab' => 'dados']),
+        ];
+
+        return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes', 'paymentConfig'));
+    }
+
+    /**
+     * Gera QR Code Pix para confirmação de pagamento no PDV.
+     */
+    public function pagamentoPix(Request $request, PixPaymentService $pixService): JsonResponse
+    {
+        $request->validate([
+            'total' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $tid = 'PDV'.now()->format('ymdHis');
+
+        return response()->json(
+            $pixService->generateForCompany($company, (float) $request->input('total'), $tid)
+        );
     }
 
     public function resumo(Request $request): JsonResponse
@@ -627,5 +665,57 @@ class PdvController extends Controller
             'melhor_dia' => $melhorDia,
             'serie' => $serie,
         ]);
+    }
+
+    /**
+     * Retorna até N IDs de produtos em destaque no PDV (mais vendidos, com fallback alfabético).
+     *
+     * @return list<string>
+     */
+    private function featuredProductIds(string $companyId, int $limit = 9): array
+    {
+        $inStock = fn ($q) => $q->where('company_id', $companyId)
+            ->where('ativo', true)
+            ->where('estoque', '>', 0);
+
+        $topBySales = VendaItem::query()
+            ->whereHas('venda', fn ($q) => $q->where('company_id', $companyId))
+            ->whereHas('produto', $inStock)
+            ->whereNotNull('produto_id')
+            ->select('produto_id', DB::raw('SUM(qtd) as total_vendido'))
+            ->groupBy('produto_id')
+            ->orderByDesc('total_vendido')
+            ->limit($limit)
+            ->pluck('produto_id')
+            ->all();
+
+        if (count($topBySales) >= $limit) {
+            return $topBySales;
+        }
+
+        $fallback = Produto::where('company_id', $companyId)
+            ->where('ativo', true)
+            ->where('estoque', '>', 0)
+            ->when($topBySales !== [], fn ($q) => $q->whereNotIn('id', $topBySales))
+            ->orderBy('nome')
+            ->limit($limit - count($topBySales))
+            ->pluck('id')
+            ->all();
+
+        return array_merge($topBySales, $fallback);
+    }
+
+    /**
+     * URL pública da foto de capa (ou primeira imagem) do produto.
+     */
+    private function produtoPhotoUrl(Produto $produto): ?string
+    {
+        $imagens = $produto->relationLoaded('imagens') ? $produto->imagens : collect();
+        /** @var ProdutoImagem|null $capa */
+        $capa = $imagens->firstWhere('is_capa', true) ?? $imagens->first();
+
+        return $capa !== null
+            ? Storage::disk('public')->url($capa->imagem_path)
+            : null;
     }
 }

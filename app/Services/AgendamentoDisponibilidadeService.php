@@ -6,8 +6,11 @@ namespace App\Services;
 
 use App\Models\Agendamento;
 use App\Models\BloqueioAgenda;
+use App\Models\Company;
 use App\Models\HorarioTrabalho;
+use App\Models\Profissional;
 use App\Models\Servico;
+use App\Support\CompanyHours;
 use Carbon\Carbon;
 
 /**
@@ -58,21 +61,88 @@ class AgendamentoDisponibilidadeService
 
     public function dentroDoExpediente(string $profissionalId, Carbon $inicio, int $duracao): bool
     {
-        $horario = HorarioTrabalho::where('profissional_id', $profissionalId)
-            ->where('dia_semana', (int) $inicio->format('w'))
-            ->where('ativo', true)
-            ->first();
+        $profissional = Profissional::find($profissionalId);
 
-        if (! $horario) {
+        if ($profissional === null) {
+            return false;
+        }
+
+        $expediente = $this->expedienteDoProfissional(
+            $profissional,
+            $profissional->company,
+            $inicio->copy()->startOfDay()
+        );
+
+        if ($expediente === null) {
             return false;
         }
 
         $dia = $inicio->format('Y-m-d');
-        $abertura = Carbon::parse($dia.' '.$horario->hora_inicio);
-        $fechamento = Carbon::parse($dia.' '.$horario->hora_fim);
+        $abertura = Carbon::parse($dia.' '.$expediente['inicio']);
+        $fechamento = Carbon::parse($dia.' '.$expediente['fim']);
         $fim = $inicio->copy()->addMinutes($duracao);
 
         return $inicio->gte($abertura) && $fim->lte($fechamento);
+    }
+
+    /**
+     * Horário do profissional na data; se não configurado, usa horário da empresa.
+     *
+     * @return array{inicio: string, fim: string}|null
+     */
+    public function expedienteDoProfissional(Profissional $profissional, Company $company, Carbon $data): ?array
+    {
+        $diaSemana = (int) $data->format('w');
+
+        $horario = HorarioTrabalho::where('profissional_id', $profissional->id)
+            ->where('dia_semana', $diaSemana)
+            ->where('ativo', true)
+            ->first();
+
+        if ($horario !== null) {
+            return [
+                'inicio' => $horario->hora_inicio,
+                'fim' => $horario->hora_fim,
+            ];
+        }
+
+        return CompanyHours::expedienteNaData($company->resolvedSettings(), $data);
+    }
+
+    /**
+     * Gera slots de agendamento para profissional + serviço + data.
+     *
+     * @return list<array{hora: string, disponivel: bool}>
+     */
+    public function gerarSlots(Profissional $profissional, Company $company, Servico $servico, Carbon $data): array
+    {
+        if (BloqueioAgenda::blockedOn($profissional->id, $data->format('Y-m-d'))) {
+            return [];
+        }
+
+        $expediente = $this->expedienteDoProfissional($profissional, $company, $data);
+
+        if ($expediente === null) {
+            return [];
+        }
+
+        $duracao = $servico->duracao_minutos;
+        $inicio = Carbon::parse($data->format('Y-m-d').' '.$expediente['inicio']);
+        $fim = Carbon::parse($data->format('Y-m-d').' '.$expediente['fim']);
+        $agora = now();
+
+        $slots = [];
+        $current = $inicio->copy();
+
+        while ($current->copy()->addMinutes($duracao)->lte($fim)) {
+            $disponivel = $current->gt($agora)
+                && ! $this->temConflito($profissional->id, $current, $duracao);
+
+            $slots[] = ['hora' => $current->format('H:i'), 'disponivel' => $disponivel];
+            $current->addMinutes($duracao);
+        }
+
+        return $slots;
     }
 
     public function temConflito(string $profissionalId, Carbon $inicio, int $duracao, ?string $excluirId = null): bool
@@ -90,5 +160,31 @@ class AgendamentoDisponibilidadeService
 
             return $inicio->lt($outroFim) && $fim->gt($outro->data_hora);
         });
+    }
+
+    /**
+     * Próximos dias em que o profissional tem expediente (empresa ou individual).
+     *
+     * @return list<string> Datas no formato Y-m-d
+     */
+    public function diasFuncionamento(
+        Profissional $profissional,
+        Company $company,
+        int $quantidade = 14,
+        int $janelaDias = 90
+    ): array {
+        $dias = [];
+        $cursor = now()->startOfDay();
+        $limite = now()->addDays($janelaDias)->startOfDay();
+
+        while (count($dias) < $quantidade && $cursor->lte($limite)) {
+            if (! $this->diaBloqueado($profissional->id, $cursor)
+                && $this->expedienteDoProfissional($profissional, $company, $cursor) !== null) {
+                $dias[] = $cursor->format('Y-m-d');
+            }
+            $cursor->addDay();
+        }
+
+        return $dias;
     }
 }

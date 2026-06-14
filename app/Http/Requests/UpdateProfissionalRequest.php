@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\PhoneFormatter;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateProfissionalRequest extends FormRequest
@@ -17,9 +18,13 @@ class UpdateProfissionalRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:150'],
             'especialidade' => ['nullable', 'string', 'max:100'],
+            'especialidades' => ['nullable', 'array'],
+            'especialidades.*' => ['string', 'max:100'],
             'comissao_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'ativo' => ['boolean'],
+            'status' => ['nullable', 'in:ativo,inativo,ferias,licenca'],
             'cor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'phone' => ['nullable', 'string', 'max:25'],
             'admissao' => ['nullable', 'date'],
@@ -29,5 +34,14 @@ class UpdateProfissionalRequest extends FormRequest
             'servicos' => ['nullable', 'array'],
             'servicos.*' => ['uuid', 'exists:servicos,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('phone')) {
+            $this->merge([
+                'phone' => PhoneFormatter::normalize($this->input('phone')),
+            ]);
+        }
     }
 }

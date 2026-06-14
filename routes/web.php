@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuditoriaController;
+use App\Http\Controllers\Admin\AdminBillingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\Admin\AdminLgpdController;
@@ -38,9 +39,11 @@ use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
+use App\Http\Controllers\WebhookAsaasController;
 use App\Http\Middleware\CheckModulePermission;
 use App\Http\Middleware\EnsureClienteDaEmpresa;
 use App\Http\Middleware\SetTenantMiddleware;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -56,6 +59,17 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
+// ── Webhooks (public, token-validated) ──────────────────────────────
+Route::post('/webhooks/asaas', WebhookAsaasController::class)
+    ->name('webhooks.asaas')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
+
+// ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
+Route::middleware('auth')->group(function () {
+    Route::view('/assinatura/suspensa', 'billing.suspended')->name('billing.suspended');
+    Route::view('/assinatura/cancelada', 'billing.cancelled')->name('billing.cancelled');
+});
+
 // ── Painel Super Admin (visão global do SaaS) ──────────────────────
 Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
@@ -70,6 +84,18 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::post('regras', [AdminRegraController::class, 'store'])->name('regras.store');
     Route::put('regras/{regra}', [AdminRegraController::class, 'update'])->name('regras.update');
     Route::delete('regras/{regra}', [AdminRegraController::class, 'destroy'])->name('regras.destroy');
+
+    // Billing / Assinaturas
+    Route::get('billing', [AdminBillingController::class, 'index'])->name('billing.index');
+    Route::get('billing/gateway', [AdminBillingController::class, 'configGateway'])->name('billing.gateway');
+    Route::post('billing/gateway', [AdminBillingController::class, 'saveConfigGateway'])->name('billing.gateway.save');
+    Route::post('billing/gateway/testar', [AdminBillingController::class, 'testGateway'])->name('billing.gateway.testar');
+    Route::get('billing/{subscription}', [AdminBillingController::class, 'show'])->name('billing.show');
+    Route::post('billing/{subscription}/fatura', [AdminBillingController::class, 'gerarFatura'])->name('billing.fatura');
+    Route::patch('billing/{subscription}/suspender', [AdminBillingController::class, 'suspender'])->name('billing.suspender');
+    Route::patch('billing/{subscription}/reativar', [AdminBillingController::class, 'reativar'])->name('billing.reativar');
+    Route::patch('billing/{subscription}/cancelar', [AdminBillingController::class, 'cancelar'])->name('billing.cancelar');
+    Route::patch('billing/invoices/{invoice}/paga', [AdminBillingController::class, 'marcarPaga'])->name('billing.invoice.paga');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
@@ -190,6 +216,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('pdv/ticket-por-dia-semana', [PdvController::class, 'ticketPorDiaSemana'])->name('pdv.ticket-por-dia-semana');
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
+    Route::get('pdv/pagamento/pix', [PdvController::class, 'pagamentoPix'])->name('pdv.pagamento.pix');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
     Route::patch('pdv/vendas/{venda}/observacao', [PdvController::class, 'observacaoVenda'])->name('pdv.vendas.observacao');
     Route::delete('pdv/vendas/{venda}', [PdvController::class, 'destroyVenda'])->name('pdv.vendas.destroy');
@@ -215,6 +242,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('permissoes/usuarios/json', [PermissaoController::class, 'usuariosJson'])->name('permissoes.usuarios.json');
     Route::patch('permissoes/usuarios/{user}/role', [PermissaoController::class, 'assignUserRole'])->name('permissoes.users.role');
     Route::patch('permissoes/usuarios/{user}/profissional', [PermissaoController::class, 'assignUserProfissional'])->name('permissoes.users.profissional');
+    Route::patch('permissoes/usuarios/{user}/grupos', [PermissaoController::class, 'assignUserGrupos'])->name('permissoes.users.grupos');
+    Route::post('permissoes/usuarios/{user}/grupos/cargo', [PermissaoController::class, 'syncUserGrupoFromCargo'])->name('permissoes.users.grupos.cargo');
     Route::get('permissoes/grupos/json', [PermissaoController::class, 'gruposJson'])->name('permissoes.grupos.json');
     Route::post('permissoes/grupos', [PermissaoController::class, 'storeGrupo'])->name('permissoes.grupos.store');
     Route::put('permissoes/grupos/{grupo}', [PermissaoController::class, 'updateGrupo'])->name('permissoes.grupos.update');
@@ -258,6 +287,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('clientes/por-mes-cadastro', [ClienteController::class, 'porMesCadastro'])->name('clientes.por-mes-cadastro');
     Route::get('clientes/segmentos', [ClienteController::class, 'segmentos'])->name('clientes.segmentos');
     Route::get('clientes/exportar', [ClienteController::class, 'exportarCsv'])->name('clientes.exportar');
+    Route::get('clientes/exportar/pdf', [ClienteController::class, 'exportarPdf'])->name('clientes.exportar.pdf');
     Route::get('clientes/exportar/segmento', [ClienteController::class, 'exportarSegmento'])->name('clientes.exportar.segmento');
     Route::post('clientes/importar', [ClienteController::class, 'importarCsv'])->name('clientes.importar');
     Route::delete('clientes/bulk-destroy', [ClienteController::class, 'destroyBulk'])->name('clientes.bulk-destroy');
@@ -324,6 +354,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('profissionais/comissao-mensal', [ProfissionalController::class, 'comissaoMensal'])->name('profissionais.comissao-mensal');
     Route::get('profissionais/servicos-executados', [ProfissionalController::class, 'servicosExecutados'])->name('profissionais.servicos-executados');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
+    Route::get('profissionais/exportar/pdf', [ProfissionalController::class, 'exportarPdf'])->name('profissionais.exportar.pdf');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
     Route::get('profissionais/{profissional}/disponibilidade', [ProfissionalController::class, 'disponibilidade'])->name('profissionais.disponibilidade');
@@ -368,6 +399,10 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::put('configuracoes/empresa', [ConfiguracaoController::class, 'updateEmpresa'])->name('configuracoes.empresa.update');
     Route::post('configuracoes/empresa/logo', [ConfiguracaoController::class, 'uploadLogo'])->name('configuracoes.empresa.logo.upload');
     Route::delete('configuracoes/empresa/logo', [ConfiguracaoController::class, 'deleteLogo'])->name('configuracoes.empresa.logo.delete');
+    Route::put('configuracoes/notificacoes', [ConfiguracaoController::class, 'updateNotificacoes'])->name('configuracoes.notificacoes');
+    Route::put('configuracoes/integracoes', [ConfiguracaoController::class, 'updateIntegracoes'])->name('configuracoes.integracoes');
+    Route::post('configuracoes/integracoes/testar-whatsapp', [ConfiguracaoController::class, 'testWhatsApp'])->name('configuracoes.integracoes.testar.whatsapp');
+    Route::post('configuracoes/integracoes/testar-gateway', [ConfiguracaoController::class, 'testGateway'])->name('configuracoes.integracoes.testar.gateway');
 
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
@@ -385,6 +420,7 @@ Route::get('/vitrine/{slug}/disponibilidade', [AgendamentoPublicoController::cla
 Route::get('/agendar/{slug}', [AgendamentoPublicoController::class, 'show'])->name('agendar.show');
 Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->middleware('throttle:8,1')->name('agendar.store');
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
+Route::get('/agendar/{slug}/dias', [AgendamentoPublicoController::class, 'dias'])->name('agendar.dias');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');

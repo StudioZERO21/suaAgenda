@@ -2,38 +2,100 @@
 @section('title', 'Clientes')
 @section('page-title', 'Clientes')
 
+@push('styles')
+<style>
+    /* Alpine x-for em thead quebra colunas — thead usa Blade estático */
+    .sa-clients-table thead > template { display: none; }
+    .sa-clients-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        border-top: 1px solid var(--sa-border);
+    }
+    .sa-clients-pager { display: flex; gap: 6px; align-items: center; }
+    .sa-clients-pager > template { display: contents; }
+    .sa-clients-pager-btn {
+        width: 30px; height: 30px; border-radius: 7px;
+        border: 1px solid var(--sa-border); background: transparent;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        color: var(--sa-text3); font-size: 13px; font-weight: 600;
+        transition: border-color 150ms, color 150ms, background 150ms;
+    }
+    .sa-clients-pager-btn:hover:not(:disabled) {
+        border-color: var(--sa-primary); color: var(--sa-text1);
+    }
+    .sa-clients-pager-btn:disabled { opacity: .4; cursor: default; }
+    .sa-clients-pager-btn--active {
+        background: var(--sa-primary); color: #fff; border-color: var(--sa-primary);
+    }
+    .sa-clients-fotos-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .sa-clients-fotos-grid > template { display: contents; }
+    .sa-clients-modal {
+        position: relative; background: var(--sa-surface); border-radius: 16px;
+        border: 1px solid var(--sa-border); width: 100%; max-width: 720px;
+        max-height: 88vh; overflow: hidden; display: flex; flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18); animation: sa-modal-in 250ms ease;
+    }
+    .sa-export-menu {
+        position: absolute; top: calc(100% + 6px); right: 0; min-width: 160px; z-index: 50;
+        background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.1); padding: 6px; overflow: hidden;
+    }
+    .sa-export-menu a {
+        display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 7px;
+        font-size: 13px; font-weight: 600; color: var(--sa-text2); text-decoration: none;
+        transition: background 120ms, color 120ms;
+    }
+    .sa-export-menu a:hover { background: var(--sa-surface2); color: var(--sa-text1); }
+</style>
+@endpush
+
 @section('content')
+<x-sa.page x-data="clientesApp()">
 
-<div x-data="clientesApp()" x-init="init()">
-
-    {{-- AppHeader --}}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-        <div>
-            <h1 style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">Clientes</h1>
-            <p style="font-size:14px;color:var(--sa-text3);margin:0" x-text="`${filtered.length} cliente${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}`"></p>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center">
+    <x-sa.app-header title="Clientes">
+        <x-slot:subtitle>
+            <span x-text="`${filtered.length} cliente${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}`"></span>
+        </x-slot:subtitle>
+        <x-slot:actions>
             @can('viewAny', \App\Models\Cliente::class)
-            <a href="{{ route('clientes.exportar') }}"
-               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
-               onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
-               onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Exportar CSV
-            </a>
+            <div style="position:relative" @click.outside="exportOpen = false">
+                <button type="button" @click="exportOpen = !exportOpen"
+                        style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body);transition:border-color 180ms,color 180ms"
+                        onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Exportar
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div x-show="exportOpen" x-cloak class="sa-export-menu">
+                    <a href="{{ route('clientes.exportar') }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Exportar CSV
+                    </a>
+                    <a href="{{ route('clientes.exportar.pdf') }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Exportar PDF
+                    </a>
+                </div>
+            </div>
             @endcan
             @can('create', \App\Models\Cliente::class)
             <a href="{{ route('clientes.create') }}"
-               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;text-decoration:none;transition:filter 200ms"
+               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:var(--sa-font-body);background:var(--sa-primary);color:#fff;text-decoration:none;transition:filter 200ms"
                onmouseover="this.style.filter='brightness(1.1)'"
                onmouseout="this.style.filter='none'">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Novo Cliente
             </a>
             @endcan
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-sa.app-header>
 
+    <x-sa.body>
     {{-- Filtros --}}
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:14px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px">
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -72,7 +134,7 @@
     </div>
 
     {{-- Tabela --}}
-    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+    <div class="sa-clients-table" style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse">
                 <thead>
@@ -84,24 +146,31 @@
                                    @change="toggleAll($event.target.checked)"
                                    style="cursor:pointer;accent-color:var(--sa-primary)">
                         </th>
-                        {{-- Colunas ordenáveis --}}
-                        <template x-for="[col, lbl] in columns" :key="col">
-                            <th @click="toggleSort(col)"
-                                style="padding:11px 14px;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap;text-align:left">
-                                <span style="display:inline-flex;align-items:center;gap:4px">
-                                    <span x-text="lbl"></span>
-                                    <span x-show="sortCol !== col" style="opacity:.3">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                                    </span>
-                                    <span x-show="sortCol === col && sortDir === 'asc'" style="color:var(--sa-secondary)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
-                                    </span>
-                                    <span x-show="sortCol === col && sortDir === 'desc'" style="color:var(--sa-secondary)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                                    </span>
+                        {{-- Colunas ordenáveis (estáticas — x-for em thead quebra layout) --}}
+                        @foreach([
+                            ['name', 'Cliente'],
+                            ['email', 'E-mail'],
+                            ['phone', 'Telefone'],
+                            ['last_date', 'Último Agend.'],
+                            ['total', 'Total'],
+                            ['status', 'Status'],
+                        ] as [$colKey, $colLabel])
+                        <th @click="toggleSort('{{ $colKey }}')"
+                            style="padding:11px 14px;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap;text-align:left">
+                            <span style="display:inline-flex;align-items:center;gap:4px">
+                                <span>{{ $colLabel }}</span>
+                                <span x-show="sortCol !== '{{ $colKey }}'" style="opacity:.3">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                                 </span>
-                            </th>
-                        </template>
+                                <span x-show="sortCol === '{{ $colKey }}' && sortDir === 'asc'" x-cloak style="color:var(--sa-secondary)">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+                                </span>
+                                <span x-show="sortCol === '{{ $colKey }}' && sortDir === 'desc'" x-cloak style="color:var(--sa-secondary)">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </span>
+                            </span>
+                        </th>
+                        @endforeach
                         <th style="padding:11px 14px;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;width:80px">Ações</th>
                     </tr>
                 </thead>
@@ -144,18 +213,16 @@
                             </td>
                             {{-- Status --}}
                             <td style="padding:14px;vertical-align:middle">
-                                <template x-if="client.status === 'active'">
-                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">
-                                        <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
-                                        Ativo
-                                    </span>
-                                </template>
-                                <template x-if="client.status !== 'active'">
-                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(107,114,128,.12);color:#6b7280">
-                                        <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
-                                        Inativo
-                                    </span>
-                                </template>
+                                <span x-show="client.status === 'active'"
+                                      style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">
+                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
+                                    Ativo
+                                </span>
+                                <span x-show="client.status !== 'active'"
+                                      style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(107,114,128,.12);color:#6b7280">
+                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
+                                    Inativo
+                                </span>
                             </td>
                             {{-- Ações --}}
                             <td style="padding:14px;vertical-align:middle">
@@ -185,66 +252,37 @@
         </div>
 
         {{-- Paginação --}}
-        <div x-show="totalPages > 1"
-             style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--sa-border)">
+        <div x-show="filtered.length > 0" x-cloak class="sa-clients-pagination">
             <span style="font-size:13px;color:var(--sa-text3)"
                   x-text="`${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} de ${filtered.length}`"></span>
-            <div style="display:flex;gap:6px;align-items:center">
-                {{-- Anterior --}}
-                <button @click="page--" :disabled="page === 0"
-                        style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);transition:all 150ms;font-size:13px"
-                        :style="page === 0 ? 'opacity:.4;cursor:default' : ''"
-                        onmouseover="if(!this.disabled)this.style.borderColor='var(--sa-primary)';if(!this.disabled)this.style.color='var(--sa-text1)'"
-                        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+            <div x-show="totalPages > 1" class="sa-clients-pager">
+                <button type="button" class="sa-clients-pager-btn" @click="page--" :disabled="page === 0">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-
-                {{-- Páginas --}}
                 <template x-for="i in totalPages" :key="i">
-                    <button @click="page = i - 1"
-                            :style="(i - 1) === page ? 'background:var(--sa-primary);color:#fff;border-color:var(--sa-primary)' : ''"
-                            style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);font-size:13px;font-weight:600;transition:all 150ms"
-                            x-text="i">
-                    </button>
+                    <button type="button"
+                            class="sa-clients-pager-btn"
+                            :class="(i - 1) === page ? 'sa-clients-pager-btn--active' : ''"
+                            @click="page = i - 1"
+                            x-text="i"></button>
                 </template>
-
-                {{-- Próxima --}}
-                <button @click="page++" :disabled="page >= totalPages - 1"
-                        style="width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3);transition:all 150ms;font-size:13px"
-                        :style="page >= totalPages - 1 ? 'opacity:.4;cursor:default' : ''"
-                        onmouseover="if(!this.disabled)this.style.borderColor='var(--sa-primary)';if(!this.disabled)this.style.color='var(--sa-text1)'"
-                        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'">
+                <button type="button" class="sa-clients-pager-btn" @click="page++" :disabled="page >= totalPages - 1">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Modal de detalhes --}}
+    </x-sa.body>
+
+    {{-- Modal de detalhes — sa-modal-overlay centraliza (Alpine remove display inline do x-show) --}}
     <div x-show="detail !== null"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
+         x-cloak
          @keydown.escape.window="detail = null"
-         style="position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px"
-         x-cloak>
+         class="sa-modal-overlay"
+         @click.self="detail = null">
 
-        {{-- Overlay --}}
-        <div @click="detail = null"
-             style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
-
-        {{-- Card do modal --}}
-        <div x-show="detail !== null"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             style="position:relative;background:var(--sa-surface);border-radius:16px;border:1px solid var(--sa-border);width:100%;max-width:720px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18)">
+        <div class="sa-clients-modal" @click.stop x-show="detail !== null">
 
             {{-- Header --}}
             <div style="padding:20px 24px;border-bottom:1px solid var(--sa-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
@@ -272,17 +310,14 @@
                     <div style="flex:1;min-width:0">
                         <div style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--sa-text1)" x-text="detail?.name"></div>
                         <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
-                            {{-- Badge status --}}
-                            <template x-if="detail?.status === 'active'">
-                                <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">
-                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Ativo
-                                </span>
-                            </template>
-                            <template x-if="detail?.status !== 'active'">
-                                <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(107,114,128,.12);color:#6b7280">
-                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Inativo
-                                </span>
-                            </template>
+                            <span x-show="detail?.status === 'active'"
+                                  style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">
+                                <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Ativo
+                            </span>
+                            <span x-show="detail?.status !== 'active'"
+                                  style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(107,114,128,.12);color:#6b7280">
+                                <span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>Inativo
+                            </span>
                             {{-- WhatsApp --}}
                             <button @click="detail && window.open(`https://wa.me/${detail.phone.replace(/\D/g,'')}`, '_blank')"
                                     style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#25D366;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);border-radius:20px;padding:4px 12px;cursor:pointer">
@@ -334,8 +369,7 @@
                                @change="uploadFoto($event)">
                     </div>
 
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-                        {{-- Fotos existentes --}}
+                    <div class="sa-clients-fotos-grid">
                         <template x-for="foto in (detail?.fotos ?? [])" :key="foto.id">
                             <div style="aspect-ratio:4/3;border-radius:10px;overflow:hidden;position:relative;background:var(--sa-surface2);border:1px solid var(--sa-border)">
                                 <img :src="foto.url" :alt="foto.legenda || foto.tipo"
@@ -391,7 +425,7 @@
         </div>
     </div>
 
-</div>
+</x-sa.page>
 
 @push('scripts')
 <script>
@@ -407,19 +441,7 @@ function clientesApp() {
         perPage: 8,
         detail: null,
         uploadingFoto: false,
-
-        columns: [
-            ['name',      'Cliente'],
-            ['email',     'E-mail'],
-            ['phone',     'Telefone'],
-            ['last_date', 'Último Agend.'],
-            ['total',     'Total'],
-            ['status',    'Status'],
-        ],
-
-        init() {
-            // nothing extra needed
-        },
+        exportOpen: false,
 
         get filtered() {
             let list = [...this.clientes];
@@ -485,7 +507,10 @@ function clientesApp() {
         },
 
         openDetail(c) {
-            this.detail = c;
+            this.detail = {
+                ...c,
+                fotos: [...(c.fotos ?? [])],
+            };
         },
 
         formatDate(val) {
@@ -542,9 +567,10 @@ function clientesApp() {
             formData.append('imagem', file);
             formData.append('tipo', 'outro');
 
-            const url = `/clientes/${this.detail.id}/fotos`;
+            const url = `{{ url('clientes') }}/${this.detail.id}/fotos`;
 
             try {
+                this.uploadingFoto = true;
                 const resp = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -556,18 +582,22 @@ function clientesApp() {
 
                 if (!resp.ok) throw new Error('Upload falhou');
 
-                const foto = await resp.json();
+                const payload = await resp.json();
+                const foto = payload.data ?? payload;
 
-                // Atualizar detail e o array original
-                if (!this.detail.fotos) this.detail.fotos = [];
-                this.detail.fotos.push(foto);
+                this.detail.fotos = [...(this.detail.fotos ?? []), foto];
 
                 const orig = this.clientes.find(c => c.id === this.detail.id);
-                if (orig) { if (!orig.fotos) orig.fotos = []; orig.fotos.push(foto); }
+                if (orig) {
+                    if (!orig.fotos) orig.fotos = [];
+                    orig.fotos = [...orig.fotos, foto];
+                }
 
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Foto enviada!', showConfirmButton: false, timer: 2000, timerProgressBar: true });
             } catch {
                 Swal.fire({ icon: 'error', title: 'Erro ao enviar', text: 'Tente novamente.' });
+            } finally {
+                this.uploadingFoto = false;
             }
         },
 
@@ -601,7 +631,9 @@ function clientesApp() {
                     this.detail.fotos = this.detail.fotos.filter(f => f.id !== foto.id);
                 }
                 const orig = this.clientes.find(c => c.id === this.detail?.id);
-                if (orig) orig.fotos = orig.fotos.filter(f => f.id !== foto.id);
+                if (orig && orig.fotos) {
+                    orig.fotos = orig.fotos.filter(f => f.id !== foto.id);
+                }
 
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Foto excluída!', showConfirmButton: false, timer: 2000, timerProgressBar: true });
             } catch {

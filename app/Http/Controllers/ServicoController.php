@@ -11,10 +11,12 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Support\SaServiceIcons;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,6 +32,7 @@ class ServicoController extends Controller
 
         $servicos = (clone $baseQuery)
             ->when($request->search, fn ($q) => $q->where('nome', 'like', "%{$request->search}%"))
+            ->with(['profissionais:id,name,cor,foto_path'])
             ->orderBy('nome')
             ->paginate(15)
             ->withQueryString();
@@ -41,22 +44,53 @@ class ServicoController extends Controller
             'duracao_media' => (int) round((float) ((clone $baseQuery)->avg('duracao_minutos') ?? 0)),
         ];
 
-        return view('servicos.index', compact('servicos', 'stats'));
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->ativo()
+            ->orderBy('name')
+            ->get(['id', 'name', 'cor', 'foto_path']);
+
+        $palette = ['#1a1a1a', '#d4a574', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#ef4444', '#0ea5e9', '#8b5cf6', '#14b8a6'];
+
+        $servicosJson = $servicos->getCollection()->map(fn (Servico $s) => [
+            'id' => $s->id,
+            'nome' => $s->nome,
+            'descricao' => $s->descricao ?? '',
+            'duracao_minutos' => (int) $s->duracao_minutos,
+            'preco' => (float) $s->preco,
+            'cor' => $s->cor ?? '#1a1a1a',
+            'icone' => SaServiceIcons::normalize($s->icone ?? SaServiceIcons::DEFAULT),
+            'ativo' => (bool) $s->ativo,
+            'profissionais' => $s->profissionais->pluck('id')->values()->all(),
+        ])->values();
+
+        $profissionaisJson = $profissionais->map(fn (Profissional $p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'cor' => $p->cor ?? '#1a1a1a',
+            'foto_url' => $p->foto_path ? Storage::url($p->foto_path) : null,
+        ])->values();
+
+        $iconCatalog = SaServiceIcons::catalogForJs();
+
+        return view('servicos.index', compact(
+            'servicos',
+            'stats',
+            'profissionais',
+            'palette',
+            'servicosJson',
+            'profissionaisJson',
+            'iconCatalog',
+        ));
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
         $this->authorize('create', Servico::class);
 
-        $profissionais = Profissional::where('company_id', auth()->user()->empresa_id)
-            ->ativo()
-            ->orderBy('name')
-            ->get();
-
-        return view('servicos.create', compact('profissionais'));
+        return redirect()->route('servicos.index', ['novo' => 1]);
     }
 
-    public function store(StoreServicoRequest $request): RedirectResponse
+    public function store(StoreServicoRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Servico::class);
 
@@ -68,28 +102,34 @@ class ServicoController extends Controller
             ...$data,
             'company_id' => auth()->user()->empresa_id,
             'ativo' => $request->boolean('ativo', true),
+            'icone' => SaServiceIcons::normalize($data['icone'] ?? SaServiceIcons::DEFAULT),
         ]);
 
         if ($profissionalIds) {
             $servico->profissionais()->sync($profissionalIds);
         }
 
+        if ($request->wantsJson()) {
+            $servico->load('profissionais:id,name,cor,foto_path');
+
+            return response()->json([
+                'success' => true,
+                'servico' => $this->servicoJson($servico),
+            ], 201);
+        }
+
         return redirect()->route('servicos.index')
             ->with('success', "Serviço {$servico->nome} criado com sucesso.");
     }
 
-    public function edit(Servico $servico): View
+    public function edit(Servico $servico): RedirectResponse
     {
         $this->authorize('update', $servico);
 
-        $empresa = auth()->user()->empresa_id;
-        $profissionais = Profissional::where('company_id', $empresa)->ativo()->orderBy('name')->get();
-        $servico->load('profissionais');
-
-        return view('servicos.edit', compact('servico', 'profissionais'));
+        return redirect()->route('servicos.index', ['editar' => $servico->id]);
     }
 
-    public function update(UpdateServicoRequest $request, Servico $servico): RedirectResponse
+    public function update(UpdateServicoRequest $request, Servico $servico): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $servico);
 
@@ -100,9 +140,19 @@ class ServicoController extends Controller
         $servico->update([
             ...$data,
             'ativo' => $request->boolean('ativo'),
+            'icone' => SaServiceIcons::normalize($data['icone'] ?? $servico->icone),
         ]);
 
         $servico->profissionais()->sync($profissionalIds);
+
+        if ($request->wantsJson()) {
+            $servico->load('profissionais:id,name,cor,foto_path');
+
+            return response()->json([
+                'success' => true,
+                'servico' => $this->servicoJson($servico),
+            ]);
+        }
 
         return redirect()->route('servicos.index')
             ->with('success', 'Serviço atualizado com sucesso.');
@@ -726,5 +776,27 @@ class ServicoController extends Controller
 
         return redirect()->route('servicos.index')
             ->with('success', "Serviço {$servico->nome} removido.");
+    }
+
+    /**
+     * Serializa serviço para respostas JSON do modal.
+     *
+     * @return array<string, mixed>
+     */
+    private function servicoJson(Servico $servico): array
+    {
+        $servico->loadMissing('profissionais:id,name,cor,foto_path');
+
+        return [
+            'id' => $servico->id,
+            'nome' => $servico->nome,
+            'descricao' => $servico->descricao ?? '',
+            'duracao_minutos' => (int) $servico->duracao_minutos,
+            'preco' => (float) $servico->preco,
+            'cor' => $servico->cor ?? '#1a1a1a',
+            'icone' => SaServiceIcons::normalize($servico->icone ?? SaServiceIcons::DEFAULT),
+            'ativo' => (bool) $servico->ativo,
+            'profissionais' => $servico->profissionais->pluck('id')->values()->all(),
+        ];
     }
 }

@@ -231,6 +231,13 @@ final class SaPalettes
                 'qui' => ['08:00', '20:00', true],
                 'sex' => ['08:00', '20:00', true],
                 'sab' => ['08:00', '16:00', true],
+                'dom' => ['09:00', '14:00', false],
+            ],
+            'closure' => [
+                'active' => false,
+                'status' => 'ferias',
+                'return_date' => null,
+                'note' => '',
             ],
             'advanced' => [
                 'confirm_required' => false,
@@ -239,6 +246,34 @@ final class SaPalettes
                 'cancel_policy' => '',
                 'min_advance_mins' => 30,
                 'max_advance_days' => 60,
+            ],
+            'payments' => [
+                'pix_key' => '',
+                'pix_key_type' => 'random',
+                'pix_city' => '',
+            ],
+            'integrations' => [
+                'whatsapp' => [
+                    'ativo' => false,
+                    'twilio_sid' => '',
+                    'twilio_token' => '',
+                    'twilio_numero' => '',
+                ],
+                'gateway' => 'nenhum',
+                'mercadopago' => ['access_token' => ''],
+                'asaas' => ['api_key' => '', 'ambiente' => 'sandbox'],
+                'stripe' => ['publishable_key' => '', 'secret_key' => ''],
+            ],
+            'notifications_v2' => [
+                'agendamento_confirmado' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'agendamento_cancelado' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'lembrete_24h' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'lembrete_1h' => ['email' => false, 'whatsapp' => false, 'sms' => false],
+                'no_show' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'pagamento_confirmado' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'novo_cliente' => ['email' => false, 'whatsapp' => false, 'sms' => false],
+                'resumo_diario' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'relatorio_semanal' => ['email' => false, 'whatsapp' => false, 'sms' => false],
             ],
         ];
     }

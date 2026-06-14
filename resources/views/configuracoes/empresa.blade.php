@@ -20,8 +20,54 @@
         color:var(--sa-text1); background:var(--sa-surface); outline:none;
     }
     .sa-field textarea { resize:vertical; min-height:100px; }
-    .sa-hours-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:10px; margin-bottom:8px; border:1px solid var(--sa-border); background:var(--sa-surface2); }
-    .sa-hours-row.is-active { background:color-mix(in srgb,var(--sa-primary) 5%,transparent); border-color:color-mix(in srgb,var(--sa-primary) 15%,transparent); }
+    .sa-hours-preset { padding:16px; border-radius:12px; border:1px solid var(--sa-border); background:var(--sa-surface2); }
+    .sa-hours-preset__tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .sa-hours-preset__tab {
+        padding:6px 12px; border-radius:20px; border:1.5px solid var(--sa-border); background:var(--sa-surface);
+        font-size:12px; font-weight:600; color:var(--sa-text2); cursor:pointer; transition:all 150ms;
+    }
+    .sa-hours-preset__tab.is-active { border-color:var(--sa-primary); color:var(--sa-text1); background:color-mix(in srgb,var(--sa-primary) 6%,transparent); }
+    .sa-hours-preset__row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px; }
+    .sa-hours-preset__field { flex:1; min-width:120px; }
+    .sa-hours-preset__field label { display:block; font-size:11px; font-weight:600; color:var(--sa-text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; }
+    .sa-hours-preset__field select, .sa-hours-preset__field input {
+        width:100%; padding:8px 10px; border:1.5px solid var(--sa-border); border-radius:8px;
+        font-size:13px; color:var(--sa-text1); background:var(--sa-surface); outline:none;
+    }
+    .sa-hours-preset__times { display:flex; align-items:center; gap:6px; flex:1; min-width:180px; }
+    .sa-hours-preset__times input { flex:1; padding:8px 10px; border:1.5px solid var(--sa-border); border-radius:8px; font-size:13px; background:var(--sa-surface); color:var(--sa-text1); }
+    .sa-hours-preset__times span { font-size:12px; color:var(--sa-text3); flex-shrink:0; }
+    .sa-hours-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .sa-hours-chip {
+        width:34px; height:34px; border-radius:8px; border:1.5px solid var(--sa-border); background:var(--sa-surface);
+        font-size:11px; font-weight:700; color:var(--sa-text2); cursor:pointer; transition:all 150ms; padding:0;
+    }
+    .sa-hours-chip.is-on { border-color:var(--sa-primary); background:var(--sa-primary); color:#fff; }
+    .sa-hours-table-wrap { border-radius:12px; border:1px solid var(--sa-border); overflow:hidden; background:var(--sa-surface); }
+    .sa-hours-table { width:100%; border-collapse:collapse; }
+    .sa-hours-table thead tr { background:var(--sa-surface2); border-bottom:1px solid var(--sa-border); }
+    .sa-hours-table th { padding:9px 12px; text-align:left; font-size:11px; font-weight:600; color:var(--sa-text3); text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+    .sa-hours-table td { padding:8px 12px; border-bottom:1px solid var(--sa-border); vertical-align:middle; }
+    .sa-hours-table tbody tr:last-child td { border-bottom:none; }
+    .sa-hours-table tbody tr { transition:background 120ms; }
+    .sa-hours-table tbody tr:hover { background:var(--sa-surface2); }
+    .sa-hours-table tbody tr.is-open { background:color-mix(in srgb,var(--sa-primary) 3%,transparent); }
+    .sa-hours-table tbody tr.is-temp { background:color-mix(in srgb,#f59e0b 4%,transparent); }
+    .sa-hours-table__day { font-size:13px; font-weight:600; color:var(--sa-text1); white-space:nowrap; width:72px; }
+    .sa-hours-table__day span { display:block; font-size:10px; font-weight:500; color:var(--sa-text3); }
+    .sa-hours-table select, .sa-hours-table input[type=time], .sa-hours-table input[type=date] {
+        padding:6px 8px; border:1.5px solid var(--sa-border); border-radius:7px; font-size:12px;
+        color:var(--sa-text1); background:var(--sa-surface); outline:none; width:100%;
+    }
+    .sa-hours-table__times { display:flex; align-items:center; gap:6px; min-width:160px; }
+    .sa-hours-table__times input { width:auto; flex:1; min-width:0; }
+    .sa-hours-table__times span { font-size:11px; color:var(--sa-text3); flex-shrink:0; }
+    .sa-hours-table__muted { font-size:11px; color:var(--sa-text3); font-style:italic; white-space:nowrap; }
+    .sa-empresa-sections { display:flex; flex-direction:column; gap:24px; }
+    .sa-empresa-section { display:flex; flex-direction:column; gap:16px; }
+    .sa-empresa-section__title { font-size:14px; font-weight:600; color:var(--sa-text1); margin:0; }
+    .sa-empresa-section__sub { font-size:13px; color:var(--sa-text3); margin:0; line-height:1.5; }
+    .sa-closure-card { padding:20px; border-radius:12px; border:1px solid color-mix(in srgb,#f59e0b 25%,transparent); background:color-mix(in srgb,#f59e0b 5%,transparent); }
     .sa-toggle { width:42px; height:24px; border-radius:12px; border:none; cursor:pointer; background:var(--sa-border); position:relative; flex-shrink:0; padding:0; }
     .sa-toggle.is-on { background:var(--sa-primary); }
     .sa-toggle__knob { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left 200ms; box-shadow:0 1px 4px rgba(0,0,0,.2); }
@@ -29,21 +75,28 @@
     .sa-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
     .sa-grid2--tight { gap:12px; }
     .sa-empresa-tabs button span.lbl { display:inline; }
+    .sa-closure-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
     @media (max-width:760px) {
         .sa-grid2 { grid-template-columns:1fr; }
         .sa-empresa-body { padding:20px; }
         .sa-empresa-tabs { overflow-x:auto; }
         .sa-empresa-tabs button { flex:0 0 auto; padding:14px 16px; }
+        .sa-closure-grid { grid-template-columns:1fr; }
+        .sa-hours-table-wrap { overflow-x:auto; }
+        .sa-hours-table { min-width:520px; }
     }
 </style>
 @endpush
 
 @section('content')
 @php
+    use App\Support\CompanyHours;
     $tab = request('tab', 'dados');
-    $hours = $settings['hours'];
     $adv = $settings['advanced'];
-    $weekdays = ['seg'=>'Segunda','ter'=>'Terça','qua'=>'Quarta','qui'=>'Quinta','sex'=>'Sexta','sab'=>'Sábado'];
+    $payments = $settings['payments'] ?? [];
+    $weekdays = CompanyHours::DAY_LABELS;
+    $weekdayShort = ['seg'=>'Seg','ter'=>'Ter','qua'=>'Qua','qui'=>'Qui','sex'=>'Sex','sab'=>'Sáb','dom'=>'Dom'];
+    $statusOptions = CompanyHours::STATUS_LABELS;
     $empresaTabs = [
         'dados' => ['label'=>'Dados','icon'=>'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'],
         'horarios' => ['label'=>'Horários','icon'=>'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'],
@@ -57,7 +110,8 @@
 
     <x-sa.body padding="24px 32px 40px">
         <div class="sa-empresa-wrap">
-            <form method="POST" action="{{ route('configuracoes.empresa.update') }}" class="sa-empresa-card" x-data="{ tab: '{{ $tab }}' }">
+            <form method="POST" action="{{ route('configuracoes.empresa.update') }}" class="sa-empresa-card"
+                  x-data="{ tab: @js($tab) }">
                 @csrf @method('PUT')
                 <input type="hidden" name="tab" :value="tab">
 
@@ -143,29 +197,161 @@
                                     <textarea name="description" maxlength="300" placeholder="Descreva seu negócio...">{{ old('description', $company->description) }}</textarea>
                                     <p style="font-size:11px;color:var(--sa-text3);margin-top:4px">{{ strlen($company->description ?? '') }}/300</p>
                                 </div>
+                                <div style="padding:16px;border-radius:12px;border:1px solid var(--sa-border);background:var(--sa-surface2)">
+                                    <div style="font-size:12px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Recebimentos Pix (PDV)</div>
+                                    <div style="display:flex;flex-direction:column;gap:12px">
+                                        <div class="sa-field">
+                                            <label>Tipo de chave</label>
+                                            <select name="pix_key_type">
+                                                @foreach(['random'=>'Aleatória','email'=>'E-mail','phone'=>'Telefone','document'=>'CPF/CNPJ'] as $val => $lbl)
+                                                <option value="{{ $val }}" {{ old('pix_key_type', $payments['pix_key_type'] ?? 'random') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="sa-field">
+                                            <label>Chave Pix</label>
+                                            <input type="text" name="pix_key" value="{{ old('pix_key', $payments['pix_key'] ?? '') }}" placeholder="Ex: seu@email.com ou UUID">
+                                        </div>
+                                        <div class="sa-field">
+                                            <label>Cidade (obrigatório no QR Code)</label>
+                                            <input type="text" name="pix_city" value="{{ old('pix_city', $payments['pix_city'] ?? '') }}" placeholder="Ex: São Paulo">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {{-- HORÁRIOS --}}
-                    <div x-show="tab === 'horarios'" x-cloak>
-                        <p style="font-size:13px;color:var(--sa-text3);margin-bottom:16px">Defina os dias e horários de atendimento. Horários fechados não aparecerão no link de agendamento.</p>
-                        @foreach($weekdays as $key => $label)
-                        @php [$open, $close, $active] = $hours[$key] ?? ['08:00','20:00',false]; @endphp
-                        <div class="sa-hours-row {{ $active ? 'is-active' : '' }}">
-                            <input type="hidden" name="hours[{{ $key }}][2]" value="{{ $active ? '1' : '0' }}" class="hours-active-input">
-                            <input type="checkbox" {{ $active ? 'checked' : '' }} onchange="const row=this.closest('.sa-hours-row'); row.classList.toggle('is-active',this.checked); row.querySelector('.hours-active-input').value=this.checked?'1':'0';" style="width:16px;height:16px;accent-color:var(--sa-primary)">
-                            <span style="font-size:13px;font-weight:600;width:72px;flex-shrink:0">{{ $label }}</span>
-                            <div style="display:flex;align-items:center;gap:8px;flex:1" class="hours-times">
-                                <input type="time" name="hours[{{ $key }}][0]" value="{{ $open }}" style="flex:1;padding:5px 9px;border:1px solid var(--sa-border);border-radius:7px;font-size:13px;background:var(--sa-surface)">
-                                <span style="font-size:12px;color:var(--sa-text3)">às</span>
-                                <input type="time" name="hours[{{ $key }}][1]" value="{{ $close }}" style="flex:1;padding:5px 9px;border:1px solid var(--sa-border);border-radius:7px;font-size:13px;background:var(--sa-surface)">
+                    <div x-show="tab === 'horarios'" x-cloak class="sa-empresa-sections">
+                        <div class="sa-empresa-section" x-data="companyHoursEditor(@js($hours), @js($weekdayShort))">
+                            <div>
+                                <h3 class="sa-empresa-section__title">Dias e horários de atendimento</h3>
+                                <p class="sa-empresa-section__sub" style="margin-top:6px">Use os atalhos para aplicar horários em lote ou ajuste dia a dia na tabela abaixo.</p>
+                            </div>
+
+                            {{-- Atalhos em lote --}}
+                            <div class="sa-hours-preset">
+                                <div style="font-size:12px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Aplicar em lote</div>
+                                <div class="sa-hours-preset__tabs">
+                                    <button type="button" class="sa-hours-preset__tab" :class="{ 'is-active': preset === 'weekdays' }" @click="preset = 'weekdays'">Segunda a Sexta</button>
+                                    <button type="button" class="sa-hours-preset__tab" :class="{ 'is-active': preset === 'saturday' }" @click="preset = 'saturday'">Sábado</button>
+                                    <button type="button" class="sa-hours-preset__tab" :class="{ 'is-active': preset === 'all' }" @click="preset = 'all'">Todos os dias</button>
+                                    <button type="button" class="sa-hours-preset__tab" :class="{ 'is-active': preset === 'custom' }" @click="preset = 'custom'">Escolher dias</button>
+                                </div>
+
+                                <div x-show="preset === 'custom'" x-cloak class="sa-hours-chips">
+                                    <template x-for="(short, key) in dayShort" :key="key">
+                                        <button type="button" class="sa-hours-chip" :class="{ 'is-on': presetDays[key] }" @click="presetDays[key] = !presetDays[key]" x-text="short"></button>
+                                    </template>
+                                </div>
+
+                                <div class="sa-hours-preset__row">
+                                    <div class="sa-hours-preset__field" style="max-width:150px">
+                                        <label>Situação</label>
+                                        <select x-model="presetStatus">
+                                            @foreach($statusOptions as $val => $lbl)
+                                            <option value="{{ $val }}">{{ $lbl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="sa-hours-preset__times" x-show="presetStatus === 'aberto'" x-cloak>
+                                        <input type="time" x-model="presetOpen">
+                                        <span>às</span>
+                                        <input type="time" x-model="presetClose">
+                                    </div>
+                                    <div class="sa-hours-preset__field" x-show="needsReturn(presetStatus)" x-cloak style="max-width:160px">
+                                        <label>Data de retorno</label>
+                                        <input type="date" x-model="presetReturn">
+                                    </div>
+                                    <button type="button" @click="applyPreset()"
+                                            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sa-font-body);background:var(--sa-primary);color:#fff;white-space:nowrap;transition:filter 200ms;flex-shrink:0"
+                                            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                                        Aplicar
+                                    </button>
+                                </div>
+                                <p style="font-size:11px;color:var(--sa-text3);margin:10px 0 0" x-text="presetHint()"></p>
+                            </div>
+
+                            {{-- Tabela compacta por dia --}}
+                            <div>
+                                <div style="font-size:12px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ajuste por dia</div>
+                                <div class="sa-hours-table-wrap">
+                                    <table class="sa-hours-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Dia</th>
+                                                <th>Situação</th>
+                                                <th>Horário</th>
+                                                <th>Retorno</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($weekdays as $key => $label)
+                                            <tr :class="{ 'is-open': hours['{{ $key }}'].status === 'aberto', 'is-temp': needsReturn(hours['{{ $key }}'].status) }">
+                                                <td class="sa-hours-table__day">
+                                                    {{ $weekdayShort[$key] }}
+                                                    <span>{{ $label }}</span>
+                                                </td>
+                                                <td style="width:130px">
+                                                    <select name="hours[{{ $key }}][status]" x-model="hours.{{ $key }}.status">
+                                                        @foreach($statusOptions as $val => $lbl)
+                                                        <option value="{{ $val }}">{{ $lbl }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <div class="sa-hours-table__times" x-show="hours.{{ $key }}.status === 'aberto'" x-cloak>
+                                                        <input type="time" name="hours[{{ $key }}][open]" x-model="hours.{{ $key }}.open">
+                                                        <span>às</span>
+                                                        <input type="time" name="hours[{{ $key }}][close]" x-model="hours.{{ $key }}.close">
+                                                    </div>
+                                                    <span class="sa-hours-table__muted" x-show="hours.{{ $key }}.status === 'fechado'" x-cloak>Fechado</span>
+                                                    <span class="sa-hours-table__muted" x-show="needsReturn(hours.{{ $key }}.status)" x-cloak x-text="statusLabel(hours.{{ $key }}.status)"></span>
+                                                </td>
+                                                <td style="width:140px">
+                                                    <input type="date" name="hours[{{ $key }}][return_date]" x-model="hours.{{ $key }}.return_date"
+                                                           x-show="needsReturn(hours.{{ $key }}.status)" x-cloak>
+                                                    <span class="sa-hours-table__muted" x-show="!needsReturn(hours.{{ $key }}.status)" x-cloak>—</span>
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                        @endforeach
-                        <div class="sa-hours-row" style="opacity:.6">
-                            <input type="checkbox" disabled style="width:16px;height:16px">
-                            <span style="font-size:13px;color:var(--sa-text3);font-style:italic">Domingo — Fechado</span>
+
+                        <div class="sa-closure-card sa-empresa-section">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+                                <div>
+                                    <h3 class="sa-empresa-section__title">Fechamento temporário do estabelecimento</h3>
+                                    <p class="sa-empresa-section__sub" style="margin-top:6px">Use quando todo o negócio estiver fechado por férias, feriado prolongado ou reforma.</p>
+                                </div>
+                                <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--sa-text1);cursor:pointer;flex-shrink:0">
+                                    <input type="hidden" name="closure[active]" value="0">
+                                    <input type="checkbox" name="closure[active]" value="1" {{ $closure['active'] ? 'checked' : '' }} style="width:16px;height:16px;accent-color:var(--sa-primary)">
+                                    Ativo
+                                </label>
+                            </div>
+                            <div class="sa-closure-grid">
+                                <div class="sa-field" style="margin:0">
+                                    <label>Motivo</label>
+                                    <select name="closure[status]">
+                                        @foreach(['ferias'=>'Férias','feriado'=>'Feriado','reforma'=>'Reforma','outro'=>'Outro'] as $val => $lbl)
+                                        <option value="{{ $val }}" @selected($closure['status'] === $val)>{{ $lbl }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="sa-field" style="margin:0">
+                                    <label>Data de retorno</label>
+                                    <input type="date" name="closure[return_date]" value="{{ $closure['return_date'] }}">
+                                </div>
+                            </div>
+                            <div class="sa-field" style="margin-top:14px;margin-bottom:0">
+                                <label>Observação (opcional)</label>
+                                <input type="text" name="closure[note]" value="{{ $closure['note'] }}" placeholder="Ex: Retornamos dia 15/07 com horário normal">
+                            </div>
                         </div>
                     </div>
 
@@ -210,9 +396,9 @@
                     </div>
 
                     {{-- AVANÇADO --}}
-                    <div x-show="tab === 'avancado'" x-cloak style="display:flex;flex-direction:column;gap:20px">
-                        <x-sa.card padding="18px">
-                            <h4 style="font-size:14px;font-weight:600;margin:0 0 14px">Regras de Agendamento</h4>
+                    <div x-show="tab === 'avancado'" x-cloak class="sa-empresa-sections">
+                        <x-sa.card padding="20px">
+                            <h4 class="sa-empresa-section__title" style="margin-bottom:16px">Regras de Agendamento</h4>
                             <div class="sa-grid2 sa-grid2--tight">
                                 <div class="sa-field">
                                     <label>Antecedência mínima</label>
@@ -232,15 +418,15 @@
                                 </div>
                             </div>
                         </x-sa.card>
-                        <x-sa.card padding="18px">
-                            <h4 style="font-size:14px;font-weight:600;margin:0 0 14px">Confirmações & Lembretes</h4>
+                        <x-sa.card padding="20px">
+                            <h4 class="sa-empresa-section__title" style="margin-bottom:16px">Confirmações & Lembretes</h4>
                             <x-sa.setting-row label="Exigir confirmação do cliente" sub="O agendamento só é confirmado após resposta do cliente">
                                 <x-sa.toggle name="confirm_required" :checked="$adv['confirm_required']" />
                             </x-sa.setting-row>
                             <x-sa.setting-row label="Lembrete automático" sub="Enviar WhatsApp/SMS antes do horário">
                                 <x-sa.toggle name="auto_reminder" :checked="$adv['auto_reminder']" />
                             </x-sa.setting-row>
-                            <div class="sa-field" style="margin-top:12px">
+                            <div class="sa-field" style="margin-top:16px;margin-bottom:0">
                                 <label>Enviar lembrete</label>
                                 <select name="reminder_hours">
                                     @foreach([1=>'1 hora antes',2=>'2 horas antes',24=>'24 horas antes',48=>'48 horas antes'] as $v => $l)
@@ -249,12 +435,12 @@
                                 </select>
                             </div>
                         </x-sa.card>
-                        <x-sa.card padding="18px">
-                            <h4 style="font-size:14px;font-weight:600;margin:0 0 10px">Política de Cancelamento</h4>
+                        <x-sa.card padding="20px">
+                            <h4 class="sa-empresa-section__title" style="margin-bottom:12px">Política de Cancelamento</h4>
                             <textarea name="cancel_policy" rows="3" placeholder="Descreva sua política..." style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;background:var(--sa-surface)">{{ old('cancel_policy', $adv['cancel_policy']) }}</textarea>
                             <p style="font-size:11px;color:var(--sa-text3);margin-top:6px">Exibida na página pública de agendamento.</p>
                         </x-sa.card>
-                        <x-sa.card padding="18px">
+                        <x-sa.card padding="20px">
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <div>
                                     <h4 style="font-size:14px;font-weight:600;margin:0 0 4px">Conformidade LGPD</h4>
@@ -282,6 +468,71 @@
 
 @push('scripts')
 <script>
+function companyHoursEditor(initialHours, dayShort) {
+    const tempStatuses = ['ferias', 'feriado', 'reforma', 'outro'];
+    const statusLabels = @json($statusOptions);
+
+    return {
+        hours: Object.fromEntries(Object.entries(initialHours).map(([k, v]) => [k, {
+            ...v,
+            return_date: v.return_date || '',
+        }])),
+        dayShort,
+        preset: 'weekdays',
+        presetStatus: 'aberto',
+        presetOpen: '08:00',
+        presetClose: '20:00',
+        presetReturn: '',
+        presetDays: { seg: true, ter: true, qua: true, qui: true, sex: true, sab: false, dom: false },
+
+        needsReturn(status) {
+            return tempStatuses.includes(status);
+        },
+
+        statusLabel(status) {
+            return statusLabels[status] || status;
+        },
+
+        presetKeys() {
+            if (this.preset === 'weekdays') return ['seg', 'ter', 'qua', 'qui', 'sex'];
+            if (this.preset === 'saturday') return ['sab'];
+            if (this.preset === 'all') return Object.keys(this.dayShort);
+            return Object.keys(this.presetDays).filter(k => this.presetDays[k]);
+        },
+
+        presetHint() {
+            const labels = {
+                weekdays: 'Segunda a Sexta',
+                saturday: 'Sábado',
+                all: 'Todos os dias (Seg–Dom)',
+                custom: 'Dias selecionados nos chips acima',
+            };
+            return 'Será aplicado em: ' + (labels[this.preset] || '');
+        },
+
+        applyPreset() {
+            const keys = this.presetKeys();
+            if (!keys.length) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'Selecione ao menos um dia', showConfirmButton: false, timer: 2200 });
+                return;
+            }
+            keys.forEach(key => {
+                this.hours[key].status = this.presetStatus;
+                if (this.presetStatus === 'aberto') {
+                    this.hours[key].open = this.presetOpen;
+                    this.hours[key].close = this.presetClose;
+                    this.hours[key].return_date = '';
+                } else if (this.needsReturn(this.presetStatus)) {
+                    this.hours[key].return_date = this.presetReturn;
+                } else {
+                    this.hours[key].return_date = '';
+                }
+            });
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Horário aplicado!', showConfirmButton: false, timer: 1800 });
+        },
+    };
+}
+
 function logoUploader(initialUrl) {
     return {
         logoUrl: initialUrl || null,

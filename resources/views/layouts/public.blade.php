@@ -77,6 +77,20 @@
             padding: 32px 20px 60px;
         }
         @media (max-width: 640px) { .pub-main { padding: 20px 14px 48px; } }
+
+        /* SweetAlert2 — botão cancelar sempre visível (páginas públicas) */
+        .swal2-cancel.swal-cancel-muted {
+            border: 1.5px solid var(--sa-border) !important;
+            background: var(--sa-surface) !important;
+            color: var(--sa-text2) !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        .swal2-cancel.swal-cancel-muted:hover {
+            border-color: var(--sa-primary) !important;
+            color: var(--sa-text1) !important;
+            background: var(--sa-surface2) !important;
+        }
     </style>
     @stack('styles')
 </head>

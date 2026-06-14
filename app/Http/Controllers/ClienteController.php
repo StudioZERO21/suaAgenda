@@ -14,6 +14,9 @@ use App\Models\Venda;
 use App\Services\ImageService;
 use App\Services\LgpdService;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +36,7 @@ class ClienteController extends Controller
         $clientes = Cliente::where('company_id', $empresa)
             ->with('fotos')
             ->withCount('agendamentos')
+            ->withMax('agendamentos', 'data_hora')
             ->orderBy('name')
             ->get();
 
@@ -42,7 +46,7 @@ class ClienteController extends Controller
             'email' => $c->email ?? '',
             'phone' => $c->phone ?? '',
             'status' => $c->ativo ? 'active' : 'inactive',
-            'last_date' => $c->agendamentos()->latest('data_hora')->value('data_hora'),
+            'last_date' => $c->agendamentos_max_data_hora,
             'total' => $c->agendamentos_count,
             'fotos' => $c->fotos->map(fn (ClienteFoto $f) => [
                 'id' => $f->id,
@@ -200,17 +204,25 @@ class ClienteController extends Controller
         return response()->json(['deleted' => $deleted]);
     }
 
-    public function exportarCsv(): StreamedResponse
+    /**
+     * Clientes da empresa autenticada para exportação (CSV/PDF).
+     *
+     * @return Collection<int, Cliente>
+     */
+    private function clientesParaExportacao()
     {
-        $this->authorize('viewAny', Cliente::class);
-
-        $empresa = auth()->user()->empresa_id;
-
-        $clientes = Cliente::where('company_id', $empresa)
+        return Cliente::where('company_id', auth()->user()->empresa_id)
             ->withCount('agendamentos')
             ->with(['agendamentos' => fn ($q) => $q->latest('data_hora')->limit(1)])
             ->orderBy('name')
             ->get();
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $clientes = $this->clientesParaExportacao();
 
         return response()->streamDownload(function () use ($clientes): void {
             $out = fopen('php://output', 'w');
@@ -232,6 +244,35 @@ class ClienteController extends Controller
             fclose($out);
         }, 'clientes-'.now()->format('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Exporta a lista de clientes em PDF (Dompdf).
+     */
+    public function exportarPdf(): Response
+    {
+        $this->authorize('viewAny', Cliente::class);
+
+        $clientes = $this->clientesParaExportacao();
+        $company = auth()->user()->company;
+
+        $html = view('clientes.export-pdf', compact('clientes', 'company'))->render();
+
+        $options = new Options;
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        $filename = 'clientes-'.now()->format('Y-m-d').'.pdf';
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 

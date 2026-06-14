@@ -26,6 +26,7 @@ class Servico extends Model
         'preco',
         'categoria',
         'cor',
+        'icone',
         'ativo',
     ];
 

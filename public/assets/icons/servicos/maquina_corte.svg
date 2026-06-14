@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="#1a1a1a" aria-hidden="true">
+<path d="M128 192h256c44 0 80 36 80 80v48c0 44-36 80-80 80H128c-44 0-80-36-80-80v-48c0-44 36-80 80-80z"/>
+<rect x="160" y="224" width="192" height="96" rx="12" fill="#fff"/>
+<path d="M384 256h64l32 48-32 48h-64z"/>
+<circle cx="208" cy="272" r="12" fill="#1a1a1a"/>
+<circle cx="272" cy="272" r="12" fill="#1a1a1a"/>
+</svg>

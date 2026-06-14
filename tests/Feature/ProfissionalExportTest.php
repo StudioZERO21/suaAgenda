@@ -86,3 +86,32 @@ describe('profissional_export_csv', function () {
         $this->get(route('profissionais.exportar'))->assertRedirect();
     });
 });
+
+describe('profissional_export_pdf', function () {
+    it('admin pode exportar PDF', function () {
+        $response = $this->actingAs($this->admin)
+            ->get(route('profissionais.exportar.pdf'));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+        expect(str_starts_with($response->getContent(), '%PDF'))->toBeTrue();
+    });
+
+    it('PDF contém nome do profissional', function () {
+        $this->actingAs($this->admin)
+            ->get(route('profissionais.exportar.pdf'))
+            ->assertOk();
+    });
+
+    it('não exporta profissionais de outra empresa no PDF', function () {
+        $outra = Company::create(['name' => 'Outra PDF', 'slug' => 'outra-pdf-prof', 'plano' => 'trial', 'ativo' => true]);
+        Profissional::create(['company_id' => $outra->id, 'name' => 'Intruso PDF', 'ativo' => true]);
+
+        $html = view('profissionais.export-pdf', [
+            'profissionais' => Profissional::where('company_id', $this->company->id)->withCount('agendamentos')->with('servicos:id,nome')->get(),
+            'company' => $this->company,
+        ])->render();
+
+        expect($html)->not->toContain('Intruso PDF');
+    });
+});

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditavel;
+use App\Support\UserPermissions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,14 +14,17 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use Auditavel, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
+    use Auditavel, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes {
+        HasRoles::hasPermissionTo as protected spatieHasPermissionTo;
+    }
 
-    protected $fillable = ['name', 'email', 'password', 'empresa_id', 'profissional_id', 'ativo'];
+    protected $fillable = ['name', 'email', 'password', 'empresa_id', 'profissional_id', 'ativo', 'acl_manual'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -30,6 +34,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'ativo' => 'boolean',
+            'acl_manual' => 'boolean',
         ];
     }
 
@@ -46,6 +51,37 @@ class User extends Authenticatable
     public function scopeAtivo(Builder $query): Builder
     {
         return $query->where('ativo', true);
+    }
+
+    /**
+     * Grupo ACL da empresa prevalece sobre permissões do papel global (gestor/analista).
+     *
+     * @param  string|int|Permission|\BackedEnum  $permission
+     */
+    public function hasPermissionTo($permission, ?string $guardName = null): bool
+    {
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
+        if ($this->hasRole('admin_empresa')) {
+            return $this->spatieHasPermissionTo($permission, $guardName);
+        }
+
+        if (UserPermissions::hasCompanyGrupo($this)) {
+            $name = match (true) {
+                is_string($permission) => $permission,
+                $permission instanceof \BackedEnum => $permission->value,
+                is_object($permission) && property_exists($permission, 'name') => (string) $permission->name,
+                default => null,
+            };
+
+            if ($name !== null && UserPermissions::isModulePermission($name)) {
+                return in_array($name, UserPermissions::effectiveNames($this), true);
+            }
+        }
+
+        return $this->spatieHasPermissionTo($permission, $guardName);
     }
 
     /**

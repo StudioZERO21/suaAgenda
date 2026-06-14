@@ -484,6 +484,773 @@
         }
         .sa-tr:hover { background: var(--sa-surface2); }
 
+        /* Abas verticais (PermissionsScreen.jsx) */
+        .sa-vtab {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: var(--sa-text2);
+            font-weight: 500;
+            font-size: 13px;
+            font-family: var(--sa-font-body);
+            border-left: 2px solid transparent;
+            transition: all 150ms;
+            margin-bottom: 2px;
+        }
+        .sa-vtab--active {
+            background: color-mix(in srgb, var(--sa-primary) 8%, transparent);
+            color: var(--sa-primary);
+            font-weight: 600;
+            border-left-color: var(--sa-primary);
+        }
+
+        /* Matriz de permissões (PermissionsScreen.jsx) */
+        .sa-perm-matrix-wrap { overflow-x: auto; }
+        .sa-perm-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        .sa-perm-matrix thead th {
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sa-text1);
+            text-align: center;
+            border-bottom: 2px solid var(--sa-border);
+            background: var(--sa-surface2);
+            min-width: 100px;
+        }
+        .sa-perm-matrix thead th:first-child {
+            padding: 10px 14px;
+            color: var(--sa-text3);
+            text-align: left;
+            width: 200px;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+        .sa-perm-matrix .sa-perm-cat-row {
+            cursor: pointer;
+            background: color-mix(in srgb, var(--sa-primary) 4%, transparent);
+        }
+        .sa-perm-matrix .sa-perm-cat-row td {
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--sa-text1);
+            border-bottom: 1px solid var(--sa-border);
+            border-top: 1px solid var(--sa-border);
+        }
+        .sa-perm-matrix .sa-perm-row td:first-child {
+            padding: 9px 14px 9px 22px;
+            font-size: 12px;
+            color: var(--sa-text2);
+            border-bottom: 1px solid var(--sa-border);
+            position: sticky;
+            left: 0;
+            background: var(--sa-surface);
+            z-index: 1;
+        }
+        .sa-perm-matrix .sa-perm-row td:not(:first-child) {
+            text-align: center;
+            border-bottom: 1px solid var(--sa-border);
+            padding: 9px 4px;
+        }
+        .sa-perm-check {
+            display: inline-flex;
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Badge de grupo ACL (PermissionsScreen — pill com borda colorida) */
+        .sa-grupo-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 20px;
+            white-space: nowrap;
+            line-height: 1.3;
+            border: 1px solid var(--grupo-badge-color, var(--sa-border));
+            background: var(--grupo-badge-bg, var(--sa-surface2));
+            color: var(--grupo-badge-color, var(--sa-text2));
+        }
+        .sa-grupo-badge--md {
+            font-size: 11px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+        }
+
+        /* Grupos ACL (PermissionsScreen.jsx — grid + cards) */
+        .sa-acl-groups-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            align-items: stretch;
+        }
+        /* Alpine x-for usa <template>; não deve ocupar célula do grid */
+        .sa-acl-groups-grid > template { display: none; }
+        .sa-acl-group-card {
+            background: var(--sa-surface);
+            border: 1px solid var(--sa-border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: box-shadow 200ms;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .sa-acl-group-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+        .sa-acl-group-card__strip { height: 4px; flex-shrink: 0; }
+        .sa-acl-group-card__body {
+            padding: 16px 16px 0;
+            flex: 1;
+            min-width: 0;
+        }
+        .sa-acl-group-card__head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .sa-acl-group-card__title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--sa-text1);
+            font-family: var(--sa-font-heading);
+            line-height: 1.3;
+        }
+        .sa-acl-group-card__desc {
+            font-size: 12px;
+            color: var(--sa-text3);
+            margin: 0 0 12px;
+            line-height: 1.5;
+        }
+        .sa-acl-group-card__perms { margin-bottom: 12px; }
+        .sa-acl-group-card__perm-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--sa-border);
+            gap: 8px;
+        }
+        .sa-acl-group-card__perm-row span:first-child {
+            font-size: 11px;
+            color: var(--sa-text3);
+            min-width: 0;
+        }
+        .sa-acl-group-card__perm-row span:last-child {
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .sa-acl-group-card__roles { margin-bottom: 12px; }
+        .sa-acl-group-card__roles-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sa-text3);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 6px;
+        }
+        .sa-acl-group-card__roles-list {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .sa-acl-group-card__role-tag {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .sa-acl-group-card__footer {
+            padding: 10px 12px;
+            border-top: 1px solid var(--sa-border);
+            display: flex;
+            gap: 6px;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+        .sa-acl-group-card__footer .sa-btn:first-child { flex: 1; }
+        .sa-acl-group-add {
+            background: var(--sa-surface2);
+            border: 2px dashed var(--sa-border);
+            border-radius: 14px;
+            padding: 32px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 200ms;
+            font-family: var(--sa-font-body);
+            min-height: 220px;
+        }
+        .sa-acl-group-add:hover {
+            border-color: var(--sa-primary);
+            background: color-mix(in srgb, var(--sa-primary) 4%, transparent);
+        }
+        .sa-acl-group-add__icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--sa-primary) 10%, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sa-acl-group-add__label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-text2);
+        }
+
+        /* Modal — Editar Grupo de Acesso (PermissionsScreen GroupModal) */
+        .sa-group-modal {
+            background: var(--sa-surface);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 64px rgba(0,0,0,.2);
+            animation: sa-modal-in 250ms ease;
+        }
+        .sa-group-modal__header {
+            padding: 24px 28px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        .sa-group-modal__title {
+            font-family: var(--sa-font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--sa-text1);
+            margin: 0;
+        }
+        .sa-group-modal__subtitle {
+            font-size: 13px;
+            color: var(--sa-text3);
+            margin: 4px 0 0;
+        }
+        .sa-group-modal__close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--sa-text3);
+            padding: 4px;
+            display: flex;
+            border-radius: 6px;
+        }
+        .sa-group-modal__body {
+            padding: 20px 28px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        .sa-group-modal__form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sa-group-modal__row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .sa-group-modal__field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-text1);
+            letter-spacing: .2px;
+            margin-bottom: 6px;
+        }
+        .sa-group-modal__field input,
+        .sa-group-modal__field textarea {
+            width: 100%;
+            padding: 10px 13px;
+            font-size: 14px;
+            border: 1.5px solid var(--sa-border);
+            border-radius: 8px;
+            background: var(--sa-surface);
+            color: var(--sa-text1);
+            font-family: var(--sa-font-body);
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 180ms, outline 180ms;
+        }
+        .sa-group-modal__field textarea { resize: vertical; min-height: 42px; }
+        .sa-group-modal__field input:focus,
+        .sa-group-modal__field textarea:focus {
+            border-color: var(--sa-primary);
+            outline: 3px solid rgba(0,0,0,.06);
+        }
+        .sa-group-modal__colors {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sa-group-modal__colors > template { display: none; }
+        .sa-group-modal__swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .sa-group-modal__perms-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        .sa-group-modal__perms-head label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-text1);
+        }
+        .sa-group-modal__perms-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-height: 360px;
+            overflow-y: auto;
+            align-items: start;
+        }
+        .sa-group-modal__perms-grid > template { display: none; }
+        .sa-group-modal__cat-card {
+            background: var(--sa-surface2);
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--sa-border);
+            min-width: 0;
+        }
+        .sa-group-modal__cat-card > template { display: none; }
+        .sa-group-modal__cat-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .sa-group-modal__cat-check {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sa-group-modal__cat-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--sa-text1);
+        }
+        .sa-group-modal__perm-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 0;
+            cursor: pointer;
+        }
+        .sa-group-modal__perm-check {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sa-group-modal__perm-label {
+            font-size: 11px;
+            color: var(--sa-text2);
+            line-height: 1.4;
+        }
+        .sa-group-modal__footer {
+            padding: 16px 28px 24px;
+            border-top: 1px solid var(--sa-border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        /* Cargos & Grupos (PermissionsScreen roles tab) */
+        .sa-role-assign-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sa-role-assign-list > template { display: none; }
+        .sa-role-assign-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            background: var(--sa-surface);
+            border: 1px solid var(--sa-border);
+            border-radius: 12px;
+            transition: box-shadow 150ms;
+            min-width: 0;
+        }
+        .sa-role-assign-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,.07); }
+        .sa-role-assign-row__icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sa-role-assign-row__role {
+            flex: 1;
+            min-width: 0;
+        }
+        .sa-role-assign-row__name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--sa-text1);
+        }
+        .sa-role-assign-row__nivel {
+            font-size: 11px;
+            color: var(--sa-text3);
+            margin-top: 2px;
+        }
+        .sa-role-assign-row__arrow {
+            flex-shrink: 0;
+            color: var(--sa-text3);
+        }
+        .sa-role-assign-row__group {
+            flex: 1;
+            min-width: 0;
+        }
+        .sa-role-assign-row__group-inner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sa-role-assign-row__group-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .sa-role-assign-row__group-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-text1);
+        }
+        .sa-role-assign-row__group-meta {
+            font-size: 11px;
+            color: var(--sa-text3);
+            margin-top: 1px;
+        }
+        .sa-role-assign-row__empty {
+            font-size: 13px;
+            color: var(--sa-text3);
+            font-style: italic;
+        }
+        .sa-role-assign-row__bar-wrap {
+            width: 80px;
+            flex-shrink: 0;
+        }
+        .sa-role-assign-row__bar-track {
+            height: 5px;
+            border-radius: 3px;
+            background: var(--sa-surface2);
+            overflow: hidden;
+        }
+        .sa-role-assign-row__bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 600ms ease;
+        }
+        .sa-role-assign-row__bar-pct {
+            font-size: 10px;
+            color: var(--sa-text3);
+            margin-top: 3px;
+            text-align: right;
+        }
+        .sa-acl-hint {
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: color-mix(in srgb, var(--sa-secondary) 8%, transparent);
+            border: 1px solid color-mix(in srgb, var(--sa-secondary) 20%, transparent);
+            border-radius: 10px;
+        }
+        .sa-acl-hint__title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-secondary);
+            margin-bottom: 4px;
+        }
+        .sa-acl-hint__text {
+            font-size: 12px;
+            color: var(--sa-text3);
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        /* Modal — Atribuir grupo a cargo */
+        .sa-assign-modal {
+            background: var(--sa-surface);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 64px rgba(0,0,0,.2);
+            animation: sa-modal-in 250ms ease;
+        }
+        .sa-assign-modal__header {
+            padding: 24px 28px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+        .sa-assign-modal__title {
+            font-family: var(--sa-font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--sa-text1);
+            margin: 0;
+        }
+        .sa-assign-modal__subtitle {
+            font-size: 13px;
+            color: var(--sa-text3);
+            margin: 4px 0 0;
+        }
+        .sa-assign-modal__close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--sa-text3);
+            padding: 4px;
+            display: flex;
+            border-radius: 6px;
+        }
+        .sa-assign-modal__body {
+            padding: 20px 28px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        .sa-assign-modal__options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sa-assign-modal__options > template { display: none; }
+        .sa-assign-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 150ms;
+            border: 2px solid var(--sa-border);
+            background: var(--sa-surface);
+        }
+        .sa-assign-option__radio {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .sa-assign-option__check {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sa-assign-option__name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--sa-text1);
+        }
+        .sa-assign-option__desc {
+            font-size: 11px;
+            color: var(--sa-text3);
+            margin-top: 2px;
+        }
+        .sa-assign-option__count {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .sa-assign-modal__empty {
+            padding: 10px 0;
+            text-align: center;
+            font-size: 13px;
+            color: var(--sa-text3);
+        }
+        .sa-assign-modal__footer {
+            padding: 16px 28px 24px;
+            border-top: 1px solid var(--sa-border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        /* Funcionários — aba Usuários & Funções (somente leitura) */
+        .sa-funcionario-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sa-funcionario-list > template { display: none; }
+        .sa-funcionario-card {
+            background: var(--sa-surface);
+            border: 1px solid var(--sa-border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            transition: box-shadow 150ms;
+        }
+        .sa-funcionario-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+        .sa-funcionario-card__head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+        .sa-funcionario-card__avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--sa-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: var(--sa-font-body);
+            flex-shrink: 0;
+        }
+        .sa-funcionario-card__info { flex: 1; min-width: 0; }
+        .sa-funcionario-card__name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sa-text1);
+        }
+        .sa-funcionario-card__email {
+            font-size: 12px;
+            color: var(--sa-text3);
+            margin-top: 1px;
+        }
+        .sa-funcionario-card__badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .sa-funcionario-card__badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .sa-funcionario-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--sa-border);
+        }
+        .sa-funcionario-card__meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+        .sa-funcionario-card__meta-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sa-text3);
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+        .sa-funcionario-card__meta-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sa-text1);
+        }
+        .sa-funcionario-card__perms-head {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sa-text3);
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            margin-bottom: 8px;
+        }
+        .sa-funcionario-card__perms-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .sa-funcionario-card__perms-grid > template { display: none; }
+        .sa-funcionario-card__perm-cat {
+            background: var(--sa-surface2);
+            border-radius: 8px;
+            padding: 8px 10px;
+            border: 1px solid var(--sa-border);
+        }
+        .sa-funcionario-card__perm-cat-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .sa-funcionario-card__perm-cat-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sa-text1);
+        }
+        .sa-funcionario-card__perm-cat-count {
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .sa-funcionario-card__perm-labels {
+            font-size: 10px;
+            color: var(--sa-text3);
+            line-height: 1.5;
+        }
+
         .sa-search-input {
             width: 100%;
             padding: 10px 12px 10px 36px;
@@ -519,6 +1286,7 @@
         @media (max-width: 1080px) {
             .sa-grid-4 { grid-template-columns: repeat(2, 1fr); }
             .sa-grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .sa-acl-groups-grid { grid-template-columns: repeat(2, 1fr); }
             .sa-grid-2-360 { grid-template-columns: 1fr; }
             .sa-app-header { padding: 20px 20px 0; }
             .sa-page-body { padding: 16px 20px 0 !important; }
@@ -526,6 +1294,10 @@
         @media (max-width: 768px) {
             .sa-grid-4 { grid-template-columns: 1fr; }
             .sa-grid-3 { grid-template-columns: 1fr; }
+            .sa-acl-groups-grid { grid-template-columns: 1fr; }
+            .sa-group-modal__row { grid-template-columns: 1fr; }
+            .sa-group-modal__perms-grid { grid-template-columns: 1fr; }
+            .sa-funcionario-card__perms-grid { grid-template-columns: 1fr; }
             .sa-app-header { padding: 16px 16px 0; }
             .sa-page-body { padding: 16px 16px 0 !important; }
             .hide-mobile { display: none; }
@@ -1121,6 +1893,28 @@
 @endif
 
 @stack('scripts')
+<script>
+window.saMaskPhone = function (value) {
+    let digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('55') && digits.length > 11) {
+        digits = digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    if (!digits.length) return '';
+    if (digits.length <= 2) return '(' + digits;
+    if (digits.length <= 6) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2);
+    if (digits.length <= 10) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 6) + '-' + digits.slice(6);
+    return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 7) + '-' + digits.slice(7);
+};
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-sa-phone-mask]').forEach(function (el) {
+        if (el.value) el.value = window.saMaskPhone(el.value);
+        el.addEventListener('input', function () {
+            el.value = window.saMaskPhone(el.value);
+        });
+    });
+});
+</script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>
