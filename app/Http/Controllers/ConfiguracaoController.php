@@ -203,6 +203,35 @@ class ConfiguracaoController extends Controller
     }
 
     /**
+     * Salva configurações de notificações por evento (notifications_v2).
+     */
+    public function updateNotificacoes(Request $request): RedirectResponse
+    {
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $this->authorize('update', $company);
+
+        $defaults = SaPalettes::defaultCompanySettings()['notifications_v2'];
+        $submitted = $request->input('notifications_v2', []);
+
+        $notificacoesV2 = [];
+        foreach ($defaults as $event => $defaultChannels) {
+            foreach ($defaultChannels as $channel => $default) {
+                $notificacoesV2[$event][$channel] = (bool) ($submitted[$event][$channel] ?? false);
+            }
+        }
+
+        $settings = $company->settings ?? [];
+        $settings['notifications_v2'] = $notificacoesV2;
+
+        $company->settings = $settings;
+        $company->save();
+
+        return redirect()
+            ->route('configuracoes', ['tab' => 'notificacoes'])
+            ->with('success', 'Configurações de notificações salvas!');
+    }
+
+    /**
      * Salva configurações de integrações (WhatsApp + gateway de pagamento).
      */
     public function updateIntegracoes(Request $request): RedirectResponse

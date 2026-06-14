@@ -134,6 +134,7 @@
     $intAsaas     = $integrations['asaas'] ?? [];
     $intStripe    = $integrations['stripe'] ?? [];
     $notif = $settings['notifications'];
+    $notifV2 = $settings['notifications_v2'];
     $sec = $settings['security'];
     $contacts = $settings['contacts'];
     $rawSettings = $company->settings ?? [];
@@ -154,7 +155,7 @@
     <x-sa.app-header title="Configurações" subtitle="Personalize seu sistema suaAgenda.pro">
         @can('update', $company)
         <x-slot:actions>
-            <x-sa.btn type="submit" x-show="tab !== 'icones'" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : (tab === 'integracoes' ? 'form-integracoes' : 'form-preferencias')">
+            <x-sa.btn type="submit" x-show="tab !== 'icones'" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : (tab === 'integracoes' ? 'form-integracoes' : (tab === 'notificacoes' ? 'form-notificacoes' : 'form-preferencias'))">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
                 Salvar
             </x-sa.btn>
@@ -453,55 +454,169 @@
                         </x-sa.card>
                     </div>
 
-                    {{-- NOTIFICAÇÕES --}}
-                    <div x-show="tab === 'notificacoes'" x-cloak class="sa-tab-panel" x-data="{ channel: '{{ $notif['channel'] }}' }">
-                        <x-sa.card padding="22px">
-                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px">Canal Principal</h3>
-                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 14px">Como você quer receber notificações do sistema</p>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap">
-                                @foreach(['whatsapp' => ['WhatsApp','#25D366'], 'sms' => ['SMS','#6366f1'], 'email' => ['E-mail','var(--sa-secondary)']] as $ch => [$lbl, $col])
-                                <button type="button" class="sa-channel-btn" :class="{ 'is-active': channel === '{{ $ch }}' }"
-                                        :style="channel === '{{ $ch }}' ? 'border-color:{{ $col }};background:{{ $col }}12;color:{{ $col }}' : ''"
-                                        @click="channel = '{{ $ch }}'">
-                                    {{ $lbl }}
-                                </button>
-                                @endforeach
-                                <input type="hidden" name="notifications[channel]" :value="channel">
+                    </form>
+
+                    {{-- NOTIFICAÇÕES — form independente --}}
+                    @can('update', $company)
+                    <form method="POST" action="{{ route('configuracoes.notificacoes') }}" id="form-notificacoes">
+                        @csrf @method('PUT')
+                    @endcan
+
+                    <div x-show="tab === 'notificacoes'" x-cloak class="sa-tab-panel">
+                        @php
+                        $waAtivado = ! empty($settings['integrations']['whatsapp']['ativo']) && ! empty($settings['integrations']['whatsapp']['twilio_sid']);
+                        $notifEventos = [
+                            'agendamento_confirmado' => ['label' => 'Agendamento confirmado',  'sub' => 'Enviado ao cliente quando o agendamento é confirmado', 'para' => 'cliente', 'cor' => '#059669'],
+                            'agendamento_cancelado'  => ['label' => 'Agendamento cancelado',   'sub' => 'Notifica o cliente quando um agendamento é cancelado',  'para' => 'cliente', 'cor' => '#dc2626'],
+                            'lembrete_24h'           => ['label' => 'Lembrete 24h antes',      'sub' => 'Aviso enviado ao cliente no dia anterior ao serviço',   'para' => 'cliente', 'cor' => '#d97706'],
+                            'lembrete_1h'            => ['label' => 'Lembrete 1h antes',       'sub' => 'Aviso enviado 1 hora antes do horário agendado',        'para' => 'cliente', 'cor' => '#d97706'],
+                            'no_show'                => ['label' => 'No-show detectado',        'sub' => 'Alerta interno quando o cliente não compareceu',        'para' => 'empresa', 'cor' => '#6b7280'],
+                            'pagamento_confirmado'   => ['label' => 'Pagamento confirmado',    'sub' => 'Confirmação enviada ao cliente após pagamento',         'para' => 'cliente', 'cor' => '#059669'],
+                            'novo_cliente'           => ['label' => 'Novo cliente cadastrado', 'sub' => 'Alerta interno quando um novo cliente se cadastra',     'para' => 'empresa', 'cor' => '#6b7280'],
+                            'resumo_diario'          => ['label' => 'Resumo diário',           'sub' => 'Estatísticas do dia ao final do expediente',            'para' => 'empresa', 'cor' => '#6b7280'],
+                            'relatorio_semanal'      => ['label' => 'Relatório semanal',       'sub' => 'Visão geral toda segunda-feira pela manhã',             'para' => 'empresa', 'cor' => '#6b7280'],
+                        ];
+                        @endphp
+
+                        {{-- Cabeçalho info --}}
+                        <x-sa.card padding="20px">
+                            <div style="display:flex;align-items:flex-start;gap:14px">
+                                <div style="width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--sa-primary) 9%,transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sa-primary)" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                                </div>
+                                <div>
+                                    <div style="font-size:14px;font-weight:600;color:var(--sa-text1);margin-bottom:4px">Notificações por evento</div>
+                                    <div style="font-size:13px;color:var(--sa-text3);line-height:1.6">Configure qual canal usar para cada evento. Ative <strong>WhatsApp</strong> na aba <a href="{{ route('configuracoes', ['tab' => 'integracoes']) }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">Integrações</a> para usar mensagens automáticas.</div>
+                                </div>
                             </div>
+                            @if(! $waAtivado)
+                            <div style="margin-top:14px;padding:10px 14px;border-radius:9px;border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.07);font-size:12px;color:var(--sa-text2);display:flex;align-items:center;gap:8px">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                WhatsApp não configurado — as notificações via WhatsApp não serão enviadas até que as credenciais Twilio sejam salvas em Integrações.
+                            </div>
+                            @endif
                         </x-sa.card>
-                        <x-sa.card padding="22px">
-                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px">Notificações de Agendamento</h3>
-                            @foreach([
-                                'new_booking' => ['Novo agendamento', 'Aviso quando um cliente cria um agendamento'],
-                                'cancelled' => ['Cancelamentos', 'Aviso quando um agendamento é cancelado'],
-                                'reminder' => ['Lembretes antes', 'Lembrete antes do próximo atendimento'],
-                                'no_show' => ['No-show detectado', 'Cliente não compareceu'],
-                            ] as $key => [$lbl, $sub])
-                            <x-sa.setting-row :label="$lbl" :sub="$sub">
-                                <x-sa.toggle :name="'notifications['.$key.']'" :checked="$notif[$key] ?? false" />
-                            </x-sa.setting-row>
-                            @endforeach
-                        </x-sa.card>
-                        <x-sa.card padding="22px">
-                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px">Relatórios Automáticos</h3>
-                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 4px">Resumos periódicos do seu negócio</p>
-                            @foreach(['daily_summary' => ['Resumo diário','Receber ao final de cada dia de trabalho'], 'weekly_report' => ['Relatório semanal','Visão geral toda segunda-feira de manhã']] as $key => [$lbl, $sub])
-                            <x-sa.setting-row :label="$lbl" :sub="$sub">
-                                <x-sa.toggle :name="'notifications['.$key.']'" :checked="$notif[$key] ?? false" />
-                            </x-sa.setting-row>
-                            @endforeach
-                        </x-sa.card>
-                        <x-sa.card padding="22px">
-                            <h3 style="font-size:15px;font-weight:600;margin:0 0 8px">Testar Notificações</h3>
-                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 14px;line-height:1.6">Envie uma notificação de teste para confirmar que tudo está configurado corretamente.</p>
-                            <x-sa.btn type="button" size="sm" x-on:click="saToast('Notificação de teste enviada via ' + channel.toUpperCase() + '!','success')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                                Enviar notificação de teste
-                            </x-sa.btn>
-                        </x-sa.card>
+
+                        {{-- Tabela de eventos --}}
+                        <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+                            <table style="width:100%;border-collapse:collapse">
+                                <thead>
+                                    <tr style="background:var(--sa-surface2);border-bottom:1px solid var(--sa-border)">
+                                        <th style="padding:12px 18px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em">Evento</th>
+                                        <th style="padding:12px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Para</th>
+                                        <th style="padding:12px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">
+                                            <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                                E-mail
+                                            </span>
+                                        </th>
+                                        <th style="padding:12px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">
+                                            <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.988 0C5.373 0 .017 5.34.017 11.937c0 2.104.55 4.082 1.508 5.803L.017 24l6.428-1.677c1.656.898 3.55 1.42 5.566 1.42h.005C18.6 23.743 24 18.404 24 11.806 24 5.341 18.604 0 11.988 0z"/></svg>
+                                                WhatsApp
+                                            </span>
+                                        </th>
+                                        <th style="padding:12px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">
+                                            <span style="display:flex;align-items:center;justify-content:center;gap:5px">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                                                SMS
+                                            </span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($notifEventos as $eventoKey => $evento)
+                                    @php $rowChannels = $notifV2[$eventoKey] ?? ['email' => false, 'whatsapp' => false, 'sms' => false]; @endphp
+                                    <tr style="border-bottom:1px solid var(--sa-border);transition:background 120ms"
+                                        onmouseover="this.style.background='var(--sa-surface2)'"
+                                        onmouseout="this.style.background='transparent'">
+                                        <td style="padding:14px 18px">
+                                            <div style="font-size:14px;font-weight:600;color:var(--sa-text1);margin-bottom:2px">{{ $evento['label'] }}</div>
+                                            <div style="font-size:12px;color:var(--sa-text3)">{{ $evento['sub'] }}</div>
+                                        </td>
+                                        <td style="padding:14px 10px;text-align:center">
+                                            @if($evento['para'] === 'cliente')
+                                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(99,102,241,.1);color:#6366f1">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                                Cliente
+                                            </span>
+                                            @else
+                                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(107,114,128,.1);color:#6b7280">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                                Empresa
+                                            </span>
+                                            @endif
+                                        </td>
+                                        @foreach(['email', 'whatsapp', 'sms'] as $canal)
+                                        @php
+                                            $checked = (bool) ($rowChannels[$canal] ?? false);
+                                            $disabled = ($canal === 'whatsapp' && ! $waAtivado) || ($canal === 'sms');
+                                        @endphp
+                                        <td style="padding:14px 10px;text-align:center">
+                                            @can('update', $company)
+                                            <label style="display:inline-flex;align-items:center;justify-content:center;cursor:{{ $disabled ? 'not-allowed' : 'pointer' }};position:relative">
+                                                <input type="checkbox"
+                                                    name="notifications_v2[{{ $eventoKey }}][{{ $canal }}]"
+                                                    value="1"
+                                                    {{ $checked ? 'checked' : '' }}
+                                                    {{ $disabled ? 'disabled' : '' }}
+                                                    style="appearance:none;width:18px;height:18px;border-radius:5px;border:2px solid {{ $checked && !$disabled ? 'var(--sa-primary)' : 'var(--sa-border)' }};background:{{ $checked && !$disabled ? 'var(--sa-primary)' : 'var(--sa-surface)' }};cursor:{{ $disabled ? 'not-allowed' : 'pointer' }};transition:all 150ms;flex-shrink:0;opacity:{{ $disabled ? '0.35' : '1' }}"
+                                                    onchange="this.style.background=this.checked?'var(--sa-primary)':'var(--sa-surface)';this.style.borderColor=this.checked?'var(--sa-primary)':'var(--sa-border)';this.nextElementSibling.style.display=this.checked?'flex':'none'">
+                                                <svg style="position:absolute;pointer-events:none;display:{{ $checked && !$disabled ? 'flex' : 'none' }};color:#fff" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                            </label>
+                                            @else
+                                            <span style="opacity:{{ $checked ? '1' : '.3' }};color:{{ $checked ? '#059669' : 'var(--sa-text3)' }}">
+                                                @if($checked)
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                                @else
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                @endif
+                                            </span>
+                                            @endcan
+                                        </td>
+                                        @endforeach
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {{-- Legenda de canais --}}
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                            <div style="padding:14px 16px;border-radius:10px;border:1px solid var(--sa-border);background:var(--sa-surface)">
+                                <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                    <span style="font-size:13px;font-weight:600;color:var(--sa-text1)">E-mail</span>
+                                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.1);color:#059669">● Ativo</span>
+                                </div>
+                                <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.5">Usa as configurações de e-mail do servidor. Sem custo adicional.</p>
+                            </div>
+                            <div style="padding:14px 16px;border-radius:10px;border:1px solid var(--sa-border);background:var(--sa-surface)">
+                                <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.988 0C5.373 0 .017 5.34.017 11.937c0 2.104.55 4.082 1.508 5.803L.017 24l6.428-1.677c1.656.898 3.55 1.42 5.566 1.42h.005C18.6 23.743 24 18.404 24 11.806 24 5.341 18.604 0 11.988 0z"/></svg>
+                                    <span style="font-size:13px;font-weight:600;color:var(--sa-text1)">WhatsApp</span>
+                                    @if($waAtivado)
+                                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.1);color:#059669">● Ativo</span>
+                                    @else
+                                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(107,114,128,.1);color:#6b7280">● Inativo</span>
+                                    @endif
+                                </div>
+                                <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.5">Requer credenciais Twilio em <a href="{{ route('configuracoes', ['tab' => 'integracoes']) }}" style="color:var(--sa-secondary);text-decoration:none;font-weight:600">Integrações</a>. Consome cota do plano.</p>
+                            </div>
+                            <div style="padding:14px 16px;border-radius:10px;border:1px solid var(--sa-border);background:var(--sa-surface);opacity:.6">
+                                <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                                    <span style="font-size:13px;font-weight:600;color:var(--sa-text2)">SMS</span>
+                                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(107,114,128,.1);color:#6b7280">Em breve</span>
+                                </div>
+                                <p style="font-size:12px;color:var(--sa-text3);margin:0;line-height:1.5">Disponível em uma atualização futura. Configure com Twilio SMS.</p>
+                            </div>
+                        </div>
                     </div>
 
+                    @can('update', $company)
                     </form>
+                    @endcan
 
                     {{-- TIPOGRAFIA — selects com name direto no form (sem hidden/sync JS) --}}
                     @can('update', $company)

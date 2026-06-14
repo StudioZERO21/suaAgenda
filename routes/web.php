@@ -373,6 +373,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::put('configuracoes/empresa', [ConfiguracaoController::class, 'updateEmpresa'])->name('configuracoes.empresa.update');
     Route::post('configuracoes/empresa/logo', [ConfiguracaoController::class, 'uploadLogo'])->name('configuracoes.empresa.logo.upload');
     Route::delete('configuracoes/empresa/logo', [ConfiguracaoController::class, 'deleteLogo'])->name('configuracoes.empresa.logo.delete');
+    Route::put('configuracoes/notificacoes', [ConfiguracaoController::class, 'updateNotificacoes'])->name('configuracoes.notificacoes');
     Route::put('configuracoes/integracoes', [ConfiguracaoController::class, 'updateIntegracoes'])->name('configuracoes.integracoes');
     Route::post('configuracoes/integracoes/testar-whatsapp', [ConfiguracaoController::class, 'testWhatsApp'])->name('configuracoes.integracoes.testar.whatsapp');
     Route::post('configuracoes/integracoes/testar-gateway', [ConfiguracaoController::class, 'testGateway'])->name('configuracoes.integracoes.testar.gateway');
