@@ -211,68 +211,84 @@ class AgendamentoPublicoController extends Controller
         $servico = Servico::where('company_id', $company->id)
             ->findOrFail($request->servico_id);
 
-        // Revalida o horário no servidor — o front só sugere; a agenda do
-        // profissional (expediente, bloqueio, sobreposição) é a fonte da verdade.
         $inicio = Carbon::parse($request->data_hora);
-        $valida = $disponibilidade->validar($request->profissional_id, $servico, $inicio);
 
-        if (! $valida['ok']) {
-            return back()->withInput()->withErrors(['data_hora' => $valida['motivo']]);
-        }
+        // Lock atômico Redis: garante que apenas uma requisição confirme este
+        // slot. Se não conseguir o lock em 3 s, outro cliente está no mesmo
+        // instante — retorna erro amigável em vez de criar conflito.
+        $lock = $disponibilidade->acquireLock($request->profissional_id, $inicio);
 
-        // Telefone normalizado (só dígitos) para evitar cadastros duplicados
-        // por formatação diferente; a busca no portal já casa ambos os formatos.
-        $phone = preg_replace('/\D/', '', (string) $request->cliente_phone) ?: $request->cliente_phone;
-
-        $cliente = Cliente::firstOrCreate(
-            ['company_id' => $company->id, 'phone' => $phone],
-            [
-                'name' => $request->cliente_nome,
-                'email' => $request->cliente_email,
-                'lgpd_consent' => true,
-                'lgpd_consent_at' => now(),
-                'lgpd_consent_ip' => $request->ip(),
-            ]
-        );
-
-        // Cliente recorrente sem consentimento registrado: grava agora (deu opt-in no form)
-        if (! $cliente->lgpd_consent) {
-            $cliente->update([
-                'lgpd_consent' => true,
-                'lgpd_consent_at' => now(),
-                'lgpd_consent_ip' => $request->ip(),
+        if (! $lock->block(3)) {
+            return back()->withInput()->withErrors([
+                'data_hora' => 'Este horário está sendo reservado por outro cliente. Tente novamente em instantes.',
             ]);
         }
 
-        // Regra no_show: bloqueia agendamento online de cliente faltante recorrente
-        if ($regras->enabled('no_show', $company->id)) {
-            $limite = (int) $regras->param('no_show', 'bloquear_apos', 3, $company->id);
-            $faltas = Agendamento::where('company_id', $company->id)
-                ->where('cliente_id', $cliente->id)
-                ->where('status', Agendamento::STATUS_NO_SHOW)
-                ->count();
+        try {
+            // Revalida dentro do lock — o front só sugere; a agenda do
+            // profissional (expediente, bloqueio, sobreposição) é a fonte da verdade.
+            $valida = $disponibilidade->validar($request->profissional_id, $servico, $inicio);
 
-            if ($faltas >= $limite) {
-                return back()->withInput()->withErrors([
-                    'cliente_phone' => 'Não foi possível concluir o agendamento online. Entre em contato com o estabelecimento.',
+            if (! $valida['ok']) {
+                return back()->withInput()->withErrors(['data_hora' => $valida['motivo']]);
+            }
+
+            // Telefone normalizado (só dígitos) para evitar cadastros duplicados
+            // por formatação diferente; a busca no portal já casa ambos os formatos.
+            $phone = preg_replace('/\D/', '', (string) $request->cliente_phone) ?: $request->cliente_phone;
+
+            $cliente = Cliente::firstOrCreate(
+                ['company_id' => $company->id, 'phone' => $phone],
+                [
+                    'name' => $request->cliente_nome,
+                    'email' => $request->cliente_email,
+                    'lgpd_consent' => true,
+                    'lgpd_consent_at' => now(),
+                    'lgpd_consent_ip' => $request->ip(),
+                ]
+            );
+
+            // Cliente recorrente sem consentimento registrado: grava agora (deu opt-in no form)
+            if (! $cliente->lgpd_consent) {
+                $cliente->update([
+                    'lgpd_consent' => true,
+                    'lgpd_consent_at' => now(),
+                    'lgpd_consent_ip' => $request->ip(),
                 ]);
             }
-        }
 
-        $agendamento = Agendamento::create([
-            'company_id' => $company->id,
-            'cliente_id' => $cliente->id,
-            'profissional_id' => $request->profissional_id,
-            'servico_id' => $request->servico_id,
-            'data_hora' => $request->data_hora,
-            'duracao' => $servico->duracao_minutos,
-            'valor' => $servico->preco,
-            'status' => ($company->resolvedSettings()['advanced']['confirm_required'] ?? true)
-                ? Agendamento::STATUS_PENDENTE
-                : Agendamento::STATUS_CONFIRMADO,
-            'observacao' => $request->observacao,
-            'cancel_token' => Agendamento::generateCancelToken(),
-        ]);
+            // Regra no_show: bloqueia agendamento online de cliente faltante recorrente
+            if ($regras->enabled('no_show', $company->id)) {
+                $limite = (int) $regras->param('no_show', 'bloquear_apos', 3, $company->id);
+                $faltas = Agendamento::where('company_id', $company->id)
+                    ->where('cliente_id', $cliente->id)
+                    ->where('status', Agendamento::STATUS_NO_SHOW)
+                    ->count();
+
+                if ($faltas >= $limite) {
+                    return back()->withInput()->withErrors([
+                        'cliente_phone' => 'Não foi possível concluir o agendamento online. Entre em contato com o estabelecimento.',
+                    ]);
+                }
+            }
+
+            $agendamento = Agendamento::create([
+                'company_id' => $company->id,
+                'cliente_id' => $cliente->id,
+                'profissional_id' => $request->profissional_id,
+                'servico_id' => $request->servico_id,
+                'data_hora' => $request->data_hora,
+                'duracao' => $servico->duracao_minutos,
+                'valor' => $servico->preco,
+                'status' => ($company->resolvedSettings()['advanced']['confirm_required'] ?? true)
+                    ? Agendamento::STATUS_PENDENTE
+                    : Agendamento::STATUS_CONFIRMADO,
+                'observacao' => $request->observacao,
+                'cancel_token' => Agendamento::generateCancelToken(),
+            ]);
+        } finally {
+            $lock->release();
+        }
 
         $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
 
