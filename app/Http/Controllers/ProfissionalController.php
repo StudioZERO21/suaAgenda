@@ -16,7 +16,10 @@ use App\Models\Profissional;
 use App\Models\Servico;
 use App\Models\Venda;
 use App\Services\ImageService;
+use App\Support\PhoneFormatter;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,7 +37,27 @@ class ProfissionalController extends Controller
         $empresa = auth()->user()->empresa_id;
 
         $profissionais = Profissional::where('company_id', $empresa)
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where(function ($q) use ($request) {
+                $term = '%'.$request->search.'%';
+                $q->where('name', 'like', $term)
+                    ->orWhere('especialidade', 'like', $term);
+            }))
+            ->when($request->role, fn ($q) => $q->where('especialidade', $request->role))
+            ->when($request->status, function ($q) use ($request) {
+                match ($request->status) {
+                    'ativo' => $q->where(function ($q) {
+                        $q->where('status', 'ativo')
+                            ->orWhere(fn ($q2) => $q2->whereNull('status')->where('ativo', true));
+                    }),
+                    'inativo' => $q->where(function ($q) {
+                        $q->where('status', 'inativo')
+                            ->orWhere(fn ($q2) => $q2->whereNull('status')->where('ativo', false));
+                    }),
+                    'ferias' => $q->where('status', 'ferias'),
+                    'licenca' => $q->where('status', 'licenca'),
+                    default => null,
+                };
+            })
             ->withCount('agendamentos')
             ->with('servicos:id')
             ->orderBy('name')
@@ -44,29 +67,60 @@ class ProfissionalController extends Controller
         $base = Profissional::where('company_id', $empresa);
         $stats = [
             'total' => (clone $base)->count(),
-            'ativos' => (clone $base)->where('ativo', true)->count(),
-            'inativos' => (clone $base)->where('ativo', false)->count(),
+            'ativos' => (clone $base)->where('status', 'ativo')->orWhere(function ($q) {
+                $q->whereNull('status')->where('ativo', true);
+            })->count(),
+            'ferias' => (clone $base)->where('status', 'ferias')->count(),
             'comissao_media' => (float) (clone $base)->where('ativo', true)->avg('comissao_pct'),
         ];
 
         $servicos = Servico::where('company_id', $empresa)->ativo()->orderBy('nome')->get(['id', 'nome', 'cor', 'duracao_minutos', 'preco']);
 
-        return view('profissionais.index', compact('profissionais', 'stats', 'servicos'));
+        $profIds = $profissionais->getCollection()->pluck('id');
+        $notasMap = $profIds->isEmpty()
+            ? collect()
+            : Avaliacao::query()
+                ->join('agendamentos', 'avaliacoes.agendamento_id', '=', 'agendamentos.id')
+                ->whereIn('agendamentos.profissional_id', $profIds)
+                ->groupBy('agendamentos.profissional_id')
+                ->selectRaw('agendamentos.profissional_id, ROUND(AVG(avaliacoes.nota), 1) as nota_media')
+                ->pluck('nota_media', 'profissional_id');
+
+        $profissionaisJson = $profissionais->getCollection()->map(fn (Profissional $p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'email' => $p->email ?? '',
+            'especialidade' => $p->especialidade ?? '',
+            'especialidades' => $p->especialidades ?? [],
+            'comissao_pct' => (float) ($p->comissao_pct ?? 0),
+            'status' => $p->status ?? ($p->ativo ? 'ativo' : 'inativo'),
+            'ativo' => (bool) $p->ativo,
+            'cor' => $p->cor ?? '#1a1a1a',
+            'phone' => PhoneFormatter::format($p->phone) ?: '',
+            'admissao' => $p->admissao?->format('Y-m-d') ?? '',
+            'admissao_fmt' => $p->admissao?->format('d/m/Y') ?? '',
+            'instagram' => $p->instagram ?? '',
+            'tiktok' => $p->tiktok ?? '',
+            'facebook' => $p->facebook ?? '',
+            'agendamentos_count' => $p->agendamentos_count,
+            'nota_media' => $notasMap[$p->id] ?? null,
+            'servicos' => $p->servicos->pluck('id')->values()->all(),
+            'foto_url' => $p->foto_path ? Storage::url($p->foto_path) : null,
+        ])->values();
+
+        $staffRoles = ['Administrador', 'Gerente', 'Barbeiro', 'Colorista', 'Manicure', 'Recepcionista', 'Estagiário'];
+
+        return view('profissionais.index', compact('profissionais', 'stats', 'servicos', 'profissionaisJson', 'staffRoles', 'notasMap'));
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
         $this->authorize('create', Profissional::class);
 
-        $servicos = Servico::where('company_id', auth()->user()->empresa_id)
-            ->ativo()
-            ->orderBy('nome')
-            ->get();
-
-        return view('profissionais.create', compact('servicos'));
+        return redirect()->route('profissionais.index', ['novo' => 1]);
     }
 
-    public function store(StoreProfissionalRequest $request): RedirectResponse
+    public function store(StoreProfissionalRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Profissional::class);
 
@@ -74,14 +128,26 @@ class ProfissionalController extends Controller
         $servicoIds = $data['servicos'] ?? [];
         unset($data['servicos']);
 
+        $status = $data['status'] ?? ($request->boolean('ativo', true) ? 'ativo' : 'inativo');
+        $data['status'] = $status;
+        $data['ativo'] = in_array($status, ['ativo', 'ferias', 'licenca'], true);
+
         $profissional = Profissional::create([
             ...$data,
             'company_id' => auth()->user()->empresa_id,
-            'ativo' => $request->boolean('ativo', true),
         ]);
 
         if ($servicoIds) {
             $profissional->servicos()->sync($servicoIds);
+        }
+
+        if ($request->wantsJson()) {
+            $profissional->loadCount('agendamentos');
+
+            return response()->json([
+                'success' => true,
+                'profissional' => $this->profissionalJson($profissional),
+            ], 201);
         }
 
         return redirect()->route('profissionais.show', $profissional)
@@ -128,10 +194,14 @@ class ProfissionalController extends Controller
         $servicoIds = $data['servicos'] ?? [];
         unset($data['servicos']);
 
-        $profissional->update([
-            ...$data,
-            'ativo' => $request->boolean('ativo'),
-        ]);
+        if (isset($data['status'])) {
+            $data['ativo'] = in_array($data['status'], ['ativo', 'ferias', 'licenca'], true);
+        } else {
+            $data['ativo'] = $request->boolean('ativo');
+            $data['status'] = $data['ativo'] ? 'ativo' : 'inativo';
+        }
+
+        $profissional->update($data);
 
         $profissional->servicos()->sync($servicoIds);
 
@@ -140,8 +210,7 @@ class ProfissionalController extends Controller
 
             return response()->json([
                 'success' => true,
-                'profissional' => $profissional->only(['id', 'name', 'especialidade', 'comissao_pct', 'ativo', 'cor', 'phone', 'admissao', 'instagram', 'tiktok', 'facebook']),
-                'agendamentos_count' => $profissional->agendamentos_count,
+                'profissional' => $this->profissionalJson($profissional),
             ]);
         }
 
@@ -187,6 +256,41 @@ class ProfissionalController extends Controller
         ]);
     }
 
+    /**
+     * Exporta a lista de funcionários em PDF (Dompdf).
+     */
+    public function exportarPdf(): Response
+    {
+        $this->authorize('viewAny', Profissional::class);
+
+        $empresa = auth()->user()->empresa_id;
+        $company = auth()->user()->company;
+
+        $profissionais = Profissional::where('company_id', $empresa)
+            ->with(['servicos:id,nome'])
+            ->withCount('agendamentos')
+            ->orderBy('name')
+            ->get();
+
+        $html = view('profissionais.export-pdf', compact('profissionais', 'company'))->render();
+
+        $options = new Options;
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        $filename = 'profissionais-'.now()->format('Y-m-d').'.pdf';
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
     public function uploadFoto(Request $request, Profissional $profissional): JsonResponse
     {
         $this->authorize('update', $profissional);
@@ -206,7 +310,7 @@ class ProfissionalController extends Controller
         $profissional->update(['foto_path' => $path]);
 
         return response()->json([
-            'foto_url' => Storage::disk('public')->url($path),
+            'foto_url' => Storage::url($path),
         ]);
     }
 
@@ -619,7 +723,7 @@ class ProfissionalController extends Controller
             'id' => $profissional->id,
             'name' => $profissional->name,
             'especialidade' => $profissional->especialidade ?? '',
-            'phone' => $profissional->phone ?? '',
+            'phone' => PhoneFormatter::format($profissional->phone) ?: '',
             'instagram' => $profissional->instagram ?? '',
             'cor' => $profissional->cor ?? '#999999',
             'comissao_pct' => (float) ($profissional->comissao_pct ?? 0),
@@ -1211,5 +1315,37 @@ class ProfissionalController extends Controller
 
         return redirect()->route('profissionais.index')
             ->with('success', "Profissional {$profissional->name} removido.");
+    }
+
+    /**
+     * Estrutura JSON padronizada para modal Alpine (create/update).
+     *
+     * @return array<string, mixed>
+     */
+    private function profissionalJson(Profissional $profissional): array
+    {
+        $profissional->loadMissing('servicos:id');
+
+        return [
+            'id' => $profissional->id,
+            'name' => $profissional->name,
+            'email' => $profissional->email ?? '',
+            'especialidade' => $profissional->especialidade ?? '',
+            'especialidades' => $profissional->especialidades ?? [],
+            'comissao_pct' => (float) ($profissional->comissao_pct ?? 0),
+            'status' => $profissional->status ?? ($profissional->ativo ? 'ativo' : 'inativo'),
+            'ativo' => (bool) $profissional->ativo,
+            'cor' => $profissional->cor ?? '#1a1a1a',
+            'phone' => PhoneFormatter::format($profissional->phone) ?: '',
+            'admissao' => $profissional->admissao?->format('Y-m-d') ?? '',
+            'admissao_fmt' => $profissional->admissao?->format('d/m/Y') ?? '',
+            'instagram' => $profissional->instagram ?? '',
+            'tiktok' => $profissional->tiktok ?? '',
+            'facebook' => $profissional->facebook ?? '',
+            'agendamentos_count' => $profissional->agendamentos_count ?? 0,
+            'nota_media' => null,
+            'servicos' => $profissional->servicos->pluck('id')->values()->all(),
+            'foto_url' => $profissional->foto_path ? Storage::url($profissional->foto_path) : null,
+        ];
     }
 }

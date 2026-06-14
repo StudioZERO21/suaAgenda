@@ -190,6 +190,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('pdv/ticket-por-dia-semana', [PdvController::class, 'ticketPorDiaSemana'])->name('pdv.ticket-por-dia-semana');
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
+    Route::get('pdv/pagamento/pix', [PdvController::class, 'pagamentoPix'])->name('pdv.pagamento.pix');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
     Route::patch('pdv/vendas/{venda}/observacao', [PdvController::class, 'observacaoVenda'])->name('pdv.vendas.observacao');
     Route::delete('pdv/vendas/{venda}', [PdvController::class, 'destroyVenda'])->name('pdv.vendas.destroy');
@@ -215,6 +216,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('permissoes/usuarios/json', [PermissaoController::class, 'usuariosJson'])->name('permissoes.usuarios.json');
     Route::patch('permissoes/usuarios/{user}/role', [PermissaoController::class, 'assignUserRole'])->name('permissoes.users.role');
     Route::patch('permissoes/usuarios/{user}/profissional', [PermissaoController::class, 'assignUserProfissional'])->name('permissoes.users.profissional');
+    Route::patch('permissoes/usuarios/{user}/grupos', [PermissaoController::class, 'assignUserGrupos'])->name('permissoes.users.grupos');
+    Route::post('permissoes/usuarios/{user}/grupos/cargo', [PermissaoController::class, 'syncUserGrupoFromCargo'])->name('permissoes.users.grupos.cargo');
     Route::get('permissoes/grupos/json', [PermissaoController::class, 'gruposJson'])->name('permissoes.grupos.json');
     Route::post('permissoes/grupos', [PermissaoController::class, 'storeGrupo'])->name('permissoes.grupos.store');
     Route::put('permissoes/grupos/{grupo}', [PermissaoController::class, 'updateGrupo'])->name('permissoes.grupos.update');
@@ -258,6 +261,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('clientes/por-mes-cadastro', [ClienteController::class, 'porMesCadastro'])->name('clientes.por-mes-cadastro');
     Route::get('clientes/segmentos', [ClienteController::class, 'segmentos'])->name('clientes.segmentos');
     Route::get('clientes/exportar', [ClienteController::class, 'exportarCsv'])->name('clientes.exportar');
+    Route::get('clientes/exportar/pdf', [ClienteController::class, 'exportarPdf'])->name('clientes.exportar.pdf');
     Route::get('clientes/exportar/segmento', [ClienteController::class, 'exportarSegmento'])->name('clientes.exportar.segmento');
     Route::post('clientes/importar', [ClienteController::class, 'importarCsv'])->name('clientes.importar');
     Route::delete('clientes/bulk-destroy', [ClienteController::class, 'destroyBulk'])->name('clientes.bulk-destroy');
@@ -324,6 +328,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('profissionais/comissao-mensal', [ProfissionalController::class, 'comissaoMensal'])->name('profissionais.comissao-mensal');
     Route::get('profissionais/servicos-executados', [ProfissionalController::class, 'servicosExecutados'])->name('profissionais.servicos-executados');
     Route::get('profissionais/exportar', [ProfissionalController::class, 'exportarCsv'])->name('profissionais.exportar');
+    Route::get('profissionais/exportar/pdf', [ProfissionalController::class, 'exportarPdf'])->name('profissionais.exportar.pdf');
     Route::resource('profissionais', ProfissionalController::class)->parameters(['profissionais' => 'profissional']);
     Route::patch('profissionais/{profissional}/toggle', [ProfissionalController::class, 'toggle'])->name('profissionais.toggle');
     Route::get('profissionais/{profissional}/disponibilidade', [ProfissionalController::class, 'disponibilidade'])->name('profissionais.disponibilidade');
@@ -385,6 +390,7 @@ Route::get('/vitrine/{slug}/disponibilidade', [AgendamentoPublicoController::cla
 Route::get('/agendar/{slug}', [AgendamentoPublicoController::class, 'show'])->name('agendar.show');
 Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->middleware('throttle:8,1')->name('agendar.store');
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
+Route::get('/agendar/{slug}/dias', [AgendamentoPublicoController::class, 'dias'])->name('agendar.dias');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');

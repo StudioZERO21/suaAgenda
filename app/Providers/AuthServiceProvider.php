@@ -33,6 +33,7 @@ use App\Policies\ProdutoPolicy;
 use App\Policies\ProfissionalPolicy;
 use App\Policies\ServicoPolicy;
 use App\Policies\VendaPolicy;
+use App\Support\UserPermissions;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -63,6 +64,20 @@ class AuthServiceProvider extends ServiceProvider
             if ($user->hasRole('super_admin')) {
                 return true;
             }
+
+            if (! UserPermissions::isModulePermission($ability)) {
+                return null;
+            }
+
+            if ($user->hasRole('admin_empresa')) {
+                return true;
+            }
+
+            if (UserPermissions::hasCompanyGrupo($user)) {
+                return UserPermissions::can($user, $ability);
+            }
+
+            return null;
         });
     }
 }

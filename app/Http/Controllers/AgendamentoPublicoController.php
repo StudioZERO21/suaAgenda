@@ -8,10 +8,8 @@ use App\Http\Requests\StoreAgendamentoPublicoRequest;
 use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
-use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
 use App\Models\Company;
-use App\Models\HorarioTrabalho;
 use App\Models\PortfolioItem;
 use App\Models\Profissional;
 use App\Models\Servico;
@@ -68,6 +66,7 @@ class AgendamentoPublicoController extends Controller
             $s->id => [
                 'nome' => $s->nome,
                 'preco' => $s->precoFormatado(),
+                'duracao' => $s->duracaoFormatada(),
                 'profissionais' => $s->profissionais->pluck('id')->values()->toArray(),
             ],
         ]);
@@ -132,9 +131,6 @@ class AgendamentoPublicoController extends Controller
             ->findOrFail($request->servico_id);
 
         $data = Carbon::parse($request->data)->startOfDay();
-        $diaSemana = (int) $data->format('w');
-        $duracao = $servico->duracao_minutos;
-        $agora = now();
 
         $profissionaisIds = $servico->profissionais()->pluck('profissionais.id');
         $profissionais = Profissional::where('company_id', $company->id)
@@ -143,35 +139,17 @@ class AgendamentoPublicoController extends Controller
             ->orderBy('name')
             ->get();
 
-        $result = $profissionais->map(function (Profissional $prof) use ($data, $diaSemana, $duracao, $agora, $disponibilidade) {
-            $vazio = ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => []];
+        $result = $profissionais->map(function (Profissional $prof) use ($company, $servico, $data, $disponibilidade) {
+            $slots = $disponibilidade->gerarSlots($prof, $company, $servico, $data);
 
-            if (BloqueioAgenda::blockedOn($prof->id, $data->format('Y-m-d'))) {
-                return $vazio;
-            }
-
-            $horario = HorarioTrabalho::where('profissional_id', $prof->id)
-                ->where('dia_semana', $diaSemana)
-                ->where('ativo', true)
-                ->first();
-
-            if (! $horario) {
-                return $vazio;
-            }
-
-            $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
-            $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
-
-            $slots = [];
-            $current = $inicio->copy();
-            while ($current->copy()->addMinutes($duracao)->lte($fim)) {
-                $livre = $current->gt($agora)
-                    && ! $disponibilidade->temConflito($prof->id, $current, $duracao);
-                $slots[] = ['hora' => $current->format('H:i'), 'disponivel' => $livre];
-                $current->addMinutes($duracao);
-            }
-
-            return ['profissional' => ['id' => $prof->id, 'name' => $prof->name, 'cor' => $prof->cor ?? '#1a1a1a'], 'slots' => $slots];
+            return [
+                'profissional' => [
+                    'id' => $prof->id,
+                    'name' => $prof->name,
+                    'cor' => $prof->cor ?? '#1a1a1a',
+                ],
+                'slots' => $slots,
+            ];
         });
 
         return response()->json($result->values());
@@ -194,39 +172,32 @@ class AgendamentoPublicoController extends Controller
             ->findOrFail($request->servico_id);
 
         $data = Carbon::parse($request->data)->startOfDay();
-        $diaSemana = (int) $data->format('w'); // 0=Dom,1=Seg,...,6=Sáb
 
-        if (BloqueioAgenda::blockedOn($profissional->id, $data->format('Y-m-d'))) {
-            return response()->json([]);
-        }
-
-        $horario = HorarioTrabalho::where('profissional_id', $profissional->id)
-            ->where('dia_semana', $diaSemana)
-            ->where('ativo', true)
-            ->first();
-
-        if (! $horario) {
-            return response()->json([]);
-        }
-
-        $duracao = $servico->duracao_minutos;
-        $inicio = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_inicio);
-        $fim = Carbon::parse($data->format('Y-m-d').' '.$horario->hora_fim);
-        $agora = now();
-
-        $slots = [];
-        $current = $inicio->copy();
-
-        while ($current->copy()->addMinutes($duracao)->lte($fim)) {
-            // Considera sobreposição de duração (não só hora exata) e descarta horários passados.
-            $disponivel = $current->gt($agora)
-                && ! $disponibilidade->temConflito($profissional->id, $current, $duracao);
-
-            $slots[] = ['hora' => $current->format('H:i'), 'disponivel' => $disponivel];
-            $current->addMinutes($duracao);
-        }
+        $slots = $disponibilidade->gerarSlots($profissional, $company, $servico, $data);
 
         return response()->json($slots);
+    }
+
+    /**
+     * Retorna os próximos dias de funcionamento do profissional.
+     *
+     * GET /agendar/{slug}/dias?profissional_id=X
+     */
+    public function dias(string $slug, Request $request, AgendamentoDisponibilidadeService $disponibilidade): JsonResponse
+    {
+        $company = Company::where('slug', $slug)->firstOrFail();
+
+        $request->validate([
+            'profissional_id' => ['required', 'uuid'],
+        ]);
+
+        $profissional = Profissional::where('company_id', $company->id)
+            ->ativo()
+            ->findOrFail($request->profissional_id);
+
+        return response()->json(
+            $disponibilidade->diasFuncionamento($profissional, $company)
+        );
     }
 
     public function store(

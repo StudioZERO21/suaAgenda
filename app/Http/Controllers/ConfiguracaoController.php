@@ -13,7 +13,9 @@ use App\Models\Company;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\ImageService;
+use App\Support\CompanyHours;
 use App\Support\SaPalettes;
+use App\Support\SaServiceIcons;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,8 +44,9 @@ class ConfiguracaoController extends Controller
         $settings = $company->resolvedSettings();
         $palettes = SaPalettes::all();
         $activePalette = SaPalettes::get($settings['theme_palette'] ?? 'A');
+        $iconCategories = SaServiceIcons::categories();
 
-        return view('configuracoes.index', compact('company', 'settings', 'palettes', 'activePalette'));
+        return view('configuracoes.index', compact('company', 'settings', 'palettes', 'activePalette', 'iconCategories'));
     }
 
     /**
@@ -140,8 +143,10 @@ class ConfiguracaoController extends Controller
 
         $settings = $company->resolvedSettings();
         $segments = self::SEGMENTS;
+        $hours = CompanyHours::normalizeAll($settings['hours'] ?? []);
+        $closure = CompanyHours::normalizeClosure($settings['closure'] ?? null);
 
-        return view('configuracoes.empresa', compact('company', 'settings', 'segments'));
+        return view('configuracoes.empresa', compact('company', 'settings', 'segments', 'hours', 'closure'));
     }
 
     /**
@@ -152,7 +157,8 @@ class ConfiguracaoController extends Controller
         $company = Company::findOrFail(auth()->user()->empresa_id);
         $current = $company->resolvedSettings();
 
-        $hours = $request->input('hours', $current['hours']);
+        $hours = CompanyHours::sanitizeFromRequest($request->input('hours'));
+        $closure = CompanyHours::sanitizeClosure($request->input('closure'));
         $advanced = array_replace_recursive($current['advanced'], [
             'min_advance_mins' => (int) $request->input('min_advance_mins', $current['advanced']['min_advance_mins']),
             'max_advance_days' => (int) $request->input('max_advance_days', $current['advanced']['max_advance_days']),
@@ -160,6 +166,11 @@ class ConfiguracaoController extends Controller
             'auto_reminder' => $request->boolean('auto_reminder'),
             'reminder_hours' => (int) $request->input('reminder_hours', $current['advanced']['reminder_hours']),
             'cancel_policy' => $request->input('cancel_policy', ''),
+        ]);
+        $payments = array_replace_recursive($current['payments'] ?? [], [
+            'pix_key' => trim((string) $request->input('pix_key', '')),
+            'pix_key_type' => $request->input('pix_key_type', $current['payments']['pix_key_type'] ?? 'random'),
+            'pix_city' => trim((string) $request->input('pix_city', '')),
         ]);
 
         $company->update([
@@ -178,7 +189,9 @@ class ConfiguracaoController extends Controller
             'lgpd_consent' => $request->boolean('lgpd_consent'),
             'settings' => array_replace_recursive($current, [
                 'hours' => $hours,
+                'closure' => $closure,
                 'advanced' => $advanced,
+                'payments' => $payments,
             ]),
         ]);
 

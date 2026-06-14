@@ -124,6 +124,7 @@
         'contatos' => ['label' => 'Contatos', 'icon' => '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/>'],
         'api' => ['label' => 'API & Webhooks', 'icon' => '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'],
         'notificacoes' => ['label' => 'Notificações', 'icon' => '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>'],
+        'icones' => ['label' => 'Catálogo de Ícones', 'icon' => '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/>'],
     ];
     $notif = $settings['notifications'];
     $sec = $settings['security'];
@@ -146,7 +147,7 @@
     <x-sa.app-header title="Configurações" subtitle="Personalize seu sistema suaAgenda.pro">
         @can('update', $company)
         <x-slot:actions>
-            <x-sa.btn type="submit" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : 'form-preferencias'">
+            <x-sa.btn type="submit" x-show="tab !== 'icones'" x-bind:form="tab === 'tipografia' ? 'form-tipografia' : 'form-preferencias'">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
                 Salvar
             </x-sa.btn>
@@ -590,6 +591,46 @@
                     @can('update', $company)
                     </form>
                     @endcan
+
+                    {{-- CATÁLOGO DE ÍCONES --}}
+                    <div x-show="tab === 'icones'" x-cloak class="sa-tab-panel" x-data="{ iconRefSegment: '' }">
+                        <x-sa.card padding="22px">
+                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px">Ícones por segmento profissional</h3>
+                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 8px;line-height:1.6">
+                                Referência dos ícones disponíveis. A <strong>seleção</strong> é feita apenas ao
+                                <a href="{{ route('servicos.index') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">cadastrar ou editar um serviço</a>.
+                            </p>
+                            <p style="font-size:12px;color:var(--sa-text3);margin:0 0 16px;line-height:1.6">
+                                Escolha um segmento abaixo para ver os ícones correspondentes.
+                            </p>
+
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text2);margin-bottom:5px">Segmento profissional</label>
+                            <select x-model="iconRefSegment"
+                                    style="width:100%;max-width:420px;padding:10px 32px 10px 13px;font-size:14px;border:1.5px solid var(--sa-border);border-radius:8px;background:var(--sa-surface);color:var(--sa-text1);cursor:pointer;font-family:'Inter',sans-serif;appearance:none;background-image:url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e&quot;);background-repeat:no-repeat;background-position:right 10px center;background-size:14px;outline:none;margin-bottom:20px">
+                                <option value="">Selecione o segmento...</option>
+                                @foreach($iconCategories as $catId => $cat)
+                                <option value="{{ $catId }}">{{ $cat['label'] }}</option>
+                                @endforeach
+                            </select>
+
+                            @foreach($iconCategories as $catId => $cat)
+                            <div x-show="iconRefSegment === '{{ $catId }}'" x-cloak>
+                                <p style="font-size:12px;color:var(--sa-text3);margin:0 0 12px">{{ $cat['description'] }}</p>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">
+                                    @foreach($cat['icons'] as $iconKey)
+                                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;border-radius:12px;border:1px solid var(--sa-border);background:var(--sa-surface2)">
+                                        <div style="width:40px;height:40px;border-radius:10px;background:color-mix(in srgb,var(--sa-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-primary) 14%,transparent);display:flex;align-items:center;justify-content:center">
+                                            <x-sa.service-icon :name="$iconKey" :size="20" color="var(--sa-primary)" />
+                                        </div>
+                                        <span style="font-size:12px;font-weight:600;color:var(--sa-text1);text-align:center">{{ \App\Support\SaServiceIcons::label($iconKey) }}</span>
+                                        <code style="font-size:10px;color:var(--sa-text3);background:var(--sa-surface);padding:2px 6px;border-radius:4px">{{ $iconKey }}</code>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endforeach
+                        </x-sa.card>
+                    </div>
 
                 </div>
             </div>

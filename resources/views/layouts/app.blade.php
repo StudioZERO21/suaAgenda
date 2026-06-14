@@ -1086,6 +1086,16 @@
             margin-top: 2px;
             flex-shrink: 0;
         }
+        .sa-assign-option__check {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .sa-assign-option__name {
             font-size: 13px;
             font-weight: 700;
@@ -1883,6 +1893,28 @@
 @endif
 
 @stack('scripts')
+<script>
+window.saMaskPhone = function (value) {
+    let digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('55') && digits.length > 11) {
+        digits = digits.slice(2);
+    }
+    digits = digits.slice(0, 11);
+    if (!digits.length) return '';
+    if (digits.length <= 2) return '(' + digits;
+    if (digits.length <= 6) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2);
+    if (digits.length <= 10) return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 6) + '-' + digits.slice(6);
+    return '(' + digits.slice(0, 2) + ') ' + digits.slice(2, 7) + '-' + digits.slice(7);
+};
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-sa-phone-mask]').forEach(function (el) {
+        if (el.value) el.value = window.saMaskPhone(el.value);
+        el.addEventListener('input', function () {
+            el.value = window.saMaskPhone(el.value);
+        });
+    });
+});
+</script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>

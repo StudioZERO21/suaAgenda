@@ -102,6 +102,79 @@ describe('pdv_index', function () {
     it('unauthenticated é redirecionado', function () {
         $this->get(route('pdv'))->assertRedirect();
     });
+
+    it('produtos incluem foto e flag de destaque para os 9 mais vendidos', function () {
+        $prodB = Produto::create([
+            'company_id' => $this->company->id,
+            'nome' => 'Pomada',
+            'preco' => 30.00,
+            'estoque' => 5,
+            'ativo' => true,
+        ]);
+
+        $venda = Venda::create([
+            'company_id' => $this->company->id,
+            'subtotal' => 150,
+            'desconto' => 0,
+            'total' => 150,
+            'metodo_pagamento' => 'pix',
+        ]);
+
+        VendaItem::create([
+            'venda_id' => $venda->id,
+            'produto_id' => $prodB->id,
+            'descricao' => 'Pomada',
+            'qtd' => 5,
+            'preco_unit' => 30,
+            'total' => 150,
+        ]);
+
+        $view = $this->actingAs($this->admin)->get(route('pdv'))->viewData('produtosJs');
+
+        $pomada = collect($view)->firstWhere('name', 'Pomada');
+        $shampoo = collect($view)->firstWhere('name', 'Shampoo');
+
+        expect($pomada)->not->toBeNull()
+            ->and($pomada['featured'])->toBeTrue()
+            ->and($pomada['featuredRank'])->toBe(0)
+            ->and($pomada)->toHaveKey('photoUrl')
+            ->and($shampoo['featured'])->toBeTrue();
+    });
+
+    it('produtos sem estoque não aparecem como mais vendidos', function () {
+        $prodSemEstoque = Produto::create([
+            'company_id' => $this->company->id,
+            'nome' => 'Esgotado Top',
+            'preco' => 50.00,
+            'estoque' => 0,
+            'ativo' => true,
+        ]);
+
+        $venda = Venda::create([
+            'company_id' => $this->company->id,
+            'subtotal' => 500,
+            'desconto' => 0,
+            'total' => 500,
+            'metodo_pagamento' => 'pix',
+        ]);
+
+        VendaItem::create([
+            'venda_id' => $venda->id,
+            'produto_id' => $prodSemEstoque->id,
+            'descricao' => 'Esgotado Top',
+            'qtd' => 10,
+            'preco_unit' => 50,
+            'total' => 500,
+        ]);
+
+        $view = $this->actingAs($this->admin)->get(route('pdv'))->viewData('produtosJs');
+
+        $esgotado = collect($view)->firstWhere('name', 'Esgotado Top');
+
+        expect($esgotado)->not->toBeNull()
+            ->and($esgotado['featured'])->toBeFalse()
+            ->and($esgotado['stock'])->toBe(0);
+    });
 });
 
 describe('pdv_store', function () use (&$salePayload) {

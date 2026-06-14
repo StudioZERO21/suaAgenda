@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\SaServiceIcons;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreServicoRequest extends FormRequest
 {
@@ -22,9 +24,19 @@ class StoreServicoRequest extends FormRequest
             'preco' => ['required', 'numeric', 'min:0', 'max:9999.99'],
             'categoria' => ['nullable', 'string', 'max:60'],
             'cor' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'icone' => ['nullable', 'string', Rule::in(SaServiceIcons::keys())],
             'ativo' => ['boolean'],
             'profissionais' => ['nullable', 'array'],
             'profissionais.*' => ['uuid', 'exists:profissionais,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('icone')) {
+            $this->merge([
+                'icone' => SaServiceIcons::normalize($this->input('icone')),
+            ]);
+        }
     }
 }

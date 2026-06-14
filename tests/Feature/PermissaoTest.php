@@ -150,7 +150,7 @@ describe('permissoes index', function () {
         expect($html)->toContain('border: 1px solid var(--grupo-badge-color');
     });
 
-    it('aba usuarios exibe somente funcionarios em modo leitura', function () {
+    it('aba usuarios permite editar grupos ACL dos funcionarios', function () {
         $cliente = User::factory()->create([
             'empresa_id' => $this->company->id,
             'name' => 'Maria Cliente',
@@ -164,11 +164,10 @@ describe('permissoes index', function () {
 
         expect($html)->toContain('class="sa-funcionario-list"');
         expect($html)->toContain('funcionarios:');
-        expect($html)->toContain('userPermPreview(f)');
-        expect($html)->not->toContain('changeUserRole');
-        expect($html)->not->toContain('changeUserProfissional');
+        expect($html)->toContain('openUserGrupos(f)');
+        expect($html)->toContain('saveUserGrupos()');
+        expect($html)->toContain('syncUserGruposFromCargo()');
         expect($html)->not->toContain('maria@cliente.test');
-        expect($html)->not->toContain('<select x-model="u.role"');
     });
 
     it('gestor não pode acessar permissões (sem cfg_perms)', function () {

@@ -201,10 +201,10 @@
                     </div>
                 </div>
 
-                {{-- USERS TAB (somente leitura — funcionários) --}}
+                {{-- USERS TAB --}}
                 <div x-show="tab === 'users'" x-cloak>
                     <p style="font-size:13px;color:var(--sa-text3);margin:0 0 16px;line-height:1.6">
-                        Visão somente leitura dos funcionários com acesso ao painel, grupos ACL e permissões efetivas.
+                        Funcionários com acesso ao painel. Atribua um ou mais grupos ACL diretamente ou use o grupo do cargo vinculado.
                     </p>
                     <div class="sa-funcionario-list">
                         <template x-for="f in funcionarios" :key="f.id">
@@ -220,21 +220,41 @@
                                               class="sa-funcionario-card__badge"
                                               style="background:color-mix(in srgb,var(--sa-primary) 10%,transparent);color:var(--sa-primary)"
                                               x-text="f.funcao"></span>
+                                        <span x-show="f.acl_manual"
+                                              class="sa-funcionario-card__badge"
+                                              style="background:rgba(99,102,241,.12);color:#6366f1">Grupos manuais</span>
                                         <span x-show="!f.ativo"
                                               class="sa-funcionario-card__badge"
                                               style="background:rgba(107,114,128,.12);color:#6b7280">Inativo</span>
                                     </div>
+                                    <x-sa.btn x-show="f.funcao_slug !== 'admin_empresa'" size="sm" variant="muted" @click="openUserGrupos(f)"
+                                              :icon="'<svg width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7\'/><path d=\'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z\'/></svg>'">
+                                        Grupos
+                                    </x-sa.btn>
                                 </div>
                                 <div class="sa-funcionario-card__meta">
                                     <div class="sa-funcionario-card__meta-item">
                                         <span class="sa-funcionario-card__meta-label">Grupo ACL</span>
-                                        <span class="sa-funcionario-card__meta-value"
-                                              :style="'color:' + f.grupo.cor"
-                                              x-text="f.grupo.nome + ' (' + f.grupo.perms.length + '/' + totalPerms + ')'"></span>
+                                        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                                            <template x-for="g in (f.grupos.length ? f.grupos : [f.grupo])" :key="f.id + '-g-' + (g.id || g.nome)">
+                                                <span class="sa-grupo-badge sa-grupo-badge--md"
+                                                      :style="grupoBadgeStyle(g.cor || f.grupo.cor)"
+                                                      x-text="g.nome"></span>
+                                            </template>
+                                            <span class="sa-funcionario-card__meta-value"
+                                                  style="font-size:12px;color:var(--sa-text3)"
+                                                  x-text="'(' + f.grupo.perms.length + '/' + totalPerms + ')'"></span>
+                                        </div>
                                     </div>
                                     <div class="sa-funcionario-card__meta-item" x-show="f.cargo">
                                         <span class="sa-funcionario-card__meta-label">Cargo</span>
                                         <span class="sa-funcionario-card__meta-value" :style="'color:' + f.cargo.cor" x-text="f.cargo.nome"></span>
+                                    </div>
+                                    <div class="sa-funcionario-card__meta-item" x-show="f.cargo_grupo && !f.acl_manual">
+                                        <span class="sa-funcionario-card__meta-label">Via cargo</span>
+                                        <span class="sa-grupo-badge sa-grupo-badge--md"
+                                              :style="grupoBadgeStyle(f.cargo_grupo.cor)"
+                                              x-text="f.cargo_grupo.nome"></span>
                                     </div>
                                     <div class="sa-funcionario-card__meta-item" x-show="f.profissional">
                                         <span class="sa-funcionario-card__meta-label">Profissional</span>
@@ -262,11 +282,11 @@
                         <p x-show="funcionarios.length === 0" style="font-size:14px;color:var(--sa-text3);text-align:center;padding:32px 0">Nenhum funcionário com acesso ao painel.</p>
                     </div>
                     <div class="sa-acl-hint" style="margin-top:16px">
-                        <div class="sa-acl-hint__title">💡 Somente consulta</div>
+                        <div class="sa-acl-hint__title">💡 Grupos por funcionário</div>
                         <p class="sa-acl-hint__text">
-                            Esta aba exibe funcionários com função de painel (<strong>Administrador</strong>, <strong>Gestor</strong> ou <strong>Analista</strong>)
-                            ou vínculo profissional. Clientes não aparecem aqui.
-                            Para alterar funções ou vínculos, use a gestão de equipe em <strong>Funcionários</strong> e <strong>Cargos &amp; Grupos</strong> nesta mesma tela.
+                            Por padrão, o grupo ACL vem do <strong>cargo</strong> do profissional vinculado.
+                            Use <strong>Grupos</strong> para atribuir um ou mais grupos manualmente — nesse modo, alterações no cargo não sobrescrevem a escolha.
+                            Clique em <strong>Usar grupo do cargo</strong> no modal para voltar à sincronização automática.
                         </p>
                     </div>
                 </div>
@@ -394,6 +414,61 @@
             </div>
         </div>
     </div>
+
+    {{-- UserGruposModal --}}
+    <div x-show="userGruposModalOpen" x-cloak
+         @keydown.escape.window="userGruposModalOpen = false"
+         class="sa-modal-overlay"
+         @click.self="userGruposModalOpen = false">
+        <div class="sa-assign-modal" @click.stop>
+            <div class="sa-assign-modal__header">
+                <div>
+                    <h3 class="sa-assign-modal__title" x-text="'Grupos ACL — ' + (editUser?.name || '')"></h3>
+                    <p class="sa-assign-modal__subtitle">Selecione um ou mais grupos de acesso para este funcionário</p>
+                </div>
+                <button type="button" class="sa-assign-modal__close" @click="userGruposModalOpen = false" aria-label="Fechar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="sa-assign-modal__body">
+                <div class="sa-assign-modal__options">
+                    <template x-for="g in grupos" :key="'ug-' + g.id">
+                        <div class="sa-assign-option" @click="toggleUserGrupo(g.id)"
+                             :style="'border-color:' + (isUserGrupoSelected(g.id) ? g.cor : 'var(--sa-border)') + ';background:' + (isUserGrupoSelected(g.id) ? g.cor + '08' : 'var(--sa-surface)')">
+                            <div class="sa-assign-option__check"
+                                 :style="'border:2px solid ' + g.cor + ';background:' + (isUserGrupoSelected(g.id) ? g.cor : 'transparent')">
+                                <svg x-show="isUserGrupoSelected(g.id)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div class="sa-assign-option__name" x-text="g.nome"></div>
+                                <div class="sa-assign-option__desc" x-text="g.descricao"></div>
+                                <div class="sa-assign-option__count" :style="'color:' + g.cor" x-text="g.perms.length + ' permissões'"></div>
+                            </div>
+                        </div>
+                    </template>
+                    <div class="sa-assign-modal__empty" x-show="userGruposSel.length === 0">Nenhum grupo = sem acesso ACL (permissões da função global, se houver)</div>
+                </div>
+                <div x-show="editUser?.cargo_grupo" style="margin-top:12px;padding:12px;background:var(--sa-surface2);border-radius:8px;border:1px solid var(--sa-border)">
+                    <div style="font-size:12px;color:var(--sa-text3);margin-bottom:6px">Grupo sugerido pelo cargo</div>
+                    <span class="sa-grupo-badge sa-grupo-badge--md"
+                          :style="grupoBadgeStyle(editUser?.cargo_grupo?.cor)"
+                          x-text="editUser?.cargo_grupo?.nome"></span>
+                </div>
+            </div>
+            <div class="sa-assign-modal__footer" style="justify-content:space-between">
+                <x-sa.btn variant="muted" size="sm" @click="syncUserGruposFromCargo()" x-show="editUser?.cargo_grupo">
+                    Usar grupo do cargo
+                </x-sa.btn>
+                <div style="display:flex;gap:8px;margin-left:auto">
+                    <x-sa.btn variant="secondary" size="sm" @click="userGruposModalOpen = false">Cancelar</x-sa.btn>
+                    <x-sa.btn size="sm" @click="saveUserGrupos()" x-bind:disabled="userGruposSaving">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
+                        Salvar
+                    </x-sa.btn>
+                </div>
+            </div>
+        </div>
+    </div>
 </x-sa.page>
 
 @push('scripts')
@@ -415,9 +490,13 @@ function permissionsApp() {
         expandedCat: {},
         groupModalOpen: false,
         assignModalOpen: false,
+        userGruposModalOpen: false,
         editGroup: null,
         assignRole: null,
+        editUser: null,
         assignSel: '',
+        userGruposSel: [],
+        userGruposSaving: false,
         groupForm: blankGroup(),
         groupSaving: false,
         groupColors: ['#ef4444', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#0ea5e9', '#1a1a1a', '#d4a574'],
@@ -537,6 +616,72 @@ function permissionsApp() {
             const gId = this.getGroupId(role.id);
             this.assignSel = gId ? String(gId) : '';
             this.assignModalOpen = true;
+        },
+
+        openUserGrupos(f) {
+            this.editUser = f;
+            this.userGruposSel = (f.grupo_ids || []).map(id => String(id));
+            this.userGruposModalOpen = true;
+        },
+
+        isUserGrupoSelected(groupId) {
+            return this.userGruposSel.includes(String(groupId));
+        },
+
+        toggleUserGrupo(groupId) {
+            const key = String(groupId);
+            this.userGruposSel = this.userGruposSel.includes(key)
+                ? this.userGruposSel.filter(x => x !== key)
+                : [...this.userGruposSel, key];
+        },
+
+        updateFuncionario(updated) {
+            this.funcionarios = this.funcionarios.map(f => f.id === updated.id ? updated : f);
+            if (this.editUser?.id === updated.id) {
+                this.editUser = updated;
+            }
+        },
+
+        async saveUserGrupos() {
+            if (!this.editUser) return;
+            this.userGruposSaving = true;
+            try {
+                const r = await fetch('/permissoes/usuarios/' + this.editUser.id + '/grupos', {
+                    method: 'PATCH',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ grupo_ids: this.userGruposSel.map(id => parseInt(id, 10)) }),
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'Erro ao salvar grupos.');
+                this.updateFuncionario(data.funcionario);
+                this.userGruposModalOpen = false;
+                Swal.fire({ title: 'Grupos atualizados!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            } finally {
+                this.userGruposSaving = false;
+            }
+        },
+
+        async syncUserGruposFromCargo() {
+            if (!this.editUser) return;
+            this.userGruposSaving = true;
+            try {
+                const r = await fetch('/permissoes/usuarios/' + this.editUser.id + '/grupos/cargo', {
+                    method: 'POST',
+                    headers: jsonHeaders(),
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.message || 'Erro ao sincronizar com cargo.');
+                this.updateFuncionario(data.funcionario);
+                this.userGruposSel = (data.funcionario.grupo_ids || []).map(id => String(id));
+                this.userGruposModalOpen = false;
+                Swal.fire({ title: 'Grupos sincronizados com o cargo!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } catch (e) {
+                Swal.fire({ title: 'Erro', text: e.message, icon: 'error', confirmButtonColor: '#1a1a1a' });
+            } finally {
+                this.userGruposSaving = false;
+            }
         },
 
         isCatAllOn(cat) {

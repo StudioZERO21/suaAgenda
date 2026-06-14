@@ -16,12 +16,12 @@ class ServicoSeeder extends Seeder
         $company = Company::where('slug', 'barbearia-teste')->firstOrFail();
 
         $servicos = [
-            ['nome' => 'Corte',          'duracao_minutos' => 30,  'preco' => 45.00,  'cor' => '#1a1a1a', 'categoria' => 'Cabelo'],
-            ['nome' => 'Barba',          'duracao_minutos' => 30,  'preco' => 35.00,  'cor' => '#d4a574', 'categoria' => 'Barba'],
-            ['nome' => 'Corte + Barba',  'duracao_minutos' => 60,  'preco' => 75.00,  'cor' => '#6366f1', 'categoria' => 'Combo'],
-            ['nome' => 'Hidratação',     'duracao_minutos' => 60,  'preco' => 90.00,  'cor' => '#10b981', 'categoria' => 'Tratamento'],
-            ['nome' => 'Coloração',      'duracao_minutos' => 120, 'preco' => 180.00, 'cor' => '#ec4899', 'categoria' => 'Tratamento'],
-            ['nome' => 'Barba + Bigode', 'duracao_minutos' => 45,  'preco' => 50.00,  'cor' => '#f59e0b', 'categoria' => 'Barba'],
+            ['nome' => 'Corte',          'duracao_minutos' => 30,  'preco' => 45.00,  'cor' => '#1a1a1a', 'icone' => 'scissors',         'categoria' => 'Cabelo'],
+            ['nome' => 'Barba',          'duracao_minutos' => 30,  'preco' => 35.00,  'cor' => '#d4a574', 'icone' => 'barba_silhueta',   'categoria' => 'Barba'],
+            ['nome' => 'Corte + Barba',  'duracao_minutos' => 60,  'preco' => 75.00,  'cor' => '#6366f1', 'icone' => 'barba_tesoura',    'categoria' => 'Combo'],
+            ['nome' => 'Hidratação',     'duracao_minutos' => 60,  'preco' => 90.00,  'cor' => '#10b981', 'icone' => 'mulher_mascara',   'categoria' => 'Tratamento'],
+            ['nome' => 'Coloração',      'duracao_minutos' => 120, 'preco' => 180.00, 'cor' => '#ec4899', 'icone' => 'mulher_coloracao', 'categoria' => 'Tratamento'],
+            ['nome' => 'Barba + Bigode', 'duracao_minutos' => 45,  'preco' => 50.00,  'cor' => '#f59e0b', 'icone' => 'bigode',           'categoria' => 'Barba'],
         ];
 
         $criados = collect();

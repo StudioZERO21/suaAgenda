@@ -46,17 +46,7 @@ final class NavMenu
      */
     public static function pode(User $user, ?array $permissions): bool
     {
-        if ($permissions === null) {
-            return true;
-        }
-
-        foreach ($permissions as $permission) {
-            if ($user->can($permission)) {
-                return true;
-            }
-        }
-
-        return false;
+        return UserPermissions::canAny($user, $permissions);
     }
 
     /**

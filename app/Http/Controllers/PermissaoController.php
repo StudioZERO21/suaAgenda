@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Permissao\AssignUserGruposRequest;
 use App\Http\Requests\Permissao\StoreGrupoAcessoRequest;
 use App\Http\Requests\Permissao\UpdateGrupoAcessoRequest;
 use App\Models\Cargo;
 use App\Models\Profissional;
 use App\Models\Role;
 use App\Models\User;
-use App\Support\DefaultRolePermissions;
 use App\Support\SaDemoData;
+use App\Support\UserPermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -207,27 +208,96 @@ class PermissaoController extends Controller
         }
 
         $user->update(['profissional_id' => $profissionalId]);
-        $this->resyncGrupoDoUsuario($user->fresh());
+
+        if (! $user->fresh()->acl_manual) {
+            $this->resyncGrupoDoUsuario($user->fresh(['profissional.cargo.grupoAcesso']));
+        }
 
         return response()->json(['success' => true, 'profissional_id' => $profissionalId]);
     }
 
     /**
-     * Garante que o usuário tenha exatamente o grupo de acesso definido
-     * pelo cargo do profissional vinculado (ou nenhum).
+     * Atribui um ou mais grupos ACL diretamente ao funcionário.
+     */
+    public function assignUserGrupos(AssignUserGruposRequest $request, User $user): JsonResponse
+    {
+        abort_if($user->empresa_id !== auth()->user()->empresa_id, 403);
+
+        if ($user->hasRole('admin_empresa')) {
+            return response()->json([
+                'message' => 'Administrador da empresa possui acesso total e não usa grupos ACL.',
+            ], 422);
+        }
+
+        /** @var list<int> $grupoIds */
+        $grupoIds = array_values(array_unique(array_map('intval', $request->input('grupo_ids', []))));
+
+        $grupos = Role::where('company_id', auth()->user()->empresa_id)
+            ->whereIn('id', $grupoIds)
+            ->get();
+
+        if ($grupos->count() !== count($grupoIds)) {
+            abort(422, 'Grupo de acesso inválido.');
+        }
+
+        $this->syncUserGrupos($user, $grupos->all(), manual: true);
+
+        return response()->json([
+            'success' => true,
+            'funcionario' => $this->funcionarioToJson($user->fresh(['roles.permissions', 'profissional.cargo.grupoAcesso'])),
+        ]);
+    }
+
+    /**
+     * Restaura grupos ACL conforme o cargo do profissional vinculado.
+     */
+    public function syncUserGrupoFromCargo(User $user): JsonResponse
+    {
+        abort_if(! auth()->user()->hasRole(['admin_empresa', 'super_admin']) && ! auth()->user()->can('cfg_perms'), 403);
+        abort_if($user->empresa_id !== auth()->user()->empresa_id, 403);
+
+        if ($user->hasRole('admin_empresa')) {
+            return response()->json(['message' => 'Administrador não usa grupos ACL.'], 422);
+        }
+
+        $user->update(['acl_manual' => false]);
+        $this->resyncGrupoDoUsuario($user->fresh(['profissional.cargo.grupoAcesso']));
+
+        return response()->json([
+            'success' => true,
+            'funcionario' => $this->funcionarioToJson($user->fresh(['roles.permissions', 'profissional.cargo.grupoAcesso'])),
+        ]);
+    }
+
+    /**
+     * Garante grupos ACL pelo cargo do profissional, salvo atribuição manual.
      */
     private function resyncGrupoDoUsuario(User $user): void
+    {
+        if ($user->acl_manual) {
+            return;
+        }
+
+        $grupo = $user->profissional?->cargo?->grupoAcesso;
+
+        $this->syncUserGrupos($user, $grupo !== null ? [$grupo] : [], manual: false);
+    }
+
+    /**
+     * @param  list<Role>  $grupos
+     */
+    private function syncUserGrupos(User $user, array $grupos, bool $manual): void
     {
         $gruposDaEmpresa = Role::where('company_id', $user->empresa_id)->pluck('id');
         $user->roles()->detach($gruposDaEmpresa);
         $user->unsetRelation('roles');
 
-        $grupo = $user->profissional?->cargo?->grupoAcesso;
-
-        if ($grupo !== null) {
+        foreach ($grupos as $grupo) {
             $user->assignRole($grupo);
         }
 
+        $user->updateQuietly(['acl_manual' => $manual]);
+        UserPermissions::forgetUser($user->id);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
@@ -271,7 +341,7 @@ class PermissaoController extends Controller
         return User::where('empresa_id', $companyId)
             ->with([
                 'roles.permissions',
-                'profissional.cargo',
+                'profissional.cargo.grupoAcesso',
             ])
             ->orderBy('name')
             ->get()
@@ -307,21 +377,24 @@ class PermissaoController extends Controller
     private function funcionarioToJson(User $user): array
     {
         $globalRole = $user->roles->whereNull('company_id')->first();
-        $grupoAcl = $user->roles->whereNotNull('company_id')->first();
+        $gruposAcl = $user->roles->whereNotNull('company_id')->values();
         $funcaoSlug = $globalRole?->name ?? '';
         $funcaoLabel = self::FUNCAO_LABELS[$funcaoSlug] ?? '';
 
-        $perms = $user->getAllPermissions()->pluck('name')->sort()->values()->all();
+        $perms = UserPermissions::namesForDisplay($user);
 
-        if ($perms === [] && $funcaoSlug !== '') {
-            $perms = DefaultRolePermissions::for($funcaoSlug) ?? [];
-        }
+        $grupos = $gruposAcl->map(fn (Role $role): array => [
+            'id' => $role->id,
+            'nome' => $role->name,
+            'cor' => $role->cor ?? '#6366f1',
+            'descricao' => $role->descricao ?? '',
+        ])->all();
 
-        if ($grupoAcl !== null) {
+        if ($grupos !== []) {
             $grupo = [
-                'nome' => $grupoAcl->name,
-                'cor' => $grupoAcl->cor ?? '#6366f1',
-                'descricao' => $grupoAcl->descricao ?? '',
+                'nome' => count($grupos) === 1 ? $grupos[0]['nome'] : count($grupos).' grupos',
+                'cor' => $grupos[0]['cor'],
+                'descricao' => implode(', ', array_column($grupos, 'nome')),
             ];
         } elseif ($funcaoSlug === 'admin_empresa') {
             $grupo = ['nome' => 'Acesso Total', 'cor' => '#ef4444', 'descricao' => 'Função Administrador'];
@@ -334,6 +407,7 @@ class PermissaoController extends Controller
         }
 
         $cargo = $user->profissional?->cargo;
+        $cargoGrupo = $cargo?->grupoAcesso;
 
         return [
             'id' => $user->id,
@@ -343,6 +417,14 @@ class PermissaoController extends Controller
             'funcao' => $funcaoLabel,
             'funcao_slug' => $funcaoSlug,
             'grupo' => array_merge($grupo, ['perms' => $perms]),
+            'grupos' => $grupos,
+            'grupo_ids' => array_column($grupos, 'id'),
+            'acl_manual' => (bool) $user->acl_manual,
+            'cargo_grupo' => $cargoGrupo ? [
+                'id' => $cargoGrupo->id,
+                'nome' => $cargoGrupo->name,
+                'cor' => $cargoGrupo->cor ?? '#6366f1',
+            ] : null,
             'cargo' => $cargo ? ['nome' => $cargo->nome, 'cor' => $cargo->cor] : null,
             'profissional' => $user->profissional ? ['nome' => $user->profissional->name] : null,
         ];

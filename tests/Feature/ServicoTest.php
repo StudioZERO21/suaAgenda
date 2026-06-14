@@ -56,11 +56,14 @@ describe('servicos', function () {
                 'duracao_minutos' => 30,
                 'preco' => 35.00,
                 'cor' => '#d4a574',
+                'icone' => 'sparkle',
                 'ativo' => '1',
             ])
             ->assertRedirect(route('servicos.index'));
 
-        expect(Servico::where('nome', 'Barba')->where('company_id', $this->company->id)->exists())->toBeTrue();
+        $svc = Servico::where('nome', 'Barba')->where('company_id', $this->company->id)->first();
+        expect($svc)->not->toBeNull();
+        expect($svc->icone)->toBe('sparkle');
     });
 
     it('gestor pode criar serviço', function () {

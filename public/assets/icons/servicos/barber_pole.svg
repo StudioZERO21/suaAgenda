@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="#1a1a1a" aria-hidden="true">
+<rect x="200" y="64" width="112" height="384" rx="16" fill="#1a1a1a"/>
+<path fill="#fff" d="M200 96h112v64H200zm0 128h112v64H200zm0 128h112v64H200z"/>
+<path fill="#1a1a1a" d="m312 128-112 64 112 64V128zm0 128-112 64 112 64V256z"/>
+<ellipse cx="256" cy="48" rx="40" ry="24" fill="#1a1a1a"/>
+<ellipse cx="256" cy="464" rx="48" ry="28" fill="#1a1a1a"/>
+</svg>

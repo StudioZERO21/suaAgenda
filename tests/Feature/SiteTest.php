@@ -35,7 +35,13 @@ describe('site settings', function () {
     it('admin pode carregar a página de configurações do site', function () {
         $this->actingAs($this->admin)
             ->get(route('site.index'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('Configurações do Site')
+            ->assertSee('Textos do Hero')
+            ->assertSee('Seções Visíveis')
+            ->assertSee('Mensagens Automáticas')
+            ->assertSee('Metadados')
+            ->assertSee('siteApp(');
     });
 
     it('admin pode salvar configurações do site e recebe json 200', function () {

@@ -231,6 +231,13 @@ final class SaPalettes
                 'qui' => ['08:00', '20:00', true],
                 'sex' => ['08:00', '20:00', true],
                 'sab' => ['08:00', '16:00', true],
+                'dom' => ['09:00', '14:00', false],
+            ],
+            'closure' => [
+                'active' => false,
+                'status' => 'ferias',
+                'return_date' => null,
+                'note' => '',
             ],
             'advanced' => [
                 'confirm_required' => false,
@@ -239,6 +246,11 @@ final class SaPalettes
                 'cancel_policy' => '',
                 'min_advance_mins' => 30,
                 'max_advance_days' => 60,
+            ],
+            'payments' => [
+                'pix_key' => '',
+                'pix_key_type' => 'random',
+                'pix_city' => '',
             ],
         ];
     }

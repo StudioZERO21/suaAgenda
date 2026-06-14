@@ -22,6 +22,8 @@
     $showTestimon = ($cfg['show_testimonials'] ?? true)  !== false;
     $showBookCta  = ($cfg['show_booking_cta']  ?? true)  !== false;
     $dispUrl      = route('vitrine.disponibilidade', $company->slug);
+    $slotsUrl     = route('agendar.slots', $company->slug);
+    $diasUrl      = route('agendar.dias', $company->slug);
     $bookBase     = route('agendar.show', $company->slug);
 
     $fotoUrl = fn ($path) => $path ? \Illuminate\Support\Facades\Storage::url($path) : null;
@@ -80,6 +82,127 @@
     .vit-gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     @media (max-width: 920px) { .vit-grid-3 { grid-template-columns: 1fr; } .vit-section { padding: 0 24px; } .vit-gallery { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 600px) { .vit-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+    /* Modal de agendamento */
+    .vit-book-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(0,0,0,.58); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 16px;
+    }
+    .vit-book-modal {
+        background: var(--sa-surface);
+        border-radius: 20px;
+        width: min(560px, calc(100vw - 24px));
+        max-height: min(92vh, 720px);
+        overflow: hidden;
+        display: flex; flex-direction: column;
+        box-shadow: 0 28px 80px rgba(0,0,0,.32);
+        border: 1px solid var(--sa-border);
+    }
+    .vit-book-modal__accent { height: 4px; background: linear-gradient(90deg, var(--sa-secondary), color-mix(in srgb, var(--sa-secondary) 60%, #fff)); flex-shrink: 0; }
+    .vit-book-steps { display: flex; gap: 6px; padding: 0 24px 16px; }
+    .vit-book-step {
+        flex: 1; height: 4px; border-radius: 4px; background: var(--sa-border);
+        transition: background 200ms;
+    }
+    .vit-book-step.is-done { background: var(--sa-secondary); }
+    .vit-book-step.is-active { background: color-mix(in srgb, var(--sa-secondary) 55%, var(--sa-border)); }
+    .vit-book-body { overflow-y: auto; padding: 0 24px 26px; flex: 1; min-height: 0; }
+    .vit-book-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 480px) { .vit-book-slots { grid-template-columns: repeat(3, 1fr); } }
+    .vit-book-slot {
+        padding: 10px 6px; border-radius: 10px; font-size: 13px; font-weight: 600;
+        font-family: var(--sa-font-body); text-align: center; transition: all 150ms;
+        border: 1.5px solid var(--sa-border); background: var(--sa-surface2);
+        color: var(--sa-text3); cursor: not-allowed; opacity: .45;
+        text-decoration: line-through;
+        appearance: none; -webkit-appearance: none; box-shadow: none; margin: 0;
+    }
+    .vit-book-slot.is-free {
+        cursor: pointer; opacity: 1; text-decoration: none;
+        background: color-mix(in srgb, var(--sa-secondary) 10%, transparent);
+        border-color: color-mix(in srgb, var(--sa-secondary) 40%, transparent);
+        color: var(--sa-secondary);
+    }
+    .vit-book-slot.is-free:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .vit-book-pick {
+        display: flex; align-items: center; gap: 14px; width: 100%;
+        padding: 15px 16px; border-radius: 14px; border: 1.5px solid var(--sa-border);
+        background: var(--sa-surface); cursor: pointer; text-align: left;
+        transition: border-color 150ms, box-shadow 150ms;
+    }
+    .vit-book-pick:hover { border-color: var(--sa-secondary); box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+    .vit-book-label {
+        display: block; font-size: 13px; font-weight: 600; color: var(--sa-text1);
+        letter-spacing: .2px; margin-bottom: 6px;
+    }
+    .vit-book-field, .vit-book-select {
+        width: 100%; padding: 11px 14px; border: 1.5px solid var(--sa-border);
+        border-radius: 8px; font-size: 14px; color: var(--sa-text1);
+        background: var(--sa-surface); outline: none; box-sizing: border-box;
+        font-family: var(--sa-font-body);
+        transition: border-color 180ms, outline 180ms;
+        appearance: none; -webkit-appearance: none;
+    }
+    .vit-book-select {
+        padding-right: 36px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 12px center;
+        cursor: pointer;
+    }
+    .vit-book-field:focus, .vit-book-select:focus {
+        border-color: var(--sa-primary);
+        outline: 3px solid rgba(0,0,0,.06);
+    }
+    .vit-book-preview {
+        margin-top: 14px; padding: 14px 16px; border-radius: 12px;
+        background: color-mix(in srgb, var(--sa-secondary) 6%, transparent);
+        border: 1px solid color-mix(in srgb, var(--sa-secondary) 18%, transparent);
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .vit-book-days-row {
+        display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+        margin-bottom: 16px; -webkit-overflow-scrolling: touch;
+    }
+    .vit-book-day {
+        padding: 10px 14px; border-radius: 12px; min-width: 66px; flex-shrink: 0;
+        border: 1.5px solid var(--sa-border); background: var(--sa-surface);
+        color: var(--sa-text1); cursor: pointer; text-align: center;
+        font-family: var(--sa-font-body); transition: border-color 180ms, background 180ms, color 180ms;
+        appearance: none; -webkit-appearance: none; box-shadow: none; margin: 0;
+    }
+    .vit-book-day:hover:not(.is-active) { border-color: color-mix(in srgb, var(--sa-secondary) 50%, var(--sa-border)); }
+    .vit-book-day.is-active {
+        border-color: var(--sa-secondary); background: var(--sa-secondary); color: #fff;
+    }
+    .vit-book-day__week {
+        display: block; font-size: 10px; font-weight: 700; letter-spacing: .8px;
+        text-transform: uppercase; opacity: .75; margin-bottom: 2px;
+    }
+    .vit-book-day.is-active .vit-book-day__week { opacity: .9; }
+    .vit-book-day__num {
+        display: block; font-family: var(--sa-font-heading); font-size: 18px;
+        font-weight: 700; line-height: 1.1;
+    }
+    .vit-book-btn-primary {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: 13px 18px; border-radius: 10px; border: none;
+        cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sa-font-body);
+        background: var(--sa-primary); color: #fff; transition: filter 200ms;
+        appearance: none; -webkit-appearance: none; box-shadow: none; margin: 0;
+    }
+    .vit-book-btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+    .vit-book-btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    .vit-book-btn-action {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: 13px 18px; border-radius: 10px; border: none;
+        cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--sa-font-body);
+        background: var(--sa-secondary); color: #fff; transition: filter 200ms;
+        appearance: none; -webkit-appearance: none; box-shadow: none; margin-top: 20px;
+    }
+    .vit-book-btn-action:hover:not(:disabled) { filter: brightness(1.06); }
+    .vit-book-btn-action:disabled { opacity: .45; cursor: not-allowed; }
+    .vit-book-footer { padding-top: 4px; }
 </style>
 @endpush
 
@@ -412,126 +535,172 @@
         </div>
     </footer>
 
-    {{-- ══ MODAL DE AGENDAMENTO (centralizado) ═══════════════════ --}}
-    <div x-show="aberto" x-cloak x-transition.opacity @keydown.escape.window="fechar()"
-         style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px"
+    {{-- ══ MODAL DE AGENDAMENTO ═══════════════════════════════════ --}}
+    <div x-show="aberto" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="fechar()"
+         class="vit-book-overlay"
          @click.self="fechar()">
-        <div style="background:var(--sa-surface);border-radius:18px;width:min(540px, calc(100vw - 24px));max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.28)">
+        <div class="vit-book-modal" @click.stop
+             x-transition:enter="transition ease-out duration-220"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+            <div class="vit-book-modal__accent"></div>
+
             {{-- Header --}}
-            <div style="display:flex;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--sa-border);position:sticky;top:0;background:var(--sa-surface);z-index:2">
+            <div style="display:flex;align-items:center;gap:12px;padding:18px 24px 12px;flex-shrink:0">
                 <button type="button" x-show="podeVoltar" @click="voltar()"
-                        style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:8px;background:transparent;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--sa-border);border-radius:9px;background:transparent;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <div style="flex:1;min-width:0">
-                    <div style="font-family:var(--sa-font-heading);font-size:17px;font-weight:700;color:var(--sa-text1)" x-text="tituloEtapa"></div>
-                    <div style="font-size:12px;color:var(--sa-text3)" x-text="subtituloEtapa"></div>
+                    <div style="font-family:var(--sa-font-heading);font-size:18px;font-weight:700;color:var(--sa-text1);letter-spacing:-.3px" x-text="tituloEtapa"></div>
+                    <div style="font-size:12px;color:var(--sa-text3);margin-top:2px" x-text="subtituloEtapa"></div>
                 </div>
-                <button type="button" @click="fechar()" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button type="button" @click="fechar()" aria-label="Fechar"
+                        style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--sa-surface2);border:1px solid var(--sa-border);border-radius:50%;cursor:pointer;color:var(--sa-text3);flex-shrink:0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
-            <div style="padding:22px 24px 26px">
+            {{-- Progresso --}}
+            <div class="vit-book-steps">
+                <div class="vit-book-step" :class="{ 'is-done': stepIndex > 0, 'is-active': stepIndex === 0 }"></div>
+                <div class="vit-book-step" :class="{ 'is-done': stepIndex > 1, 'is-active': stepIndex === 1 }"></div>
+                <div class="vit-book-step" :class="{ 'is-done': stepIndex > 2, 'is-active': stepIndex === 2 }"></div>
+                <div class="vit-book-step" :class="{ 'is-done': stepIndex > 3, 'is-active': stepIndex === 3 }"></div>
+            </div>
+
+            <div class="vit-book-body">
                 {{-- ETAPA: SERVIÇO --}}
-                <div x-show="step === 'servico'" style="display:flex;flex-direction:column;gap:12px">
-                    <template x-for="s in servicos" :key="s.id">
-                        <button type="button" @click="escolherServico(s.id)"
-                                style="display:flex;align-items:center;gap:14px;width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;text-align:left;transition:all 150ms"
-                                @mouseenter="$el.style.borderColor='var(--sa-primary)'" @mouseleave="$el.style.borderColor='var(--sa-border)'">
-                            <div style="flex:1;min-width:0">
-                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="s.nome"></div>
-                            </div>
-                            <div style="font-size:14px;font-weight:700;color:var(--sa-secondary);flex-shrink:0" x-text="s.preco"></div>
-                        </button>
-                    </template>
+                <div x-show="step === 'servico'" class="vit-book-footer">
+                    <label class="vit-book-label">Serviço <span style="color:var(--sa-secondary)">*</span></label>
+                    <select class="vit-book-select" x-model="servicoId" @change="profId = ''">
+                        <option value="">Selecione um serviço…</option>
+                        <template x-for="s in servicos" :key="s.id">
+                            <option :value="s.id" x-text="s.nome + ' · ' + s.duracao + ' · ' + s.preco"></option>
+                        </template>
+                    </select>
+                    <div x-show="servicoDetalhe" class="vit-book-preview">
+                        <div>
+                            <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="servicoDetalhe?.nome"></div>
+                            <div style="font-size:12px;color:var(--sa-text3);margin-top:3px" x-text="servicoDetalhe?.duracao"></div>
+                        </div>
+                        <div style="font-family:var(--sa-font-heading);font-size:17px;font-weight:800;color:var(--sa-secondary)" x-text="servicoDetalhe?.preco"></div>
+                    </div>
+                    <button type="button" class="vit-book-btn-action" @click="continuarServico()" :disabled="!servicoId">
+                        Seguir
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                 </div>
 
                 {{-- ETAPA: PROFISSIONAL --}}
-                <div x-show="step === 'profissional'" style="display:flex;flex-direction:column;gap:12px">
-                    <template x-for="p in profsDoServico" :key="p.id">
-                        <button type="button" @click="escolherProfissional(p.id)"
-                                style="display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;text-align:left;transition:all 150ms"
-                                @mouseenter="$el.style.borderColor='var(--sa-primary)'" @mouseleave="$el.style.borderColor='var(--sa-border)'">
-                            <template x-if="p.foto">
-                                <img :src="p.foto" :alt="p.name" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                <div x-show="step === 'profissional'" class="vit-book-footer">
+                    <label class="vit-book-label">Profissional <span style="color:var(--sa-secondary)">*</span></label>
+                    <select class="vit-book-select" x-model="profId">
+                        <option value="">Selecione um profissional…</option>
+                        <template x-for="p in profsDoServico" :key="p.id">
+                            <option :value="p.id" x-text="p.name + (p.especialidade ? ' · ' + p.especialidade : '')"></option>
+                        </template>
+                    </select>
+                    <div x-show="prof" class="vit-book-preview" style="margin-top:14px">
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <template x-if="prof?.foto">
+                                <img :src="prof.foto" :alt="prof.name" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--sa-border)">
                             </template>
-                            <template x-if="!p.foto">
-                                <div :style="`width:48px;height:48px;border-radius:50%;background:${p.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`" x-text="p.name.charAt(0).toUpperCase()"></div>
+                            <template x-if="prof && !prof.foto">
+                                <div :style="`width:44px;height:44px;border-radius:50%;background:${prof.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:var(--sa-font-heading)`" x-text="prof.name.charAt(0).toUpperCase()"></div>
                             </template>
-                            <div style="flex:1;min-width:0">
-                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="p.name"></div>
-                                <div style="font-size:12px;color:var(--sa-text3)" x-text="p.especialidade"></div>
+                            <div>
+                                <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="prof?.name"></div>
+                                <div style="font-size:12px;color:var(--sa-text3)" x-text="prof?.especialidade"></div>
                             </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
-                    </template>
+                        </div>
+                    </div>
+                    <button type="button" class="vit-book-btn-action" @click="continuarProfissional()" :disabled="!profId || carregandoDias">
+                        <span x-text="carregandoDias ? 'Carregando dias…' : 'Seguir'"></span>
+                        <svg x-show="!carregandoDias" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                 </div>
 
                 {{-- ETAPA: HORÁRIO --}}
                 <div x-show="step === 'horario'">
-                    {{-- Card do profissional --}}
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--sa-surface2);border-radius:12px">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px 16px;background:color-mix(in srgb,var(--sa-secondary) 6%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 18%,transparent);border-radius:14px">
                         <template x-if="prof && prof.foto">
-                            <img :src="prof.foto" :alt="prof.name" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                            <img :src="prof.foto" :alt="prof.name" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--sa-border)">
                         </template>
                         <template x-if="prof && !prof.foto">
-                            <div :style="`width:44px;height:44px;border-radius:50%;background:${prof.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`" x-text="prof.name.charAt(0).toUpperCase()"></div>
+                            <div :style="`width:46px;height:46px;border-radius:50%;background:${prof.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;font-family:var(--sa-font-heading)`" x-text="prof.name.charAt(0).toUpperCase()"></div>
                         </template>
                         <div style="min-width:0">
                             <div style="font-size:14px;font-weight:700;color:var(--sa-text1)" x-text="prof?.name"></div>
-                            <div style="font-size:12px;color:var(--sa-text3)" x-text="servicoNome"></div>
+                            <div style="font-size:12px;color:var(--sa-text3)" x-text="servicoNome + ' · Escolha um horário'"></div>
                         </div>
                     </div>
 
-                    {{-- Abas de dia --}}
-                    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px">
-                        <template x-for="(d, i) in dias" :key="d.iso">
-                            <button type="button" @click="diaSel = d.iso; buscar()"
-                                    :style="diaSel === d.iso ? 'border-color:var(--sa-secondary);background:var(--sa-secondary);color:#fff' : 'border-color:var(--sa-border);background:var(--sa-surface);color:var(--sa-text1)'"
-                                    style="padding:9px 14px;border-radius:10px;border:1.5px solid;min-width:62px;flex-shrink:0;cursor:pointer;text-align:center;transition:all 180ms">
-                                <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.7" x-text="i === 0 ? 'Hoje' : d.weekday"></div>
-                                <div style="font-family:var(--sa-font-heading);font-size:18px;font-weight:700;line-height:1.1" x-text="d.day"></div>
+                    <div class="vit-book-days-row">
+                        <template x-for="d in dias" :key="d.iso">
+                            <button type="button" class="vit-book-day" :class="{ 'is-active': diaSel === d.iso }" @click="selecionarDia(d.iso)">
+                                <span class="vit-book-day__week" x-text="d.isToday ? 'Hoje' : d.weekday"></span>
+                                <span class="vit-book-day__num" x-text="d.day"></span>
                             </button>
                         </template>
                     </div>
 
-                    <div x-show="!carregando" style="margin-bottom:14px">
+                    <p x-show="!carregandoDias && dias.length === 0" style="font-size:13px;color:var(--sa-text3);text-align:center;padding:16px 0">
+                        Nenhum dia de funcionamento nos próximos meses para este profissional.
+                    </p>
+
+                    <div x-show="carregando" style="text-align:center;padding:32px 16px">
+                        <div style="width:32px;height:32px;border:3px solid var(--sa-border);border-top-color:var(--sa-secondary);border-radius:50%;margin:0 auto 12px;animation:vitSpin .7s linear infinite"></div>
+                        <div style="font-size:13px;color:var(--sa-text3)">Buscando horários disponíveis…</div>
+                    </div>
+
+                    <div x-show="!carregando && erroHorarios" style="padding:12px 14px;border-radius:10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);color:#dc2626;font-size:13px;margin-bottom:14px" x-text="erroHorarios"></div>
+
+                    <div x-show="!carregando && !erroHorarios">
                         <div :style="livres > 0 ? 'background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#059669' : 'background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);color:#dc2626'"
-                             style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid">
+                             style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;border:1px solid;margin-bottom:16px">
                             <span style="width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
-                            <span style="font-size:13px;font-weight:600" x-text="livres > 0 ? (livres + ' horários disponíveis') : 'Sem horários neste dia'"></span>
+                            <span style="font-size:13px;font-weight:600" x-text="livres > 0 ? (livres + ' horário' + (livres === 1 ? '' : 's') + ' disponível' + (livres === 1 ? '' : 'is')) : (slots.length ? 'Todos os horários estão ocupados neste dia' : 'Sem expediente neste dia')"></span>
+                        </div>
+
+                        <div x-show="slots.length > 0" class="vit-book-slots">
+                            <template x-for="slot in slots" :key="slot.hora">
+                                <button type="button"
+                                        @click="slot.disponivel && escolherHorario(slot.hora)"
+                                        :disabled="!slot.disponivel"
+                                        class="vit-book-slot"
+                                        :class="{ 'is-free': slot.disponivel }"
+                                        x-text="slot.hora"></button>
+                            </template>
+                        </div>
+
+                        <div x-show="slots.length > 0" style="display:flex;gap:16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--sa-border)">
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <div style="width:10px;height:10px;border-radius:3px;background:var(--sa-secondary)"></div>
+                                <span style="font-size:12px;color:var(--sa-text3)">Disponível</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <div style="width:10px;height:10px;border-radius:3px;background:var(--sa-border2)"></div>
+                                <span style="font-size:12px;color:var(--sa-text3)">Ocupado</span>
+                            </div>
                         </div>
                     </div>
-
-                    <div x-show="!carregando">
-                        <template x-for="grupo in slotsAgrupados" :key="grupo.label">
-                            <div style="margin-bottom:16px">
-                                <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px" x-text="grupo.label"></div>
-                                <div style="display:flex;flex-wrap:wrap;gap:10px">
-                                    <template x-for="slot in grupo.slots" :key="slot.hora">
-                                        <button type="button" @click="escolherHorario(slot.hora)"
-                                                :style="`background:color-mix(in srgb,${prof?.cor || 'var(--sa-primary)'} 10%,transparent);color:${prof?.cor || 'var(--sa-primary)'};border:1.5px solid color-mix(in srgb,${prof?.cor || 'var(--sa-primary)'} 35%,transparent)`"
-                                                style="padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sa-font-body);transition:filter 150ms"
-                                                @mouseenter="$el.style.filter='brightness(1.12)'" @mouseleave="$el.style.filter='none'"
-                                                x-text="slot.hora"></button>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div x-show="carregando" style="text-align:center;padding:24px;color:var(--sa-text3);font-size:14px">Buscando horários…</div>
                 </div>
 
                 {{-- ETAPA: DADOS --}}
                 <div x-show="step === 'dados'">
-                    <div style="background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 20%,transparent);border-radius:10px;padding:14px 16px;margin-bottom:18px">
-                        <div style="font-size:13px;color:var(--sa-text2);display:flex;flex-direction:column;gap:4px">
-                            <span style="font-weight:600;color:var(--sa-text1)" x-text="servicoNome"></span>
-                            <span style="color:var(--sa-text3)" x-text="prof?.name"></span>
-                            <span style="font-weight:600;color:var(--sa-secondary)" x-text="dataExtenso + ' às ' + horario"></span>
-                        </div>
+                    <div style="background:color-mix(in srgb,var(--sa-secondary) 8%,transparent);border:1px solid color-mix(in srgb,var(--sa-secondary) 22%,transparent);border-radius:14px;padding:16px 18px;margin-bottom:18px">
+                        <div style="font-size:11px;font-weight:700;color:var(--sa-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Resumo</div>
+                        <div style="font-size:14px;font-weight:600;color:var(--sa-text1)" x-text="servicoNome"></div>
+                        <div style="font-size:13px;color:var(--sa-text3);margin-top:4px" x-text="prof?.name"></div>
+                        <div style="font-family:var(--sa-font-heading);font-size:15px;font-weight:700;color:var(--sa-secondary);margin-top:8px" x-text="dataExtenso + ' às ' + horario"></div>
                     </div>
 
                     @if($politicaAgendamento ?? null)
@@ -547,31 +716,25 @@
                         <input type="hidden" name="data_hora" :value="diaSel + ' ' + horario">
 
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">Nome completo <span style="color:var(--sa-secondary)">*</span></label>
-                            <input type="text" name="cliente_nome" required
-                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
-                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <label class="vit-book-label">Nome completo <span style="color:var(--sa-secondary)">*</span></label>
+                            <input type="text" name="cliente_nome" required class="vit-book-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">WhatsApp / Telefone <span style="color:var(--sa-secondary)">*</span></label>
+                            <label class="vit-book-label">WhatsApp / Telefone <span style="color:var(--sa-secondary)">*</span></label>
                             <input type="tel" name="cliente_phone" required placeholder="(11) 99999-9999"
-                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
-                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                                   class="vit-book-field" maxlength="16"
+                                   @input="maskPhone($event.target)" inputmode="numeric" autocomplete="tel">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:6px">E-mail (opcional)</label>
-                            <input type="email" name="cliente_email"
-                                   style="width:100%;padding:11px 14px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;color:var(--sa-text1);background:var(--sa-surface);outline:none"
-                                   onfocus="this.style.borderColor='var(--sa-primary)'" onblur="this.style.borderColor='var(--sa-border)'">
+                            <label class="vit-book-label">E-mail (opcional)</label>
+                            <input type="email" name="cliente_email" class="vit-book-field" autocomplete="email">
                         </div>
                         <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
                             <input type="checkbox" name="consent" value="1" required style="margin-top:2px;accent-color:var(--sa-primary);flex-shrink:0">
                             <span style="font-size:12px;color:var(--sa-text3);line-height:1.6">Concordo com o uso dos meus dados para o agendamento e autorizo o contato via WhatsApp/e-mail.</span>
                         </label>
-                        <button type="submit" :disabled="enviando" :style="enviando ? 'opacity:.6;cursor:not-allowed' : ''"
-                                style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:var(--sa-primary);color:#fff;transition:filter 200ms"
-                                onmouseover="if(!this.disabled)this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <button type="submit" class="vit-book-btn-primary" :disabled="enviando">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                             <span x-text="enviando ? 'Enviando…' : 'Confirmar agendamento'"></span>
                         </button>
                     </form>
@@ -610,7 +773,17 @@ function vitrineBooking() {
     const SERVICOS = @json($servicosMap);
     const PROFS = @json($profsJs);
     const semana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const dispUrl = '{{ $dispUrl }}';
+    const slotsUrl = @json($slotsUrl);
+    const diasUrl = @json($diasUrl);
+    const hojeIso = (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+
+    const parseIso = (iso) => {
+        const [y, m, day] = iso.split('-').map(Number);
+        return new Date(y, m - 1, day, 12, 0, 0, 0);
+    };
 
     return {
         aberto: false,
@@ -618,12 +791,19 @@ function vitrineBooking() {
         servicoId: '', servicoNome: '',
         profId: '',
         dias: [], diaSel: '',
-        slots: [], carregando: false,
+        slots: [], carregando: false, carregandoDias: false, erroHorarios: '',
         horario: '', dataExtenso: '',
         enviando: false,
 
         get servicos() {
-            return Object.entries(SERVICOS).map(([id, s]) => ({ id, nome: s.nome, preco: s.preco }));
+            return Object.entries(SERVICOS).map(([id, s]) => ({
+                id, nome: s.nome, preco: s.preco, duracao: s.duracao || '',
+            }));
+        },
+        get servicoDetalhe() {
+            if (!this.servicoId || !SERVICOS[this.servicoId]) return null;
+            const s = SERVICOS[this.servicoId];
+            return { nome: s.nome, preco: s.preco, duracao: s.duracao || '' };
         },
         get profsDoServico() {
             const ids = SERVICOS[this.servicoId]?.profissionais ?? [];
@@ -635,16 +815,8 @@ function vitrineBooking() {
         get livres() {
             return this.slots.filter(s => s.disponivel).length;
         },
-        get slotsAgrupados() {
-            const livres = this.slots.filter(s => s.disponivel);
-            const grupos = [
-                { label: 'Manhã', min: 0, max: 12 },
-                { label: 'Tarde', min: 12, max: 18 },
-                { label: 'Noite', min: 18, max: 24 },
-            ];
-            return grupos
-                .map(g => ({ label: g.label, slots: livres.filter(s => { const h = parseInt(s.hora.split(':')[0], 10); return h >= g.min && h < g.max; }) }))
-                .filter(g => g.slots.length > 0);
+        get stepIndex() {
+            return { servico: 0, profissional: 1, horario: 2, dados: 3 }[this.step] ?? 0;
         },
         get podeVoltar() {
             return this.step === 'profissional' || this.step === 'horario' || this.step === 'dados';
@@ -663,26 +835,22 @@ function vitrineBooking() {
             return '{{ $company->name }}';
         },
 
-        gerarDias() {
-            const dias = [];
-            for (let i = 0; i < 14; i++) {
-                const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i);
-                dias.push({
-                    iso: d.toISOString().split('T')[0],
-                    weekday: semana[d.getDay()],
-                    day: String(d.getDate()).padStart(2, '0'),
-                });
-            }
-            this.dias = dias;
-            this.diaSel = dias[0].iso;
+        maskPhone(el) {
+            const digits = el.value.replace(/\D/g, '').slice(0, 11);
+            if (digits.length === 0) { el.value = ''; return; }
+            if (digits.length <= 2) el.value = `(${digits}`;
+            else if (digits.length <= 6) el.value = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+            else if (digits.length <= 10) el.value = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+            else el.value = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
         },
 
         reset() {
             this.step = 'servico';
             this.servicoId = ''; this.servicoNome = '';
             this.profId = ''; this.horario = ''; this.slots = [];
+            this.dias = []; this.diaSel = '';
+            this.erroHorarios = ''; this.carregandoDias = false;
             this.enviando = false;
-            this.gerarDias();
         },
 
         init() {
@@ -699,45 +867,92 @@ function vitrineBooking() {
             }
         },
 
-        abrir() { this.reset(); this.aberto = true; },
+        abrir() { this.reset(); this.aberto = true; document.body.style.overflow = 'hidden'; },
 
         abrirServico(id) {
             this.reset();
-            this.escolherServico(id);
+            this.servicoId = id;
+            this.servicoNome = SERVICOS[id]?.nome ?? '';
             this.aberto = true;
+            document.body.style.overflow = 'hidden';
         },
 
-        abrirProfissional(id) {
+        async abrirProfissional(id) {
             this.reset();
             this.profId = id;
-            // Serviços que este profissional realiza
             const servs = this.servicos.filter(s => (SERVICOS[s.id]?.profissionais ?? []).includes(id));
             if (servs.length === 1) {
                 this.servicoId = servs[0].id;
                 this.servicoNome = servs[0].nome;
-                this.step = 'horario';
-                this.buscar();
-            } else {
-                this.step = 'servico';
+                await this.carregarDias();
+                if (this.dias.length) {
+                    this.step = 'horario';
+                    await this.buscar();
+                } else {
+                    this.step = 'profissional';
+                }
             }
             this.aberto = true;
+            document.body.style.overflow = 'hidden';
         },
 
-        escolherServico(id) {
-            this.servicoId = id;
-            this.servicoNome = SERVICOS[id]?.nome ?? '';
-            if (this.profId && (SERVICOS[id]?.profissionais ?? []).includes(this.profId)) {
-                this.step = 'horario';
-                this.buscar();
-            } else {
-                this.profId = '';
-                this.step = 'profissional';
+        continuarServico() {
+            if (!this.servicoId) return;
+            this.servicoNome = SERVICOS[this.servicoId]?.nome ?? '';
+            const profs = this.profsDoServico;
+            if (this.profId && profs.some(p => p.id === this.profId)) {
+                this.continuarProfissional();
+                return;
+            }
+            if (profs.length === 1) {
+                this.profId = profs[0].id;
+                this.continuarProfissional();
+                return;
+            }
+            this.profId = '';
+            this.step = 'profissional';
+        },
+
+        async continuarProfissional() {
+            if (!this.profId) return;
+            await this.carregarDias();
+            if (!this.dias.length) {
+                this.erroHorarios = 'Este profissional não possui dias de funcionamento disponíveis.';
+                return;
+            }
+            this.step = 'horario';
+            await this.buscar();
+        },
+
+        async carregarDias() {
+            if (!this.profId) { this.dias = []; this.diaSel = ''; return; }
+            this.carregandoDias = true;
+            this.dias = []; this.diaSel = '';
+            try {
+                const params = new URLSearchParams({ profissional_id: this.profId });
+                const r = await fetch(`${diasUrl}?${params.toString()}`, { headers: { Accept: 'application/json' } });
+                if (!r.ok) return;
+                const isos = await r.json();
+                this.dias = isos.map((iso) => {
+                    const d = parseIso(iso);
+                    return {
+                        iso,
+                        weekday: semana[d.getDay()],
+                        day: String(d.getDate()).padStart(2, '0'),
+                        isToday: iso === hojeIso,
+                    };
+                });
+                this.diaSel = this.dias[0]?.iso ?? '';
+            } catch (e) {
+                this.dias = [];
+            } finally {
+                this.carregandoDias = false;
             }
         },
 
-        escolherProfissional(id) {
-            this.profId = id;
-            this.step = 'horario';
+        selecionarDia(iso) {
+            if (this.diaSel === iso) return;
+            this.diaSel = iso;
             this.buscar();
         },
 
@@ -750,24 +965,42 @@ function vitrineBooking() {
 
         voltar() {
             if (this.step === 'dados') this.step = 'horario';
-            else if (this.step === 'horario') this.step = this.profsDoServico.length ? 'profissional' : 'servico';
+            else if (this.step === 'horario') this.step = 'profissional';
             else if (this.step === 'profissional') this.step = 'servico';
         },
 
-        fechar() { this.aberto = false; },
+        fechar() {
+            this.aberto = false;
+            document.body.style.overflow = '';
+        },
 
         async buscar() {
-            if (!this.servicoId || !this.diaSel || !this.profId) { this.slots = []; return; }
-            this.carregando = true; this.slots = [];
+            if (!this.servicoId || !this.diaSel || !this.profId) {
+                this.slots = [];
+                return;
+            }
+            this.carregando = true;
+            this.slots = [];
+            this.erroHorarios = '';
             try {
-                const r = await fetch(`${dispUrl}?servico_id=${this.servicoId}&data=${this.diaSel}`);
-                if (r.ok) {
-                    const rows = await r.json();
-                    const row = rows.find(x => x.profissional.id === this.profId);
-                    this.slots = row ? row.slots : [];
+                const params = new URLSearchParams({
+                    servico_id: this.servicoId,
+                    profissional_id: this.profId,
+                    data: this.diaSel,
+                });
+                const r = await fetch(`${slotsUrl}?${params.toString()}`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!r.ok) {
+                    this.erroHorarios = 'Não foi possível carregar os horários. Tente outra data.';
+                    return;
                 }
-            } catch (e) { this.slots = []; }
-            this.carregando = false;
+                this.slots = await r.json();
+            } catch (e) {
+                this.erroHorarios = 'Erro de conexão. Verifique sua internet e tente novamente.';
+            } finally {
+                this.carregando = false;
+            }
         },
     };
 }
@@ -776,6 +1009,7 @@ function vitrineBooking() {
 
 @push('styles')
 <style>
+    @keyframes vitSpin { to { transform: rotate(360deg); } }
     .vit-nav-link:hover { color: #fff !important; }
     html { scroll-behavior: smooth; }
     @media (max-width: 760px) { .vit-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; } }
