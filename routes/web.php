@@ -30,6 +30,7 @@ use App\Http\Controllers\PdvController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermissaoController;
 use App\Http\Controllers\PlansController;
+use App\Http\Controllers\WebhookAsaasController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalDashboardController;
 use App\Http\Controllers\PortfolioController;
@@ -55,6 +56,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// ── Webhooks (public, token-validated) ──────────────────────────────
+Route::post('/webhooks/asaas', WebhookAsaasController::class)
+    ->name('webhooks.asaas')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // ── Painel Super Admin (visão global do SaaS) ──────────────────────
 Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
