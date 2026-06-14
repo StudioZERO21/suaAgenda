@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuditoriaController;
+use App\Http\Controllers\Admin\AdminBillingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\Admin\AdminLgpdController;
@@ -30,7 +31,6 @@ use App\Http\Controllers\PdvController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermissaoController;
 use App\Http\Controllers\PlansController;
-use App\Http\Controllers\WebhookAsaasController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalDashboardController;
 use App\Http\Controllers\PortfolioController;
@@ -39,9 +39,11 @@ use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
+use App\Http\Controllers\WebhookAsaasController;
 use App\Http\Middleware\CheckModulePermission;
 use App\Http\Middleware\EnsureClienteDaEmpresa;
 use App\Http\Middleware\SetTenantMiddleware;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -60,7 +62,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 // ── Webhooks (public, token-validated) ──────────────────────────────
 Route::post('/webhooks/asaas', WebhookAsaasController::class)
     ->name('webhooks.asaas')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
 Route::middleware('auth')->group(function () {
@@ -82,6 +84,18 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::post('regras', [AdminRegraController::class, 'store'])->name('regras.store');
     Route::put('regras/{regra}', [AdminRegraController::class, 'update'])->name('regras.update');
     Route::delete('regras/{regra}', [AdminRegraController::class, 'destroy'])->name('regras.destroy');
+
+    // Billing / Assinaturas
+    Route::get('billing', [AdminBillingController::class, 'index'])->name('billing.index');
+    Route::get('billing/gateway', [AdminBillingController::class, 'configGateway'])->name('billing.gateway');
+    Route::post('billing/gateway', [AdminBillingController::class, 'saveConfigGateway'])->name('billing.gateway.save');
+    Route::post('billing/gateway/testar', [AdminBillingController::class, 'testGateway'])->name('billing.gateway.testar');
+    Route::get('billing/{subscription}', [AdminBillingController::class, 'show'])->name('billing.show');
+    Route::post('billing/{subscription}/fatura', [AdminBillingController::class, 'gerarFatura'])->name('billing.fatura');
+    Route::patch('billing/{subscription}/suspender', [AdminBillingController::class, 'suspender'])->name('billing.suspender');
+    Route::patch('billing/{subscription}/reativar', [AdminBillingController::class, 'reativar'])->name('billing.reativar');
+    Route::patch('billing/{subscription}/cancelar', [AdminBillingController::class, 'cancelar'])->name('billing.cancelar');
+    Route::patch('billing/invoices/{invoice}/paga', [AdminBillingController::class, 'marcarPaga'])->name('billing.invoice.paga');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
