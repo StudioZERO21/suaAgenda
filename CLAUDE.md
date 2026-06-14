@@ -49,13 +49,40 @@ composer test               # Testes Pest
 npm run build               # Build frontend
 ```
 
-## Backup — OBRIGATÓRIO antes de qualquer migration
+## ⛔ REGRA ABSOLUTA DE BACKUP (NÃO NEGOCIÁVEL)
+
+> Esta regra é executada **sempre** — sem exceções, sem abreviações.
+
+### Quando executar
+| Gatilho | Ação obrigatória |
+|---|---|
+| Antes de `php artisan migrate` | SQL backup |
+| Início de nova etapa | SQL backup + git commit + push |
+| Fim de etapa / sessão | SQL backup + git commit + push |
+| Mudança crítica (model, migration, auth, payments) | SQL backup antes + git commit após |
+
+### Protocolo completo (ordem obrigatória)
 ```bash
-bash backup.sh [etapa]      # Exemplo: bash backup.sh 1.5
+# 1. SQL backup
+bash backup.sh <etapa>          # ex: bash backup.sh 1.299-pre-migration
+
+# 2. Verificar resultado
+ls -lh BACKUPS/db-etapa-<etapa>*.sql.gz   # Deve ter tamanho > 0
+
+# 3. Rodar migration (se aplicável)
+php artisan migrate
+
+# 4. Git commit + push (ao fim da sessão/etapa)
+git add -A
+git commit -m "feat(etapa-X.Y): descrição clara"
+git push origin etapa-X.Y
 ```
-- Dumpa o banco suaAgenda em BACKUPS/db-etapa-*.sql.gz (local, gitignored)
-- Executar ANTES de `php artisan migrate` em toda sessão de desenvolvimento
-- mysqldump em D:\laragon3\bin\mysql\mysql-8.4.3-winx64\bin\mysqldump.exe
+
+### Regras anti-falha
+- **NUNCA** rodar `php artisan migrate` sem backup SQL feito primeiro
+- **NUNCA** fechar sessão sem push no GitHub (é o backup off-site)
+- Arquivos `.sql.gz` ficam em `BACKUPS/` (gitignored — apenas locais)
+- mysqldump em `D:\laragon3\bin\mysql\mysql-8.4.3-winx64\bin\mysqldump.exe`
 
 ## Git & GitHub — REGRA OBRIGATÓRIA
 - Repositório: https://github.com/StudioZERO21/suaAgenda.git
