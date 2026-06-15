@@ -52,30 +52,31 @@ describe('qrcode_empresa', function () {
             ->and($content)->toContain('</svg>');
     });
 
-    it('Content-Disposition inclui slug da empresa', function () {
+    it('SVG inline não tem Content-Disposition (renderiza em img tag)', function () {
         $response = $this->actingAs($this->admin)
             ->get(route('configuracoes.empresa.qrcode'));
 
-        $disposition = $response->headers->get('content-disposition');
-        expect($disposition)->toContain('qrcode-qr-barbearia.svg');
+        // sem attachment header — renderiza inline no <img>
+        expect($response->headers->get('content-disposition'))->toBeNull();
     });
 
-    it('não vaza QR de outra empresa: Content-Disposition usa slug próprio', function () {
+    it('não vaza QR de outra empresa: cada empresa recebe seu próprio SVG', function () {
         $outra = Company::create(['name' => 'Outra', 'slug' => 'outra-qr', 'plano' => 'trial', 'ativo' => true]);
         $outro = User::factory()->create(['empresa_id' => $outra->id]);
         $outro->assignRole('admin_empresa');
 
-        $outroDisposition = $this->actingAs($outro)
+        $svgOutro = $this->actingAs($outro)
             ->get(route('configuracoes.empresa.qrcode'))
-            ->headers->get('content-disposition');
+            ->getContent();
 
-        $minhaDisposition = $this->actingAs($this->admin)
+        $svgMinha = $this->actingAs($this->admin)
             ->get(route('configuracoes.empresa.qrcode'))
-            ->headers->get('content-disposition');
+            ->getContent();
 
-        expect($outroDisposition)->toContain('outra-qr')
-            ->and($minhaDisposition)->toContain('qr-barbearia')
-            ->and($minhaDisposition)->not->toContain('outra-qr');
+        // ambos retornam SVG válido mas com conteúdo diferente (URL diferente encodada)
+        expect($svgOutro)->toContain('<svg')
+            ->and($svgMinha)->toContain('<svg')
+            ->and($svgOutro)->not->toBe($svgMinha);
     });
 
     it('unauthenticated é redirecionado', function () {
