@@ -10,6 +10,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Company;
+use App\Models\LinkVisit;
 use App\Models\PortfolioItem;
 use App\Models\Profissional;
 use App\Models\Servico;
@@ -47,6 +48,9 @@ class AgendamentoPublicoController extends Controller
     public function landing(string $slug, AgendamentoCancelamentoService $cancelamento): View
     {
         $company = Company::where('slug', $slug)->where('ativo', true)->firstOrFail();
+
+        LinkVisit::track($company->id, LinkVisit::TYPE_VIEW);
+
         $politicaAgendamento = $cancelamento->descricaoPolitica($company->id);
 
         $servicos = Servico::where('company_id', $company->id)
@@ -289,6 +293,8 @@ class AgendamentoPublicoController extends Controller
         } finally {
             $lock->release();
         }
+
+        LinkVisit::track($company->id, LinkVisit::TYPE_BOOKING);
 
         $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
 
