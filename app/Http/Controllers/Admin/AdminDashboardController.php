@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -69,6 +70,34 @@ class AdminDashboardController extends Controller
             ->limit(6)
             ->get();
 
+        // ── Métricas SaaS ─────────────────────────────────────────────────
+        $mrr = (float) Subscription::whereIn('status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_GRACE])
+            ->sum('monthly_amount');
+
+        $novasEmpresas30d = Company::where('created_at', '>=', $inicio30)->count();
+
+        $churned30d = Subscription::where('status', Subscription::STATUS_CANCELLED)
+            ->where('cancelled_at', '>=', $inicio30)
+            ->count();
+
+        $totalAtivos30dAtras = Subscription::whereIn('status', [
+            Subscription::STATUS_ACTIVE,
+            Subscription::STATUS_GRACE,
+            Subscription::STATUS_TRIAL,
+        ])
+            ->where('created_at', '<=', $inicio30)
+            ->count();
+
+        $churnRate = $totalAtivos30dAtras > 0
+            ? round($churned30d / $totalAtivos30dAtras * 100, 1)
+            : 0.0;
+
+        $conversoesTrial30d = Subscription::where('status', Subscription::STATUS_ACTIVE)
+            ->where('updated_at', '>=', $inicio30)
+            ->count();
+
+        $triaisAtivos = Subscription::where('status', Subscription::STATUS_TRIAL)->count();
+
         return view('admin.dashboard', compact(
             'totalEmpresas',
             'empresasAtivas',
@@ -80,6 +109,12 @@ class AdminDashboardController extends Controller
             'maxSerie',
             'empresasRecentes',
             'topEmpresas',
+            'mrr',
+            'novasEmpresas30d',
+            'churned30d',
+            'churnRate',
+            'conversoesTrial30d',
+            'triaisAtivos',
         ));
     }
 }

@@ -54,6 +54,35 @@
     </div>
 </div>
 
+{{-- Métricas SaaS avançadas --}}
+<div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+    <div style="font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--sa-text1);margin-bottom:16px;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Métricas SaaS
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">
+        <div>
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">MRR</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:var(--sa-secondary)">R$&nbsp;{{ number_format($mrr, 0, ',', '.') }}</div>
+            <div style="font-size:11px;color:var(--sa-text3);margin-top:2px">ARR estimado: R$&nbsp;{{ number_format($mrr * 12, 0, ',', '.') }}</div>
+        </div>
+        <div style="padding-left:16px;border-left:1px solid var(--sa-border)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Novas empresas (30d)</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:var(--sa-text1)">{{ $novasEmpresas30d }}</div>
+        </div>
+        <div style="padding-left:16px;border-left:1px solid var(--sa-border)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Churn (30d)</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:{{ $churnRate > 5 ? '#ef4444' : ($churnRate > 2 ? '#f59e0b' : 'var(--sa-text1)') }}">{{ $churnRate }}%</div>
+            <div style="font-size:11px;color:var(--sa-text3);margin-top:2px">{{ $churned30d }} cancelamentos</div>
+        </div>
+        <div style="padding-left:16px;border-left:1px solid var(--sa-border)">
+            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Trials ativos</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:var(--sa-text1)">{{ $triaisAtivos }}</div>
+            <div style="font-size:11px;color:var(--sa-text3);margin-top:2px">{{ $conversoesTrial30d }} convertidos (30d)</div>
+        </div>
+    </div>
+</div>
+
 <div class="sa-grid-2-360">
     <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
         {{-- Série 30 dias --}}
