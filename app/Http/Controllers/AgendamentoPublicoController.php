@@ -332,16 +332,20 @@ class AgendamentoPublicoController extends Controller
                 'aprovacao_manual' => true,
             ]);
         } else {
-            // Sem sinal: confirmar se empresa não exige aprovação manual
-            if (! ($settings['advanced']['confirm_required'] ?? false)) {
+            if ($sinalPct > 0) {
+                // Sinal configurado mas sem gateway Asaas → aprovação manual obrigatória.
+                // Não auto-confirma: empresa precisa aprovar manualmente.
+                $agendamento->update(['aprovacao_manual' => true]);
+            } elseif (! ($settings['advanced']['confirm_required'] ?? false)) {
+                // Sem sinal E sem exigência de confirmação → confirma automaticamente.
                 $agendamento->update(['status' => Agendamento::STATUS_CONFIRMADO]);
-            }
 
-            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+                $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
 
-            if ($agendamento->cliente?->email && $agendamento->status === Agendamento::STATUS_CONFIRMADO) {
-                Mail::to($agendamento->cliente->email)
-                    ->queue(new AgendamentoConfirmado($agendamento));
+                if ($agendamento->cliente?->email) {
+                    Mail::to($agendamento->cliente->email)
+                        ->queue(new AgendamentoConfirmado($agendamento));
+                }
             }
         }
 
