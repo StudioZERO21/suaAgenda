@@ -7,9 +7,36 @@ namespace App\Http\Controllers;
 use App\Models\Notificacao;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class NotificacaoController extends Controller
 {
+    public function listar(Request $request): View
+    {
+        $companyId = auth()->user()->empresa_id;
+
+        $tipo = $request->input('tipo', '');
+        $lida = $request->input('lida', '');
+
+        $notifs = Notificacao::where('company_id', $companyId)
+            ->when($tipo !== '', fn ($q) => $q->where('tipo', $tipo))
+            ->when($lida === '0', fn ($q) => $q->whereNull('read_at'))
+            ->when($lida === '1', fn ($q) => $q->whereNotNull('read_at'))
+            ->orderByDesc('created_at')
+            ->paginate(50)
+            ->withQueryString();
+
+        $tipos = Notificacao::where('company_id', $companyId)
+            ->select('tipo')
+            ->distinct()
+            ->pluck('tipo')
+            ->sort()
+            ->values();
+
+        return view('notificacoes.index', compact('notifs', 'tipos', 'tipo', 'lida'));
+    }
+
     public function index(): JsonResponse
     {
         $companyId = auth()->user()->empresa_id;

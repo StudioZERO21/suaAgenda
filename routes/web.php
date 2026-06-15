@@ -109,6 +109,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('/dashboard/kanban', [DashboardController::class, 'kanban'])->name('dashboard.kanban');
     Route::get('/dashboard/sumario-financeiro', [DashboardController::class, 'sumarioFinanceiro'])->name('dashboard.sumario-financeiro');
 
+    Route::get('agendamentos/triagem', [AgendamentoController::class, 'triagem'])->name('agendamentos.triagem');
     Route::get('agendamentos/resumo-hoje', [AgendamentoController::class, 'resumoHoje'])->name('agendamentos.resumo-hoje');
     Route::get('agendamentos/por-profissional', [AgendamentoController::class, 'porProfissional'])->name('agendamentos.por-profissional');
     Route::get('agendamentos/por-servico', [AgendamentoController::class, 'porServico'])->name('agendamentos.por-servico');
@@ -410,6 +411,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
 
+    Route::get('notificacoes/todas', [NotificacaoController::class, 'listar'])->name('notificacoes.listar');
     Route::get('notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');
     Route::get('notificacoes/unread-count', [NotificacaoController::class, 'unreadCount'])->name('notificacoes.unread-count');
     Route::patch('notificacoes/todas-lidas', [NotificacaoController::class, 'markAllRead'])->name('notificacoes.todas-lidas');

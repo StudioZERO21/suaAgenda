@@ -25,6 +25,51 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgendamentoController extends Controller
 {
+    /**
+     * Triagem: agendamentos que precisam de ação (sinal, aprovação, pagamento).
+     */
+    public function triagem(Request $request): View
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $filtro = $request->input('filtro', 'todos');
+
+        $base = Agendamento::with(['profissional', 'cliente', 'servico'])
+            ->where('company_id', $empresa);
+
+        $agendamentos = match ($filtro) {
+            'aguardando_sinal' => (clone $base)->where('status', Agendamento::STATUS_AGUARDANDO_SINAL),
+            'aprovacao' => (clone $base)->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true),
+            'sinal_pago' => (clone $base)->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO),
+            default => (clone $base)->where(function ($q): void {
+                $q->where('status', Agendamento::STATUS_AGUARDANDO_SINAL)
+                    ->orWhere(function ($s): void {
+                        $s->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true);
+                    })
+                    ->orWhere(function ($s): void {
+                        $s->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO);
+                    });
+            }),
+        };
+
+        $agendamentos = $agendamentos
+            ->orderByRaw("FIELD(status, 'aguardando_sinal', 'pendente', 'confirmado')")
+            ->orderBy('data_hora')
+            ->paginate(25)
+            ->withQueryString();
+
+        // Contagens para os filtros
+        $contagens = [
+            'aguardando_sinal' => Agendamento::where('company_id', $empresa)->where('status', Agendamento::STATUS_AGUARDANDO_SINAL)->count(),
+            'aprovacao' => Agendamento::where('company_id', $empresa)->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true)->count(),
+            'sinal_pago' => Agendamento::where('company_id', $empresa)->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO)->count(),
+        ];
+
+        return view('agendamentos.triagem', compact('agendamentos', 'filtro', 'contagens'));
+    }
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Agendamento::class);
