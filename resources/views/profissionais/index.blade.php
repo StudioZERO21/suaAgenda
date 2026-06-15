@@ -146,14 +146,45 @@
             </div>
             @endcan
             @can('create', \App\Models\Profissional::class)
+            @if($planLimits->canAddProfissional())
             <x-sa.btn type="button" @click="openCreateModal()" :icon="view('components.sa.icons.plus')->render()">
                 Novo Funcionário
             </x-sa.btn>
+            @else
+            <a href="{{ route('planos.index') }}"
+               style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:#d97706;color:#fff;text-decoration:none;transition:filter 200ms"
+               onmouseover="this.style.filter='brightness(1.1)'"
+               onmouseout="this.style.filter='none'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Upgrade de Plano
+            </a>
+            @endif
             @endcan
         </x-slot:actions>
     </x-sa.app-header>
 
     <x-sa.body>
+        {{-- Banner de limite de plano --}}
+        @if(!$planLimits->canAddProfissional())
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:10px;
+                    background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);margin-bottom:20px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" flex-shrink="0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div style="flex:1">
+                <span style="font-size:13px;font-weight:600;color:#92400e">Limite de profissionais atingido</span>
+                <span style="font-size:13px;color:#78350f;margin-left:6px">{{ $planLimits->mensagemLimiteProfissionais() }}</span>
+            </div>
+            <a href="{{ route('planos.index') }}"
+               style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+                      background:#d97706;color:#fff;font-size:12px;font-weight:700;text-decoration:none;
+                      white-space:nowrap;transition:filter 180ms"
+               onmouseover="this.style.filter='brightness(1.1)'"
+               onmouseout="this.style.filter='none'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Fazer upgrade
+            </a>
+        </div>
+        @endif
+
         {{-- Stat cards --}}
         <div class="sa-grid-4" style="margin-bottom:20px">
             <div class="sa-tint-card" style="--tint:var(--sa-primary)">
