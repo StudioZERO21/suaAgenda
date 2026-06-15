@@ -16,11 +16,13 @@ use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\AgendamentoCancelamentoService;
 use App\Services\AgendamentoDisponibilidadeService;
+use App\Services\Pagamento\AsaasService;
 use App\Services\RegraService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -217,9 +219,6 @@ class AgendamentoPublicoController extends Controller
 
         $inicio = Carbon::parse($request->data_hora);
 
-        // Lock atômico Redis: garante que apenas uma requisição confirme este
-        // slot. Se não conseguir o lock em 3 s, outro cliente está no mesmo
-        // instante — retorna erro amigável em vez de criar conflito.
         $lock = $disponibilidade->acquireLock($request->profissional_id, $inicio);
 
         if (! $lock->block(3)) {
@@ -229,16 +228,12 @@ class AgendamentoPublicoController extends Controller
         }
 
         try {
-            // Revalida dentro do lock — o front só sugere; a agenda do
-            // profissional (expediente, bloqueio, sobreposição) é a fonte da verdade.
             $valida = $disponibilidade->validar($request->profissional_id, $servico, $inicio);
 
             if (! $valida['ok']) {
                 return back()->withInput()->withErrors(['data_hora' => $valida['motivo']]);
             }
 
-            // Telefone normalizado (só dígitos) para evitar cadastros duplicados
-            // por formatação diferente; a busca no portal já casa ambos os formatos.
             $phone = preg_replace('/\D/', '', (string) $request->cliente_phone) ?: $request->cliente_phone;
 
             $cliente = Cliente::firstOrCreate(
@@ -252,7 +247,6 @@ class AgendamentoPublicoController extends Controller
                 ]
             );
 
-            // Cliente recorrente sem consentimento registrado: grava agora (deu opt-in no form)
             if (! $cliente->lgpd_consent) {
                 $cliente->update([
                     'lgpd_consent' => true,
@@ -261,7 +255,6 @@ class AgendamentoPublicoController extends Controller
                 ]);
             }
 
-            // Regra no_show: bloqueia agendamento online de cliente faltante recorrente
             if ($regras->enabled('no_show', $company->id)) {
                 $limite = (int) $regras->param('no_show', 'bloquear_apos', 3, $company->id);
                 $faltas = Agendamento::where('company_id', $company->id)
@@ -276,6 +269,20 @@ class AgendamentoPublicoController extends Controller
                 }
             }
 
+            $settings = $company->resolvedSettings();
+            $sinalPct = (float) ($settings['advanced']['sinal_pct'] ?? 0);
+            $asaasConfig = $settings['integrations']['asaas'] ?? [];
+            $apiKey = trim($asaasConfig['api_key'] ?? '');
+            $ambiente = $asaasConfig['ambiente'] ?? 'sandbox';
+            $gatewayAtivo = ($settings['integrations']['gateway'] ?? 'nenhum') === 'asaas' && $apiKey !== '';
+
+            // Status inicial: aguardando_sinal (com gateway) ou pendente (sem gateway)
+            $statusInicial = ($sinalPct > 0 && $gatewayAtivo)
+                ? Agendamento::STATUS_AGUARDANDO_SINAL
+                : Agendamento::STATUS_PENDENTE;
+
+            $sinalValor = $sinalPct > 0 ? round((float) $servico->preco * $sinalPct / 100, 2) : 0.0;
+
             $agendamento = Agendamento::create([
                 'company_id' => $company->id,
                 'cliente_id' => $cliente->id,
@@ -284,11 +291,12 @@ class AgendamentoPublicoController extends Controller
                 'data_hora' => $request->data_hora,
                 'duracao' => $servico->duracao_minutos,
                 'valor' => $servico->preco,
-                'status' => ($company->resolvedSettings()['advanced']['confirm_required'] ?? true)
-                    ? Agendamento::STATUS_PENDENTE
-                    : Agendamento::STATUS_CONFIRMADO,
+                'status' => $statusInicial,
                 'observacao' => $request->observacao,
                 'cancel_token' => Agendamento::generateCancelToken(),
+                'sinal_pct' => $sinalPct,
+                'sinal_valor' => $sinalValor,
+                'sinal_status' => $sinalPct > 0 ? Agendamento::SINAL_PENDENTE : Agendamento::SINAL_NENHUM,
             ]);
         } finally {
             $lock->release();
@@ -296,14 +304,85 @@ class AgendamentoPublicoController extends Controller
 
         LinkVisit::track($company->id, LinkVisit::TYPE_BOOKING);
 
-        $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+        // Fluxo com sinal via Asaas: criar cliente + cobrança e redirecionar
+        if ($agendamento->status === Agendamento::STATUS_AGUARDANDO_SINAL) {
+            $customerId = $this->garantirClienteAsaas($cliente, $apiKey, $ambiente);
 
-        if ($agendamento->cliente?->email) {
-            Mail::to($agendamento->cliente->email)
-                ->queue(new AgendamentoConfirmado($agendamento));
+            if ($customerId !== null) {
+                $cliente->update(['asaas_customer_id' => $customerId]);
+
+                $descricao = 'Sinal - '.$servico->nome.' em '.$agendamento->data_hora->format('d/m/Y H:i');
+                $cobranca = AsaasService::criarCobrancaSinal($apiKey, $ambiente, $customerId, $agendamento->sinal_valor, $descricao, $agendamento->id);
+
+                if ($cobranca['ok'] && ! empty($cobranca['payment_url'])) {
+                    $agendamento->update([
+                        'sinal_payment_id' => $cobranca['payment_id'],
+                        'sinal_payment_url' => $cobranca['payment_url'],
+                    ]);
+
+                    return redirect()->away($cobranca['payment_url']);
+                }
+            }
+
+            // Fallback se Asaas falhou: reverter para pendente com aprovação manual
+            Log::warning('sinal: falha ao criar cobrança Asaas, revertendo para pendente', ['ag' => $agendamento->id]);
+            $agendamento->update([
+                'status' => Agendamento::STATUS_PENDENTE,
+                'sinal_status' => Agendamento::SINAL_NENHUM,
+                'aprovacao_manual' => true,
+            ]);
+        } else {
+            // Sem sinal: confirmar se empresa não exige aprovação manual
+            if (! ($settings['advanced']['confirm_required'] ?? false)) {
+                $agendamento->update(['status' => Agendamento::STATUS_CONFIRMADO]);
+            }
+
+            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+
+            if ($agendamento->cliente?->email && $agendamento->status === Agendamento::STATUS_CONFIRMADO) {
+                Mail::to($agendamento->cliente->email)
+                    ->queue(new AgendamentoConfirmado($agendamento));
+            }
         }
 
         return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $agendamento->id]);
+    }
+
+    /**
+     * Callback após retorno do Asaas — exibe status do sinal.
+     * GET /agendar/{slug}/sinal/{agendamento}/callback
+     */
+    public function pagamentoSinalCallback(string $slug, string $agendamento): View|RedirectResponse
+    {
+        $company = Company::where('slug', $slug)->firstOrFail();
+        $ag = Agendamento::with(['servico', 'profissional', 'cliente'])
+            ->where('company_id', $company->id)
+            ->findOrFail($agendamento);
+
+        // Se o webhook já confirmou → redirecionar para a tela de confirmado
+        if ($ag->sinalPago() || $ag->status === Agendamento::STATUS_CONFIRMADO) {
+            $ag->load('company');
+
+            if ($ag->cliente?->email) {
+                Mail::to($ag->cliente->email)
+                    ->queue(new AgendamentoConfirmado($ag));
+            }
+
+            return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $ag->id]);
+        }
+
+        return view('public.aguardando-pagamento', compact('company', 'ag'));
+    }
+
+    private function garantirClienteAsaas(Cliente $cliente, string $apiKey, string $ambiente): ?string
+    {
+        if ($cliente->asaas_customer_id) {
+            return $cliente->asaas_customer_id;
+        }
+
+        $resultado = AsaasService::criarOuBuscarCliente($apiKey, $ambiente, $cliente->email ?? '', $cliente->name);
+
+        return $resultado['ok'] ? $resultado['customer_id'] : null;
     }
 
     public function confirmado(string $slug, string $agendamento): View

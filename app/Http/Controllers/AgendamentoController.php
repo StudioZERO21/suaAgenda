@@ -13,6 +13,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Services\Pagamento\AsaasService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -1255,6 +1256,78 @@ class AgendamentoController extends Controller
      * Cada profissional pode ter apenas 1 agendamento por slot; profissionais diferentes
      * podem ser agendados simultaneamente sem conflito.
      */
+    /**
+     * Aprovação manual do agendamento (admin/gestor) — dispensa sinal,
+     * cliente paga integral no dia do procedimento.
+     */
+    public function aprovarManual(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        abort_unless(
+            in_array($agendamento->status, [Agendamento::STATUS_AGUARDANDO_SINAL, Agendamento::STATUS_PENDENTE]),
+            422,
+            'Apenas agendamentos pendentes ou aguardando sinal podem ser aprovados manualmente.'
+        );
+
+        $agendamento->update([
+            'status' => Agendamento::STATUS_CONFIRMADO,
+            'aprovacao_manual' => true,
+            'sinal_status' => Agendamento::SINAL_NENHUM,
+        ]);
+
+        if ($agendamento->cliente?->email) {
+            Mail::to($agendamento->cliente->email)
+                ->queue(new AgendamentoConfirmado($agendamento));
+        }
+
+        return response()->json(['ok' => true, 'status' => 'confirmado']);
+    }
+
+    /**
+     * Gera link de pagamento do saldo restante via Asaas.
+     */
+    public function gerarLinkSaldo(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $saldo = $agendamento->saldoDevido();
+
+        abort_if($saldo <= 0, 422, 'Não há saldo pendente para este agendamento.');
+
+        $company = auth()->user()->company;
+        $settings = $company->resolvedSettings();
+        $asaasConfig = $settings['integrations']['asaas'] ?? [];
+        $apiKey = trim($asaasConfig['api_key'] ?? '');
+        $ambiente = $asaasConfig['ambiente'] ?? 'sandbox';
+
+        abort_if($apiKey === '', 422, 'Gateway Asaas não configurado.');
+
+        $cliente = $agendamento->cliente;
+        $customerId = $cliente?->asaas_customer_id;
+
+        if (! $customerId && $cliente) {
+            $resultado = AsaasService::criarOuBuscarCliente($apiKey, $ambiente, $cliente->email ?? '', $cliente->name);
+            if ($resultado['ok']) {
+                $customerId = $resultado['customer_id'];
+                $cliente->update(['asaas_customer_id' => $customerId]);
+            }
+        }
+
+        abort_if(! $customerId, 422, 'Não foi possível identificar o cliente no Asaas.');
+
+        $descricao = 'Saldo restante - '.($agendamento->servico?->nome ?? 'Serviço').' em '.$agendamento->data_hora->format('d/m/Y H:i');
+        $cobranca = AsaasService::criarCobrancaSaldo($apiKey, $ambiente, $customerId, $saldo, $descricao, $agendamento->id);
+
+        abort_unless($cobranca['ok'], 422, $cobranca['erro'] ?? 'Erro ao gerar cobrança.');
+
+        return response()->json([
+            'ok' => true,
+            'payment_url' => $cobranca['payment_url'],
+            'saldo' => number_format($saldo, 2, ',', '.'),
+        ]);
+    }
+
     private function temConflitoHorario(
         string $profissionalId,
         Carbon $inicio,

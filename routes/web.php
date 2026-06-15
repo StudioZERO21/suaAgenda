@@ -137,6 +137,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('agendamentos/{agendamento}/historico-cliente', [AgendamentoController::class, 'historicoCliente'])->name('agendamentos.historico-cliente');
     Route::patch('agendamentos/{agendamento}/observacao', [AgendamentoController::class, 'observacao'])->name('agendamentos.observacao');
     Route::patch('agendamentos/{agendamento}/valor', [AgendamentoController::class, 'valor'])->name('agendamentos.valor');
+    Route::post('agendamentos/{agendamento}/aprovar-manual', [AgendamentoController::class, 'aprovarManual'])->name('agendamentos.aprovar-manual');
+    Route::post('agendamentos/{agendamento}/link-saldo', [AgendamentoController::class, 'gerarLinkSaldo'])->name('agendamentos.link-saldo');
     Route::patch('agendamentos/{agendamento}/duracao', [AgendamentoController::class, 'duracao'])->name('agendamentos.duracao');
     Route::patch('agendamentos/{agendamento}/profissional', [AgendamentoController::class, 'reassignarProfissional'])->name('agendamentos.profissional');
     Route::patch('agendamentos/{agendamento}/servico', [AgendamentoController::class, 'reassignarServico'])->name('agendamentos.servico');
@@ -423,6 +425,7 @@ Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
 Route::get('/agendar/{slug}/dias', [AgendamentoPublicoController::class, 'dias'])->name('agendar.dias');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
+Route::get('/agendar/{slug}/sinal/{agendamento}/callback', [AgendamentoPublicoController::class, 'pagamentoSinalCallback'])->name('agendar.sinal.callback');
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');
 Route::post('/meu-agendamento/{token}/cancelar', [AgendamentoPublicoController::class, 'cancelarMeuAgendamento'])->name('agendamento.cancelar');

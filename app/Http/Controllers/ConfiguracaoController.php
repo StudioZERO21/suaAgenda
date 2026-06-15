@@ -168,6 +168,7 @@ class ConfiguracaoController extends Controller
             'auto_reminder' => $request->boolean('auto_reminder'),
             'reminder_hours' => (int) $request->input('reminder_hours', $current['advanced']['reminder_hours']),
             'cancel_policy' => $request->input('cancel_policy', ''),
+            'sinal_pct' => max(0, min(100, (int) $request->input('sinal_pct', $current['advanced']['sinal_pct'] ?? 0))),
         ]);
         $payments = array_replace_recursive($current['payments'] ?? [], [
             'pix_key' => trim((string) $request->input('pix_key', '')),

@@ -58,6 +58,12 @@ describe('agendamento_publico', function () {
     });
 
     it('slots retorna vazio sem horário configurado', function () {
+        // Desativa todos os dias da empresa para garantir ausência de slots,
+        // independente do dia em que o teste roda.
+        $diasOff = collect(['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'])
+            ->mapWithKeys(fn ($d) => [$d => ['09:00', '18:00', false]])->all();
+        $this->company->update(['settings' => ['hours' => $diasOff]]);
+
         $data = now()->addDay()->format('Y-m-d');
         $response = $this->getJson(route('agendar.slots', $this->company->slug).'?'.http_build_query([
             'profissional_id' => $this->profissional->id,
@@ -125,6 +131,10 @@ describe('agendamento_publico', function () {
     });
 
     it('disponibilidade retorna array vazio sem horário configurado', function () {
+        $diasOff = collect(['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'])
+            ->mapWithKeys(fn ($d) => [$d => ['09:00', '18:00', false]])->all();
+        $this->company->update(['settings' => ['hours' => $diasOff]]);
+
         $data = now()->addDay()->format('Y-m-d');
         $response = $this->getJson(route('vitrine.disponibilidade', $this->company->slug).'?'.http_build_query([
             'servico_id' => $this->servico->id,

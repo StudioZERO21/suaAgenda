@@ -246,6 +246,7 @@ final class SaPalettes
                 'cancel_policy' => '',
                 'min_advance_mins' => 30,
                 'max_advance_days' => 60,
+                'sinal_pct' => 0,
             ],
             'payments' => [
                 'pix_key' => '',

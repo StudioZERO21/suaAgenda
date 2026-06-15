@@ -17,6 +17,8 @@ class Agendamento extends Model
 {
     use Auditavel, HasFactory, HasUuids, SoftDeletes;
 
+    const STATUS_AGUARDANDO_SINAL = 'aguardando_sinal';
+
     const STATUS_PENDENTE = 'pendente';
 
     const STATUS_CONFIRMADO = 'confirmado';
@@ -28,6 +30,14 @@ class Agendamento extends Model
     const STATUS_EM_ATENDIMENTO = 'em_atendimento';
 
     const STATUS_NO_SHOW = 'no_show';
+
+    const SINAL_NENHUM = 'nenhum';
+
+    const SINAL_PENDENTE = 'pendente';
+
+    const SINAL_PAGO = 'pago';
+
+    const SINAL_EXPIRADO = 'expirado';
 
     /** Status que não contam como agendamento ativo. */
     const STATUSES_INATIVOS = [self::STATUS_CANCELADO, self::STATUS_NO_SHOW];
@@ -43,6 +53,13 @@ class Agendamento extends Model
         'status',
         'observacao',
         'cancel_token',
+        'sinal_pct',
+        'sinal_valor',
+        'sinal_status',
+        'sinal_payment_id',
+        'sinal_payment_url',
+        'sinal_pago_em',
+        'aprovacao_manual',
     ];
 
     public static function generateCancelToken(): string
@@ -56,7 +73,37 @@ class Agendamento extends Model
             'data_hora' => 'datetime',
             'duracao' => 'integer',
             'valor' => 'decimal:2',
+            'sinal_pct' => 'decimal:2',
+            'sinal_valor' => 'decimal:2',
+            'sinal_pago_em' => 'datetime',
+            'aprovacao_manual' => 'boolean',
         ];
+    }
+
+    public function aguardandoSinal(): bool
+    {
+        return $this->status === self::STATUS_AGUARDANDO_SINAL;
+    }
+
+    public function sinalPago(): bool
+    {
+        return $this->sinal_status === self::SINAL_PAGO;
+    }
+
+    public function saldoDevido(): float
+    {
+        if ($this->aprovacao_manual) {
+            return (float) $this->valor;
+        }
+
+        return max(0.0, (float) $this->valor - (float) $this->sinal_valor);
+    }
+
+    public function expiradoSemPagamento(): bool
+    {
+        return $this->status === self::STATUS_AGUARDANDO_SINAL
+            && $this->created_at !== null
+            && $this->created_at->diffInMinutes(now()) >= 10;
     }
 
     public function company(): BelongsTo

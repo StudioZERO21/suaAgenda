@@ -21,6 +21,7 @@ class Cliente extends Authenticatable
         'name',
         'phone',
         'email',
+        'asaas_customer_id',
         'data_nasc',
         'lgpd_consent',
         'lgpd_consent_at',

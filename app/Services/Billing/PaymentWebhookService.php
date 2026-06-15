@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Billing;
 
+use App\Models\Agendamento;
 use App\Models\BillingConfig;
 use App\Models\Invoice;
 use Carbon\Carbon;
@@ -49,6 +50,19 @@ final class PaymentWebhookService
             'gateway_id' => $gatewayInvoiceId,
             'external_ref' => $externalRef,
         ]);
+
+        // Rota eventos de sinal/saldo de agendamento (externalRef = "sinal:{id}" ou "saldo:{id}")
+        if ($externalRef && str_starts_with($externalRef, 'sinal:')) {
+            $this->handleSinalEvent($event, $payment, substr($externalRef, 6));
+
+            return;
+        }
+
+        if ($externalRef && str_starts_with($externalRef, 'saldo:')) {
+            $this->handleSaldoEvent($event, $payment, substr($externalRef, 6));
+
+            return;
+        }
 
         $invoice = $this->resolveInvoice($gatewayInvoiceId, $externalRef);
 
@@ -112,6 +126,68 @@ final class PaymentWebhookService
         $invoice->update(['status' => $status]);
 
         Log::info("PaymentWebhookService: invoice {$status}", ['invoice_id' => $invoice->id]);
+    }
+
+    private function handleSinalEvent(string $event, array $payment, string $agendamentoId): void
+    {
+        $agendamento = Agendamento::find($agendamentoId);
+
+        if (! $agendamento) {
+            Log::warning('PaymentWebhookService: agendamento não encontrado para sinal', ['id' => $agendamentoId]);
+
+            return;
+        }
+
+        if (in_array($event, self::ASAAS_PAID_EVENTS)) {
+            // Sinal pago → confirmar agendamento
+            if ($agendamento->sinalPago()) {
+                return; // idempotente
+            }
+
+            $paidAt = isset($payment['paymentDate']) ? Carbon::parse($payment['paymentDate']) : now();
+
+            $agendamento->update([
+                'status' => Agendamento::STATUS_CONFIRMADO,
+                'sinal_status' => Agendamento::SINAL_PAGO,
+                'sinal_pago_em' => $paidAt,
+            ]);
+
+            Log::info('PaymentWebhookService: sinal pago, agendamento confirmado', ['id' => $agendamentoId]);
+        } elseif (in_array($event, self::ASAAS_CANCELLED_EVENTS) || in_array($event, self::ASAAS_OVERDUE_EVENTS)) {
+            // Sinal cancelado/vencido → liberar slot
+            if ($agendamento->status === Agendamento::STATUS_AGUARDANDO_SINAL) {
+                $agendamento->update([
+                    'status' => Agendamento::STATUS_CANCELADO,
+                    'sinal_status' => Agendamento::SINAL_EXPIRADO,
+                ]);
+
+                Log::info('PaymentWebhookService: sinal expirado, slot liberado', ['id' => $agendamentoId]);
+            }
+        }
+    }
+
+    private function handleSaldoEvent(string $event, array $payment, string $agendamentoId): void
+    {
+        if (! in_array($event, self::ASAAS_PAID_EVENTS)) {
+            return;
+        }
+
+        $agendamento = Agendamento::find($agendamentoId);
+
+        if (! $agendamento) {
+            return;
+        }
+
+        // Saldo pago → finalizar agendamento (se já em atendimento) ou só registrar
+        $paidAt = isset($payment['paymentDate']) ? Carbon::parse($payment['paymentDate']) : now();
+
+        $agendamento->update([
+            'sinal_status' => Agendamento::SINAL_PAGO,
+            'sinal_pago_em' => $agendamento->sinal_pago_em ?? $paidAt,
+            // valor total considerado pago
+        ]);
+
+        Log::info('PaymentWebhookService: saldo pago', ['id' => $agendamentoId]);
     }
 
     private function resolveInvoice(string $gatewayInvoiceId, ?string $externalRef): ?Invoice

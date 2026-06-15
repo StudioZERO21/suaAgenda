@@ -4,7 +4,7 @@
 
 @section('content')
 
-    {{-- Cabeçalho --}}
+    {{-- Cabeï¿½alho --}}
     @php
         $badgeStyle = match($agendamento->status) {
             'confirmado' => 'background:rgba(16,185,129,.12);color:#059669',
@@ -21,10 +21,10 @@
             </a>
             <div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \à\s H:i') }}</h1>
+                    <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \ï¿½\s H:i') }}</h1>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($agendamento->status) }}</span>
                 </div>
-                <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? '—' }} • {{ $agendamento->profissional?->name ?? '—' }}</p>
+                <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? 'ï¿½' }} ï¿½ {{ $agendamento->profissional?->name ?? 'ï¿½' }}</p>
             </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -67,7 +67,7 @@
                 </div>
             </div>
             @else
-            <p style="font-size:14px;color:var(--sa-text3);margin:0">—</p>
+            <p style="font-size:14px;color:var(--sa-text3);margin:0">ï¿½</p>
             @endif
         </div>
 
@@ -85,12 +85,12 @@
                 </div>
             </div>
             @else
-            <p style="font-size:14px;color:var(--sa-text3);margin:0">—</p>
+            <p style="font-size:14px;color:var(--sa-text3);margin:0">ï¿½</p>
             @endif
         </div>
     </div>
 
-    {{-- Detalhes do serviço e horário --}}
+    {{-- Detalhes do serviï¿½o e horï¿½rio --}}
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px;margin-bottom:16px">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:20px">
             <div>
@@ -99,13 +99,13 @@
                 <div style="font-size:13px;color:var(--sa-text3)">{{ $agendamento->data_hora->format('H:i') }}</div>
             </div>
             <div>
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Duração</div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Duraï¿½ï¿½o</div>
                 <div style="font-size:15px;font-weight:600;color:var(--sa-text1)">{{ $agendamento->duracao }} min</div>
-                <div style="font-size:13px;color:var(--sa-text3)">Término: {{ $agendamento->data_hora->copy()->addMinutes($agendamento->duracao)->format('H:i') }}</div>
+                <div style="font-size:13px;color:var(--sa-text3)">Tï¿½rmino: {{ $agendamento->data_hora->copy()->addMinutes($agendamento->duracao)->format('H:i') }}</div>
             </div>
             @if($agendamento->servico)
             <div>
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Serviço</div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Serviï¿½o</div>
                 <div style="display:flex;align-items:center;gap:6px">
                     <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ $agendamento->servico->cor }}"></span>
                     <span style="font-size:15px;font-weight:600;color:var(--sa-text1)">{{ $agendamento->servico->nome }}</span>
@@ -119,22 +119,73 @@
                 <div style="font-size:18px;font-weight:700;color:var(--sa-secondary)">R$ {{ number_format((float)$agendamento->valor, 2, ',', '.') }}</div>
             </div>
             @endif
+
+            {{-- Painel de sinal/pagamento --}}
+            @if($agendamento->sinal_pct > 0 || $agendamento->aprovacao_manual)
+            <div style="grid-column:1/-1;background:var(--sa-surface2);border-radius:10px;border:1px solid var(--sa-border);padding:16px;margin-top:4px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:12px">Pagamento</div>
+                @if($agendamento->aprovacao_manual && $agendamento->sinal_status === 'nenhum')
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sa-text2)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>AprovaÃ§Ã£o manual â€” cliente pagarÃ¡ <strong>R$ {{ number_format((float)$agendamento->valor, 2, ',', '.') }}</strong> integral no dia.</span>
+                </div>
+                @else
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+                    <div>
+                        <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Sinal ({{ number_format((float)$agendamento->sinal_pct, 0) }}%)</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--sa-secondary)">R$ {{ number_format((float)$agendamento->sinal_valor, 2, ',', '.') }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Status do sinal</div>
+                        @php $sc = ['nenhum'=>'#999','pendente'=>'#d97706','pago'=>'#059669','expirado'=>'#dc2626'][$agendamento->sinal_status ?? 'nenhum']; @endphp
+                        <div style="font-size:13px;font-weight:600;color:{{ $sc }}">{{ ucfirst($agendamento->sinal_status ?? 'nenhum') }}
+                            @if($agendamento->sinal_pago_em) <span style="font-size:11px;font-weight:400;color:var(--sa-text3)">em {{ $agendamento->sinal_pago_em->format('d/m H:i') }}</span>@endif
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Saldo restante</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--sa-text1)">R$ {{ number_format($agendamento->saldoDevido(), 2, ',', '.') }}</div>
+                    </div>
+                </div>
+                @if($agendamento->saldoDevido() > 0)
+                @can('update', $agendamento)
+                <button type="button" id="btn-link-saldo" onclick="gerarLinkSaldo('{{ $agendamento->id }}')"
+                        style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;transition:border-color 180ms,color 180ms"
+                        onmouseover="this.style.borderColor='var(--sa-secondary)';this.style.color='var(--sa-secondary)'"
+                        onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Gerar link do saldo (R$ {{ number_format($agendamento->saldoDevido(), 2, ',', '.') }})
+                </button>
+                @endcan
+                @endif
+                @endif
+            </div>
+            @endif
         </div>
 
         @if($agendamento->observacao)
         <div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--sa-border)">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Observação</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sa-text3);margin-bottom:6px">Observaï¿½ï¿½o</div>
             <p style="font-size:14px;color:var(--sa-text2);line-height:1.6;margin:0;white-space:pre-wrap">{{ $agendamento->observacao }}</p>
         </div>
         @endif
     </div>
 
-    {{-- Ações de status --}}
+    {{-- Aï¿½ï¿½es de status --}}
     @can('update', $agendamento)
     @if($agendamento->status !== 'cancelado')
     <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:20px">
         <div style="font-size:13px;font-weight:700;color:var(--sa-text2);margin-bottom:14px">Alterar Status</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+            @if($agendamento->status === 'aguardando_sinal')
+            <button type="button" onclick="aprovarManualShow('{{ $agendamento->id }}')"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:rgba(5,150,105,.1);color:#065f46;transition:background 150ms"
+                    onmouseover="this.style.background='rgba(5,150,105,.2)'" onmouseout="this.style.background='rgba(5,150,105,.1)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Aprovar manualmente
+            </button>
+            @endif
 
             @if($agendamento->status === 'pendente')
             <form method="POST" action="{{ route('agendamentos.updateStatus', $agendamento) }}">
@@ -149,7 +200,7 @@
             </form>
             @endif
 
-            @if(in_array($agendamento->status, ['pendente', 'confirmado']))
+            @if(in_array($agendamento->status, ['pendente', 'confirmado', 'aguardando_sinal']))
             <form method="POST" action="{{ route('agendamentos.updateStatus', $agendamento) }}">
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="finalizado">
@@ -179,16 +230,66 @@
 
 @push('scripts')
 <script>
+function aprovarManualShow(id) {
+    Swal.fire({
+        title: 'Aprovar manualmente?',
+        text: 'O agendamento serÃ¡ confirmado sem sinal. O cliente pagarÃ¡ o valor integral no dia.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, aprovar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#059669',
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        fetch(`/agendamentos/${id}/aprovar-manual`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' }
+        }).then(res => res.json()).then(data => {
+            if (data.ok) {
+                Swal.fire({ icon: 'success', title: 'Aprovado!', timer: 1500, showConfirmButton: false })
+                    .then(() => location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: 'Erro', text: data.message ?? 'NÃ£o foi possÃ­vel aprovar.' });
+            }
+        }).catch(() => Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha na conexÃ£o.' }));
+    });
+}
+
+function gerarLinkSaldo(id) {
+    const btn = document.getElementById('btn-link-saldo');
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
+    fetch(`/agendamentos/${id}/link-saldo`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' }
+    }).then(res => res.json()).then(data => {
+        if (btn) { btn.disabled = false; btn.textContent = 'Gerar link do saldo'; }
+        if (data.ok && data.payment_url) {
+            Swal.fire({
+                title: 'Link de pagamento gerado!',
+                html: `<p style="font-size:14px;margin-bottom:12px">Saldo: <strong>R$ ${data.saldo}</strong></p>
+                       <a href="${data.payment_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;background:#d4a574;color:#fff;font-weight:600;text-decoration:none;font-size:14px">Abrir link de pagamento</a>`,
+                icon: 'success',
+                confirmButtonText: 'Fechar',
+            });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Erro', text: data.message ?? data.erro ?? 'NÃ£o foi possÃ­vel gerar o link.' });
+        }
+    }).catch(() => {
+        if (btn) { btn.disabled = false; btn.textContent = 'Gerar link do saldo'; }
+        Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha na conexÃ£o.' });
+    });
+}
+
 function confirmCancelamento(e) {
     e.preventDefault();
     const form = e.target;
     Swal.fire({
         title: 'Cancelar agendamento?',
-        text: 'Esta ação alterará o status para "Cancelado".',
+        text: 'Esta aï¿½ï¿½o alterarï¿½ o status para "Cancelado".',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, cancelar',
-        cancelButtonText: 'Não',
+        cancelButtonText: 'Nï¿½o',
         confirmButtonColor: '#e53e3e',
     }).then(r => { if (r.isConfirmed) form.submit(); });
     return false;
