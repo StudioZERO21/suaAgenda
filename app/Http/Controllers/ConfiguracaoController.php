@@ -330,7 +330,6 @@ class ConfiguracaoController extends Controller
 
         return response((string) $svg, 200, [
             'Content-Type' => 'image/svg+xml',
-            'Content-Disposition' => 'attachment; filename="qrcode-'.$company->slug.'.svg"',
         ]);
     }
 

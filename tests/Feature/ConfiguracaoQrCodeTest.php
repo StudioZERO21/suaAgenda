@@ -37,13 +37,13 @@ describe('configuracao_qrcode', function () {
             ->assertHeader('Content-Type', 'image/svg+xml');
     });
 
-    it('resposta contém filename com slug da empresa', function () {
+    it('SVG inline não tem Content-Disposition (compatível com img tag)', function () {
         $response = $this->actingAs($this->admin)
             ->get(route('configuracoes.empresa.qrcode'))
             ->assertOk();
 
-        $disposition = $response->headers->get('Content-Disposition');
-        expect($disposition)->toContain('barbearia-qr');
+        // download é tratado pelo atributo HTML download= na view, não pelo header
+        expect($response->headers->get('Content-Disposition'))->toBeNull();
     });
 
     it('gestor pode baixar QR code', function () {

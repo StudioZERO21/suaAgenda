@@ -3,6 +3,7 @@
 use App\Jobs\Billing\GenerateAnniversaryInvoicesJob;
 use App\Jobs\Billing\ProcessOverdueSubscriptionsJob;
 use App\Jobs\Billing\SyncGatewayPaymentsJob;
+use App\Jobs\Trial\SendTrialRemindersJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -20,6 +21,9 @@ Schedule::command('relatorio:semanal')->weeklyOn(1, '09:00');
 Schedule::command('notificacoes:limpar')->monthlyOn(1, '03:00');
 Schedule::command('activitylog:clean')->dailyAt('02:00');
 Schedule::command('lgpd:retencao')->dailyAt('03:30');
+
+// ── Trial reminders ──────────────────────────────────────────────────
+Schedule::job(SendTrialRemindersJob::class)->dailyAt('08:00');
 
 // ── Billing automático ────────────────────────────────────────────────
 Schedule::job(GenerateAnniversaryInvoicesJob::class)->dailyAt('06:00');

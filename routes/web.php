@@ -68,6 +68,7 @@ Route::post('/webhooks/asaas', WebhookAsaasController::class)
 Route::middleware('auth')->group(function () {
     Route::view('/assinatura/suspensa', 'billing.suspended')->name('billing.suspended');
     Route::view('/assinatura/cancelada', 'billing.cancelled')->name('billing.cancelled');
+    Route::view('/assinatura/trial-expirado', 'billing.trial-expirado')->name('billing.trial-expirado');
 });
 
 // ── Painel Super Admin (visão global do SaaS) ──────────────────────

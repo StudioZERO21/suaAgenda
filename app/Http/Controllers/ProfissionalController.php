@@ -17,6 +17,7 @@ use App\Models\Servico;
 use App\Models\Venda;
 use App\Services\ImageService;
 use App\Support\PhoneFormatter;
+use App\Support\PlanLimits;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -110,7 +111,9 @@ class ProfissionalController extends Controller
 
         $staffRoles = ['Administrador', 'Gerente', 'Barbeiro', 'Colorista', 'Manicure', 'Recepcionista', 'Estagiário'];
 
-        return view('profissionais.index', compact('profissionais', 'stats', 'servicos', 'profissionaisJson', 'staffRoles', 'notasMap'));
+        $planLimits = PlanLimits::forCompany(auth()->user()->company);
+
+        return view('profissionais.index', compact('profissionais', 'stats', 'servicos', 'profissionaisJson', 'staffRoles', 'notasMap', 'planLimits'));
     }
 
     public function create(): RedirectResponse
@@ -123,6 +126,18 @@ class ProfissionalController extends Controller
     public function store(StoreProfissionalRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Profissional::class);
+
+        $planLimits = PlanLimits::forCompany(auth()->user()->company);
+
+        if (! $planLimits->canAddProfissional()) {
+            $msg = $planLimits->mensagemLimiteProfissionais();
+
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'plan_limit', 'message' => $msg], 422);
+            }
+
+            return back()->withErrors(['plan_limit' => $msg]);
+        }
 
         $data = $request->validated();
         $servicoIds = $data['servicos'] ?? [];

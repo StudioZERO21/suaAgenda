@@ -395,6 +395,41 @@
                         </div>
                     </div>
 
+                    {{-- Analytics do link --}}
+                    @php
+                        $visitsMes   = \App\Models\LinkVisit::where('company_id', $company->id)->where('type', 'view')->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+                        $bookingsMes = \App\Models\LinkVisit::where('company_id', $company->id)->where('type', 'booking')->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+                        $totalGeral  = \App\Models\LinkVisit::where('company_id', $company->id)->where('type', 'view')->count();
+                        $convRate    = $visitsMes > 0 ? round($bookingsMes / $visitsMes * 100, 1) : 0;
+                    @endphp
+                    <div style="background:var(--sa-surface2);border-radius:12px;border:1px solid var(--sa-border);padding:20px;margin-top:20px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                            <div style="font-size:13px;font-weight:700;color:var(--sa-text1);display:flex;align-items:center;gap:6px">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                Analytics do link · {{ now()->translatedFormat('F Y') }}
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                            <div style="background:var(--sa-surface);border-radius:8px;border:1px solid var(--sa-border);padding:14px">
+                                <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Visitas este mês</div>
+                                <div style="font-size:22px;font-weight:800;color:var(--sa-text1);font-family:'Poppins',sans-serif">{{ number_format($visitsMes) }}</div>
+                            </div>
+                            <div style="background:var(--sa-surface);border-radius:8px;border:1px solid var(--sa-border);padding:14px">
+                                <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Agendamentos via link</div>
+                                <div style="font-size:22px;font-weight:800;color:var(--sa-secondary);font-family:'Poppins',sans-serif">{{ number_format($bookingsMes) }}</div>
+                            </div>
+                            <div style="background:var(--sa-surface);border-radius:8px;border:1px solid var(--sa-border);padding:14px">
+                                <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Taxa de conversão</div>
+                                <div style="font-size:22px;font-weight:800;color:#10b981;font-family:'Poppins',sans-serif">{{ $convRate }}%</div>
+                            </div>
+                        </div>
+                        @if($totalGeral === 0)
+                        <p style="font-size:12px;color:var(--sa-text3);margin-top:12px;text-align:center">
+                            Compartilhe seu link de agendamento para começar a rastrear visitas.
+                        </p>
+                        @endif
+                    </div>
+
                     {{-- AVANÇADO --}}
                     <div x-show="tab === 'avancado'" x-cloak class="sa-empresa-sections">
                         <x-sa.card padding="20px">

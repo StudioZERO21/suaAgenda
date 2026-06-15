@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Agendamento;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
@@ -77,6 +78,64 @@ class WhatsAppService
             ]);
 
         return $resp->successful();
+    }
+
+    /**
+     * Envia com controle de quota mensal por plano.
+     * Registra em whatsapp_logs independente do resultado.
+     *
+     * @param  array<string,string>  $config
+     */
+    public static function enviarComQuota(
+        string $companyId,
+        array $config,
+        string $destinatario,
+        string $mensagem,
+        ?string $eventType = null,
+    ): bool {
+        $limitService = new WhatsAppLimitService;
+
+        if (! $limitService->podeEnviar($companyId)) {
+            $limitService->registrar($companyId, $destinatario, $mensagem, 'blocked', $eventType);
+            Log::info("WhatsApp bloqueado por quota [{$companyId}] evento={$eventType}");
+
+            return false;
+        }
+
+        $sid = trim($config['twilio_sid'] ?? '');
+        $token = trim($config['twilio_token'] ?? '');
+        $numero = trim($config['twilio_numero'] ?? '');
+
+        if ($sid === '' || $token === '' || $numero === '') {
+            $limitService->registrar($companyId, $destinatario, $mensagem, 'failed', $eventType);
+
+            return false;
+        }
+
+        $dest = 'whatsapp:+'.preg_replace('/\D/', '', $destinatario);
+        $from = 'whatsapp:+'.preg_replace('/\D/', '', $numero);
+
+        try {
+            $resp = Http::timeout(10)
+                ->withBasicAuth($sid, $token)
+                ->asForm()
+                ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
+                    'From' => $from,
+                    'To' => $dest,
+                    'Body' => $mensagem,
+                ]);
+
+            $twilioSid = $resp->json('sid');
+            $status = $resp->successful() ? 'sent' : 'failed';
+            $limitService->registrar($companyId, $destinatario, $mensagem, $status, $eventType, $twilioSid);
+
+            return $resp->successful();
+        } catch (\Exception $e) {
+            $limitService->registrar($companyId, $destinatario, $mensagem, 'failed', $eventType);
+            Log::error("WhatsApp envio falhou [{$companyId}]: ".$e->getMessage());
+
+            return false;
+        }
     }
 
     public static function mensagemConfirmacao(Agendamento $ag): string

@@ -12,6 +12,8 @@ use App\Models\Profissional;
 use App\Models\Servico;
 use App\Support\CompanyHours;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Validação de disponibilidade compartilhada entre o agendamento público
@@ -143,6 +145,18 @@ class AgendamentoDisponibilidadeService
         }
 
         return $slots;
+    }
+
+    /**
+     * Retorna um lock atômico Redis para o slot profissional+horário.
+     * TTL de 15 s cobre o tempo máximo de processamento do store().
+     * Use dentro de try/finally: $lock->release().
+     */
+    public function acquireLock(string $profissionalId, Carbon $inicio): Lock
+    {
+        $key = 'slot:'.$profissionalId.':'.$inicio->format('YmdHi');
+
+        return Cache::lock($key, 15);
     }
 
     public function temConflito(string $profissionalId, Carbon $inicio, int $duracao, ?string $excluirId = null): bool

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Configurações')
 
 @push('styles')
@@ -820,6 +820,56 @@
                                 <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;border:1px solid rgba(37,211,102,.25);background:rgba(37,211,102,.06)">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.988 0C5.373 0 .017 5.34.017 11.937c0 2.104.55 4.082 1.508 5.803L.017 24l6.428-1.677c1.656.898 3.55 1.42 5.566 1.42h.005C18.6 23.743 24 18.404 24 11.806 24 5.341 18.604 0 11.988 0z"/></svg>
                                     <span style="font-size:12px;color:var(--sa-text2)">O botão <strong>WhatsApp</strong> na vitrine pública usa o número cadastrado em <a href="{{ route('configuracoes.empresa') }}" style="color:var(--sa-secondary);font-weight:600;text-decoration:none">Configurações da Empresa</a>.</span>
+                                </div>
+                            </div>
+                        </x-sa.card>
+
+                        {{-- ── CONSUMO DE MENSAGENS ───────────────────────── --}}
+                        @php
+                            $quota = app(\App\Services\WhatsAppLimitService::class)->quota($company->id);
+                        @endphp
+                        <x-sa.card padding="22px">
+                            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px;font-family:var(--sa-font-heading)">Consumo de Mensagens — {{ now()->translatedFormat('F Y') }}</h3>
+                            <p style="font-size:13px;color:var(--sa-text3);margin:0 0 16px">Plano <strong style="color:var(--sa-text1)">{{ ucfirst($quota['plano']) }}</strong> · {{ $quota['usado'] }} de {{ $quota['limite'] === PHP_INT_MAX ? '∞' : number_format($quota['limite']) }} mensagens</p>
+
+                            {{-- Barra WhatsApp --}}
+                            <div style="margin-bottom:16px">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                    <span style="font-size:13px;font-weight:600;color:var(--sa-text2);display:flex;align-items:center;gap:6px">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.988 0C5.373 0 .017 5.34.017 11.937c0 2.104.55 4.082 1.508 5.803L.017 24l6.428-1.677c1.656.898 3.55 1.42 5.566 1.42h.005C18.6 23.743 24 18.404 24 11.806 24 5.341 18.604 0 11.988 0z"/></svg>
+                                        WhatsApp
+                                    </span>
+                                    <span style="font-size:12px;color:var(--sa-text3)">{{ $quota['usado'] }} / {{ $quota['limite'] === PHP_INT_MAX ? '∞' : $quota['limite'] }}</span>
+                                </div>
+                                <div style="height:8px;border-radius:4px;background:var(--sa-surface2);border:1px solid var(--sa-border);overflow:hidden">
+                                    @php
+                                        $barColor = $quota['bloqueado'] ? '#dc2626' : ($quota['alerta'] ? '#d97706' : '#25D366');
+                                    @endphp
+                                    <div style="height:100%;width:{{ $quota['pct'] }}%;background:{{ $barColor }};border-radius:4px;transition:width 500ms"></div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;margin-top:4px">
+                                    <span style="font-size:11px;color:var(--sa-text3)">{{ $quota['pct'] }}% utilizado</span>
+                                    @if($quota['bloqueado'])
+                                        <span style="font-size:11px;color:#dc2626;font-weight:600">Limite atingido — envios bloqueados</span>
+                                    @elseif($quota['alerta'])
+                                        <span style="font-size:11px;color:#d97706;font-weight:600">⚠ Próximo do limite</span>
+                                    @else
+                                        <span style="font-size:11px;color:var(--sa-text3)">{{ $quota['restante'] }} restantes este mês</span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            {{-- E-mail (ilimitado) --}}
+                            <div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                    <span style="font-size:13px;font-weight:600;color:var(--sa-text2);display:flex;align-items:center;gap:6px">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                        E-mail
+                                    </span>
+                                    <span style="font-size:12px;color:var(--sa-text3)">Ilimitado</span>
+                                </div>
+                                <div style="height:8px;border-radius:4px;background:var(--sa-surface2);border:1px solid var(--sa-border);overflow:hidden">
+                                    <div style="height:100%;width:60%;background:var(--sa-primary);border-radius:4px;opacity:.35"></div>
                                 </div>
                             </div>
                         </x-sa.card>
