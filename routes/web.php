@@ -111,7 +111,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::patch('billing/invoices/{invoice}/paga', [AdminBillingController::class, 'marcarPaga'])->name('billing.invoice.paga');
 });
 
-Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::class])->group(function () {
+Route::middleware(['auth', SetTenantMiddleware::class, 'check.subscription', CheckModulePermission::class])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/funcionario', [DashboardFuncionarioController::class, 'index'])->name('dashboard.funcionario');
