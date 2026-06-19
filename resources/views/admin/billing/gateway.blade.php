@@ -228,7 +228,7 @@
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             {{-- Botão → Sandbox --}}
-            <form method="POST" action="{{ route('billing.gateway.mp-ambiente') }}" style="display:inline">
+            <form method="POST" action="{{ route('admin.billing.gateway.mp-ambiente') }}" style="display:inline">
                 @csrf
                 <input type="hidden" name="mp_ambiente" value="sandbox">
                 <button type="submit"
@@ -245,7 +245,7 @@
             </form>
 
             {{-- Botão → Produção --}}
-            <form method="POST" action="{{ route('billing.gateway.mp-ambiente') }}" style="display:inline"
+            <form method="POST" action="{{ route('admin.billing.gateway.mp-ambiente') }}" style="display:inline"
                   onsubmit="return confirm('Mudar para Produção? Cobranças reais serão realizadas!')">
                 @csrf
                 <input type="hidden" name="mp_ambiente" value="producao">

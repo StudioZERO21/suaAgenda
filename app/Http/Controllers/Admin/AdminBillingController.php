@@ -130,8 +130,10 @@ class AdminBillingController extends Controller
     public function configGateway(): View
     {
         $billingConfig = BillingConfig::current();
+        $mpAmbiente = $billingConfig->credentials['mp_ambiente'] ?? config('services.mercadopago.ambiente', 'sandbox');
+        $isSandbox = $mpAmbiente === 'sandbox';
 
-        return view('admin.billing.gateway', compact('billingConfig'));
+        return view('admin.billing.gateway', compact('billingConfig', 'isSandbox', 'mpAmbiente'));
     }
 
     public function saveConfigGateway(Request $request): RedirectResponse
@@ -186,7 +188,7 @@ class AdminBillingController extends Controller
         $label = $novo === 'sandbox' ? 'Sandbox (testes)' : 'Produção';
 
         return redirect()
-            ->route('billing.gateway')
+            ->route('admin.billing.gateway')
             ->with('success', "Mercado Pago alterado para: {$label}");
     }
 }
