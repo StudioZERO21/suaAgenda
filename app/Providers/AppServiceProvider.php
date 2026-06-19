@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Models\PlatformSetting;
 use App\Observers\AgendamentoObserver;
 use App\Support\SaPalettes;
 use Illuminate\Auth\Events\Failed;
@@ -19,8 +20,58 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void {}
 
+    private function loadPlatformSettings(): void
+    {
+        try {
+            $all = PlatformSetting::allCached();
+
+            // Twilio — sobrescreve config('services.twilio.*')
+            foreach ($all['twilio'] ?? [] as $key => $value) {
+                if ($value !== null) {
+                    config(["services.twilio.{$key}" => $value]);
+                }
+            }
+
+            // Stripe — sobrescreve config('services.stripe_platform.*')
+            foreach ($all['stripe'] ?? [] as $key => $value) {
+                if ($value !== null) {
+                    config(["services.stripe_platform.{$key}" => $value]);
+                }
+            }
+
+            // Mercado Pago — sobrescreve config('services.mercadopago.*')
+            foreach ($all['mercadopago'] ?? [] as $key => $value) {
+                if ($value !== null) {
+                    config(["services.mercadopago.{$key}" => $value]);
+                }
+            }
+
+            // Email — sobrescreve config('mail.*')
+            $email = $all['email'] ?? [];
+            $map = [
+                'mailer' => 'mail.default',
+                'host' => 'mail.mailers.smtp.host',
+                'port' => 'mail.mailers.smtp.port',
+                'username' => 'mail.mailers.smtp.username',
+                'password' => 'mail.mailers.smtp.password',
+                'encryption' => 'mail.mailers.smtp.encryption',
+                'from_address' => 'mail.from.address',
+                'from_name' => 'mail.from.name',
+            ];
+            foreach ($map as $key => $configKey) {
+                if (isset($email[$key]) && $email[$key] !== null) {
+                    config([$configKey => $email[$key]]);
+                }
+            }
+        } catch (\Throwable) {
+            // Tabela pode não existir ainda (primeira migração)
+        }
+    }
+
     public function boot(): void
     {
+        $this->loadPlatformSettings();
+
         Agendamento::observe(AgendamentoObserver::class);
 
         // Trilha de auditoria de autenticação (LGPD)

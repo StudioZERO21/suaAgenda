@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\Admin\AdminLgpdController;
 use App\Http\Controllers\Admin\AdminNotificacoesController;
+use App\Http\Controllers\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Admin\AdminRegraController;
 use App\Http\Controllers\Admin\AdminSaudeController;
 use App\Http\Controllers\AgendamentoController;
@@ -115,6 +116,14 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::patch('billing/{subscription}/reativar', [AdminBillingController::class, 'reativar'])->name('billing.reativar');
     Route::patch('billing/{subscription}/cancelar', [AdminBillingController::class, 'cancelar'])->name('billing.cancelar');
     Route::patch('billing/invoices/{invoice}/paga', [AdminBillingController::class, 'marcarPaga'])->name('billing.invoice.paga');
+
+    // Configurações de plataforma (APIs centralizadas)
+    Route::get('configuracoes', [AdminPlatformSettingsController::class, 'index'])->name('configuracoes.index');
+    Route::post('configuracoes/testar/stripe', [AdminPlatformSettingsController::class, 'testarStripe'])->name('configuracoes.testar.stripe');
+    Route::post('configuracoes/testar/twilio', [AdminPlatformSettingsController::class, 'testarTwilio'])->name('configuracoes.testar.twilio');
+    Route::post('configuracoes/testar/email', [AdminPlatformSettingsController::class, 'testarEmail'])->name('configuracoes.testar.email');
+    Route::post('configuracoes/testar/mercadopago', [AdminPlatformSettingsController::class, 'testarMercadoPago'])->name('configuracoes.testar.mercadopago');
+    Route::post('configuracoes/{group}', [AdminPlatformSettingsController::class, 'save'])->name('configuracoes.save');
 
     // Notificações — Twilio (WhatsApp + SMS)
     Route::get('notificacoes', [AdminNotificacoesController::class, 'index'])->name('notificacoes.index');
