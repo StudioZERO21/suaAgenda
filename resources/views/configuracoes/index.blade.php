@@ -948,59 +948,24 @@
                                     </div>
                                 </div>
                                 @else
-                                {{-- ── NÃO CONECTADO — fluxo guiado ────────────────── --}}
-                                <div style="border-radius:12px;border:1.5px solid var(--sa-border);background:var(--sa-surface2);padding:20px">
-                                    {{-- Header --}}
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-                                        <div style="width:38px;height:38px;border-radius:10px;background:rgba(0,158,227,.1);border:1px solid rgba(0,158,227,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#009ee3" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                                        </div>
-                                        <div>
-                                            <div style="font-size:14px;font-weight:700;color:var(--sa-text1)">Configurar Mercado Pago</div>
-                                            <div style="font-size:12px;color:var(--sa-text3)">Siga os 3 passos abaixo — leva menos de 2 minutos</div>
-                                        </div>
+                                {{-- ── NÃO CONECTADO — OAuth ───────────────────────── --}}
+                                <div style="border-radius:12px;border:2px dashed rgba(0,158,227,.25);background:rgba(0,158,227,.03);padding:28px 20px;text-align:center">
+                                    <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,158,227,.1);border:1px solid rgba(0,158,227,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+                                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#009ee3" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     </div>
-
-                                    {{-- Passo 1 --}}
-                                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-                                        <div style="width:24px;height:24px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">1</div>
-                                        <div>
-                                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:3px">Acesse suas credenciais do Mercado Pago</div>
-                                            <div style="font-size:12px;color:var(--sa-text3);margin-bottom:6px;line-height:1.5">Vá em <strong>Credenciais → Credenciais de teste</strong> e copie o <strong>Access Token</strong></div>
-                                            <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener"
-                                               style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#009ee3;text-decoration:none;font-weight:600;transition:opacity 150ms"
-                                               onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                                                Abrir painel do Mercado Pago
-                                            </a>
-                                        </div>
+                                    <div style="font-size:15px;font-weight:700;color:var(--sa-text1);margin-bottom:6px">Conectar Mercado Pago</div>
+                                    <div style="font-size:13px;color:var(--sa-text2);margin-bottom:20px;line-height:1.6;max-width:320px;margin-left:auto;margin-right:auto">
+                                        Autorize em poucos cliques — sem copiar API keys. Sua conta Mercado Pago fica vinculada com segurança via OAuth 2.0.
                                     </div>
-
-                                    {{-- Passo 2 --}}
-                                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-                                        <div style="width:24px;height:24px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">2</div>
-                                        <div>
-                                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:3px">Copie o Access Token</div>
-                                            <div style="font-size:12px;color:var(--sa-text3);line-height:1.5">O token de teste começa com <code style="font-family:monospace;background:var(--sa-surface);padding:1px 6px;border-radius:4px;border:1px solid var(--sa-border);font-size:11px">TEST-</code>, o de produção com <code style="font-family:monospace;background:var(--sa-surface);padding:1px 6px;border-radius:4px;border:1px solid var(--sa-border);font-size:11px">APP_USR-</code></div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Passo 3: input --}}
-                                    <div style="display:flex;gap:12px;align-items:flex-start">
-                                        <div style="width:24px;height:24px;border-radius:50%;background:var(--sa-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
-                                        <div style="flex:1">
-                                            <div style="font-size:13px;font-weight:600;color:var(--sa-text1);margin-bottom:8px">Cole o token aqui e salve</div>
-                                            <input type="password" name="mp_access_token"
-                                                   placeholder="TEST-xxxx-xxxx-xxxx ou APP_USR-xxxx"
-                                                   autocomplete="off"
-                                                   style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:13px;font-family:monospace;color:var(--sa-text1);background:var(--sa-surface);outline:none;box-sizing:border-box;transition:border-color 180ms"
-                                                   onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
-                                                   onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
-                                            <p style="font-size:11px;color:var(--sa-text3);margin:6px 0 0;display:flex;align-items:center;gap:4px">
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                                                Armazenado com criptografia AES-256 — nunca exibido após salvo
-                                            </p>
-                                        </div>
+                                    <a href="{{ route('mp.oauth.redirect') }}"
+                                       style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:9px;background:#009ee3;color:#fff;font-size:14px;font-weight:700;text-decoration:none;font-family:var(--sa-font-body);transition:filter 180ms"
+                                       onmouseover="this.style.filter='brightness(1.1)'"
+                                       onmouseout="this.style.filter='none'">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                        Conectar com Mercado Pago
+                                    </a>
+                                    <div style="margin-top:12px;font-size:11px;color:var(--sa-text3)">
+                                        Redirecionamento seguro · Sem acesso à sua senha
                                     </div>
                                 </div>
                                 @endif

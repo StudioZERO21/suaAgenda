@@ -66,10 +66,10 @@ class MercadoPagoService
      */
     public static function getAuthUrl(string $state): string
     {
+        // platform_id=mp requer aprovação marketplace — OAuth padrão funciona para todas as contas
         return self::AUTH.'/authorization?'.http_build_query([
             'client_id' => config('services.mercadopago.client_id'),
             'response_type' => 'code',
-            'platform_id' => 'mp',
             'redirect_uri' => config('services.mercadopago.redirect_uri'),
             'state' => $state,
         ]);
