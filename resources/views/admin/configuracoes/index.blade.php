@@ -26,6 +26,7 @@
             ['mercadopago', 'Mercado Pago',  '#009ee3', '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
             ['asaas',       'Asaas',         '#ff6b35', '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
             ['twilio',      'Twilio',        '#f22f46', '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/>'],
+            ['evolution',   'Evolution API', '#25d366', '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>'],
             ['email',       'E-mail (SMTP)', '#059669', '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
         ] as [$id, $label, $cor, $icon])
         <button @click="aba = '{{ $id }}'"
@@ -243,6 +244,53 @@
             </form>
         </div>
 
+        {{-- ════════ EVOLUTION ════════ --}}
+        <div x-show="aba === 'evolution'" x-cloak>
+            @if(session('success_evolution'))
+            <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:14px;color:#059669;display:flex;align-items:center;gap:8px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                {{ session('success_evolution') }}
+            </div>
+            @endif
+            <form method="POST" action="{{ route('admin.configuracoes.save', 'evolution') }}" style="display:flex;flex-direction:column;gap:16px">
+                @csrf
+                <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+                    <h2 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:var(--sa-text1);margin:0 0 8px;display:flex;align-items:center;gap:8px">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Evolution API — WhatsApp por empresa
+                    </h2>
+                    <p style="font-size:13px;color:var(--sa-text3);margin:0 0 20px">Servidor Evolution self-hosted. Cada empresa conecta o próprio número via QR code — sem custo por mensagem.</p>
+
+                    <div style="display:flex;flex-direction:column;gap:12px">
+                        <x-admin.setting-field name="evolution[api_url]" label="URL do servidor Evolution" placeholder="https://evolution.seudominio.com" :secret="false" :value="$settings['evolution']['api_url'] ?? ''" />
+                        <x-admin.setting-field name="evolution[api_key]" label="API Key (Global)" placeholder="Chave de autenticação do Evolution API" :secret="true" :value="$settings['evolution']['api_key'] ?? ''" />
+                        <x-admin.setting-field name="evolution[server_monthly_cost]" label="Custo do servidor (R$/mês)" placeholder="150.00" :secret="false" :value="$settings['evolution']['server_monthly_cost'] ?? ''" />
+                        <p style="font-size:12px;color:var(--sa-text3);margin:0">O custo mensal do servidor é exibido no dashboard de Gastos & Uso.</p>
+
+                        <div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:8px;padding:12px 16px">
+                            <p style="font-size:12px;color:var(--sa-text2);margin:0;line-height:1.6">
+                                <strong>Webhook URL das empresas:</strong><br>
+                                <code style="font-size:11px;background:var(--sa-surface2);padding:2px 6px;border-radius:4px">{{ url('/webhooks/evolution/{instanceName}') }}</code><br>
+                                O sistema configura automaticamente ao conectar cada empresa.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+                        <button type="button" onclick="testar('evolution')"
+                                style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;transition:all 150ms"
+                                onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                                onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                            Testar conexão
+                        </button>
+                        <span id="result-evolution" style="font-size:13px"></span>
+                    </div>
+                </div>
+                <x-admin.save-bar />
+            </form>
+        </div>
+
         {{-- ════════ EMAIL ════════ --}}
         <div x-show="aba === 'email'" x-cloak>
             @if(session('success_email'))
@@ -324,6 +372,7 @@ const ROUTES = {
     twilio:      '{{ route('admin.configuracoes.testar.twilio') }}',
     mercadopago: '{{ route('admin.configuracoes.testar.mercadopago') }}',
     email:       '{{ route('admin.configuracoes.testar.email') }}',
+    evolution:   '{{ route('admin.configuracoes.testar.evolution') }}',
 };
 
 async function testar(canal) {

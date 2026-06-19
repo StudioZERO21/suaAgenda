@@ -40,6 +40,12 @@ class Company extends Model
         'ativo',
         'stripe_customer_id',
         'stripe_subscription_id',
+        'evolution_instance',
+        'evolution_connected',
+        'evolution_connected_at',
+        'notif_limit_whatsapp',
+        'notif_limit_sms',
+        'notif_limit_email',
     ];
 
     protected function casts(): array
@@ -48,6 +54,8 @@ class Company extends Model
             'lgpd_consent' => 'boolean',
             'ativo' => 'boolean',
             'trial_ends_at' => 'datetime',
+            'evolution_connected' => 'boolean',
+            'evolution_connected_at' => 'datetime',
             'settings' => 'array',
         ];
     }

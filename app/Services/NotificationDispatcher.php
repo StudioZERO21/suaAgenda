@@ -51,13 +51,27 @@ final class NotificationDispatcher
                 continue;
             }
 
+            // Verifica limite mensal antes de enviar
+            if (! NotificationUsageService::podeEnviar($company, $channel)) {
+                Log::warning("NotificationDispatcher: limite mensal atingido [{$channel}]", [
+                    'company_id' => $company->id,
+                    'event' => $event,
+                ]);
+
+                continue;
+            }
+
             try {
-                match ($channel) {
+                $enviado = match ($channel) {
                     'email' => self::dispatchEmail($event, $company, $context),
                     'whatsapp' => self::dispatchWhatsApp($event, $company, $context, $settings),
                     'sms' => self::dispatchSms($event, $company, $context),
-                    default => null,
+                    default => false,
                 };
+
+                if ($enviado) {
+                    NotificationUsageService::registrar($company->id, $channel);
+                }
             } catch (\Throwable $e) {
                 Log::error("NotificationDispatcher [{$event}/{$channel}] failed", [
                     'company_id' => $company->id,
@@ -67,7 +81,7 @@ final class NotificationDispatcher
         }
     }
 
-    private static function dispatchEmail(string $event, Company $company, array $context): void
+    private static function dispatchEmail(string $event, Company $company, array $context): bool
     {
         /** @var Agendamento|null $agendamento */
         $agendamento = $context['agendamento'] ?? null;
@@ -75,7 +89,7 @@ final class NotificationDispatcher
         $mailable = self::buildMailable($event, $agendamento, $company, $context);
 
         if (! $mailable) {
-            return;
+            return false;
         }
 
         $to = in_array($event, self::CLIENT_EVENTS)
@@ -83,10 +97,12 @@ final class NotificationDispatcher
             : ($company->email ?? null);
 
         if (! $to) {
-            return;
+            return false;
         }
 
         Mail::to($to)->queue($mailable);
+
+        return true;
     }
 
     private static function dispatchWhatsApp(
@@ -94,7 +110,7 @@ final class NotificationDispatcher
         Company $company,
         array $context,
         array $settings,
-    ): void {
+    ): bool {
         /** @var Agendamento|null $agendamento */
         $agendamento = $context['agendamento'] ?? null;
 
@@ -103,32 +119,41 @@ final class NotificationDispatcher
             : ($company->whatsapp ?? null);
 
         if (! $to) {
-            return;
+            return false;
         }
 
         $message = self::buildWhatsAppMessage($event, $agendamento, $company, $context);
 
         if (! $message) {
-            return;
+            return false;
         }
 
-        // Tenta plataforma primeiro; fallback para credenciais da empresa
+        // 1. Evolution API da empresa (WhatsApp próprio)
+        if ($company->evolution_connected && $company->evolution_instance) {
+            $evolution = EvolutionService::fromConfig();
+            if ($evolution->configurado()) {
+                return $evolution->enviarTexto($company->evolution_instance, $to, $message);
+            }
+        }
+
+        // 2. Twilio plataforma (fallback)
         $platform = TwilioService::fromConfig();
-
         if ($platform->whatsappConfigured()) {
-            $platform->enviarWhatsApp($to, $message);
-
-            return;
+            return $platform->enviarWhatsApp($to, $message);
         }
 
+        // 3. Twilio por empresa (legado)
         $waConfig = $settings['integrations']['whatsapp'] ?? [];
-
         if (! empty($waConfig['ativo']) && ! empty($waConfig['twilio_sid'])) {
             WhatsAppService::enviar($waConfig, $to, $message);
+
+            return true;
         }
+
+        return false;
     }
 
-    private static function dispatchSms(string $event, Company $company, array $context): void
+    private static function dispatchSms(string $event, Company $company, array $context): bool
     {
         /** @var Agendamento|null $agendamento */
         $agendamento = $context['agendamento'] ?? null;
@@ -138,16 +163,16 @@ final class NotificationDispatcher
             : ($company->whatsapp ?? null);
 
         if (! $to) {
-            return;
+            return false;
         }
 
         $message = self::buildWhatsAppMessage($event, $agendamento, $company, $context);
 
         if (! $message) {
-            return;
+            return false;
         }
 
-        TwilioService::fromConfig()->enviarSms($to, $message);
+        return TwilioService::fromConfig()->enviarSms($to, $message);
     }
 
     private static function buildMailable(
