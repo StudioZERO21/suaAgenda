@@ -42,6 +42,13 @@ return [
         'cancel_url' => env('STRIPE_CANCEL_URL', '/planos?checkout=cancelado'),
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_SID', ''),
+        'token' => env('TWILIO_TOKEN', ''),
+        'whatsapp_number' => env('TWILIO_WHATSAPP_NUMBER', ''),
+        'sms_number' => env('TWILIO_SMS_NUMBER', ''),
+    ],
+
     'mercadopago' => [
         'client_id' => env('MP_CLIENT_ID'),
         'client_secret' => env('MP_CLIENT_SECRET'),
