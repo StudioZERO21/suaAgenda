@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminAuditoriaController;
 use App\Http\Controllers\Admin\AdminBillingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
+use App\Http\Controllers\Admin\AdminGastosController;
 use App\Http\Controllers\Admin\AdminLgpdController;
 use App\Http\Controllers\Admin\AdminNotificacoesController;
 use App\Http\Controllers\Admin\AdminPlatformSettingsController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\BloqueioController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CompanyEvolutionController;
 use App\Http\Controllers\CompanyRegraController;
 use App\Http\Controllers\ConfiguracaoController;
 use App\Http\Controllers\DashboardController;
@@ -43,6 +45,7 @@ use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
 use App\Http\Controllers\WebhookAsaasController;
+use App\Http\Controllers\WebhookEvolutionController;
 use App\Http\Controllers\WebhookMercadoPagoController;
 use App\Http\Controllers\WebhookStripeController;
 use App\Http\Controllers\WebhookTwilioInboundController;
@@ -80,6 +83,10 @@ Route::post('/webhooks/stripe', WebhookStripeController::class)
 
 Route::post('/webhooks/twilio/inbound', WebhookTwilioInboundController::class)
     ->name('webhooks.twilio.inbound')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::post('/webhooks/evolution/{instanceName}', WebhookEvolutionController::class)
+    ->name('webhooks.evolution.inbound')
     ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
@@ -132,6 +139,13 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::post('notificacoes/testar-conexao', [AdminNotificacoesController::class, 'testarConexao'])->name('notificacoes.testar-conexao');
     Route::post('notificacoes/testar-whatsapp', [AdminNotificacoesController::class, 'testarWhatsApp'])->name('notificacoes.testar-whatsapp');
     Route::post('notificacoes/testar-sms', [AdminNotificacoesController::class, 'testarSms'])->name('notificacoes.testar-sms');
+
+    // Gastos & Uso de notificações
+    Route::get('gastos', [AdminGastosController::class, 'index'])->name('gastos.index');
+    Route::post('gastos/custo-twilio', [AdminGastosController::class, 'custosTwilioApi'])->name('gastos.custo-twilio');
+
+    // Configurações de plataforma — Evolution
+    Route::post('configuracoes/testar/evolution', [AdminPlatformSettingsController::class, 'testarEvolution'])->name('configuracoes.testar.evolution');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, 'check.subscription', CheckModulePermission::class])->group(function () {
@@ -443,6 +457,12 @@ Route::middleware(['auth', SetTenantMiddleware::class, 'check.subscription', Che
     Route::put('configuracoes/integracoes', [ConfiguracaoController::class, 'updateIntegracoes'])->name('configuracoes.integracoes');
     Route::post('configuracoes/integracoes/testar-whatsapp', [ConfiguracaoController::class, 'testWhatsApp'])->name('configuracoes.integracoes.testar.whatsapp');
     Route::post('configuracoes/integracoes/testar-gateway', [ConfiguracaoController::class, 'testGateway'])->name('configuracoes.integracoes.testar.gateway');
+
+    // WhatsApp Evolution por empresa
+    Route::get('configuracoes/whatsapp', [CompanyEvolutionController::class, 'index'])->name('configuracoes.whatsapp');
+    Route::post('configuracoes/whatsapp/conectar', [CompanyEvolutionController::class, 'conectar'])->name('configuracoes.whatsapp.conectar');
+    Route::get('configuracoes/whatsapp/status', [CompanyEvolutionController::class, 'statusPoll'])->name('configuracoes.whatsapp.status');
+    Route::delete('configuracoes/whatsapp/desconectar', [CompanyEvolutionController::class, 'desconectar'])->name('configuracoes.whatsapp.desconectar');
 
     // ── MercadoPago OAuth Connect ──────────────────────────────────────────
     Route::get('configuracoes/integracoes/mercadopago/conectar', [MercadoPagoOAuthController::class, 'redirect'])->name('mp.oauth.redirect');

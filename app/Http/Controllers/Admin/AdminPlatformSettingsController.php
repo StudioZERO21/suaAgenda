@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PlatformSetting;
+use App\Services\EvolutionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 
 final class AdminPlatformSettingsController extends Controller
 {
-    private const GROUPS = ['stripe', 'mercadopago', 'asaas', 'twilio', 'email'];
+    private const GROUPS = ['stripe', 'mercadopago', 'asaas', 'twilio', 'email', 'evolution'];
 
     public function index(): View
     {
@@ -131,5 +132,12 @@ final class AdminPlatformSettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['ok' => false, 'erro' => $e->getMessage()]);
         }
+    }
+
+    public function testarEvolution(): JsonResponse
+    {
+        $result = (new EvolutionService)->testarConexao();
+
+        return response()->json($result);
     }
 }

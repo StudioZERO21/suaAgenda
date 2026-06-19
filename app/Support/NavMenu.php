@@ -40,6 +40,7 @@ final class NavMenu
             ['route' => 'admin.lgpd.index', 'label' => 'LGPD', 'permission' => null, 'match' => 'admin.lgpd.*', 'icon' => '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'],
             ['route' => 'admin.billing.index', 'label' => 'Billing', 'permission' => null, 'match' => 'admin.billing.*', 'icon' => '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
             ['route' => 'admin.notificacoes.index', 'label' => 'Notificações', 'permission' => null, 'match' => 'admin.notificacoes.*', 'icon' => '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.15 15z"/>'],
+            ['route' => 'admin.gastos.index', 'label' => 'Gastos & Uso', 'permission' => null, 'match' => 'admin.gastos.*', 'icon' => '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'],
             ['route' => 'admin.configuracoes.index', 'label' => 'Configurações', 'permission' => null, 'match' => 'admin.configuracoes.*', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2m0 16v2m7.07-3.07l-1.41-1.41M4.93 19.07l1.41-1.41M22 12h-2M2 12h2"/>'],
         ];
     }
