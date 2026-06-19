@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Pagamento;
 
+use App\Models\BillingConfig;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -12,6 +14,50 @@ class MercadoPagoService
     private const BASE = 'https://api.mercadopago.com';
 
     private const AUTH = 'https://auth.mercadopago.com.br';
+
+    // ── Ambiente (sandbox / produção) ──────────────────────────────────────────
+
+    /**
+     * Ambiente atual da plataforma: 'sandbox' ou 'producao'.
+     * Lê do BillingConfig (DB) com fallback para .env.
+     */
+    public static function getAmbiente(): string
+    {
+        return Cache::remember('mp_ambiente', 300, function () {
+            try {
+                $creds = BillingConfig::current()->credentials ?? [];
+
+                return $creds['mp_ambiente'] ?? config('services.mercadopago.ambiente', 'sandbox');
+            } catch (\Throwable) {
+                return config('services.mercadopago.ambiente', 'sandbox');
+            }
+        });
+    }
+
+    public static function isSandbox(): bool
+    {
+        return self::getAmbiente() === 'sandbox';
+    }
+
+    /**
+     * Public Key para uso no frontend do Checkout Bricks.
+     */
+    public static function getPublicKey(): string
+    {
+        return self::isSandbox()
+            ? (config('services.mercadopago.public_key_test') ?? '')
+            : (config('services.mercadopago.public_key') ?? '');
+    }
+
+    /**
+     * Access Token da plataforma para chamadas de API (não por empresa).
+     */
+    public static function getPlatformAccessToken(): string
+    {
+        return self::isSandbox()
+            ? (config('services.mercadopago.access_token_test') ?? '')
+            : (config('services.mercadopago.access_token') ?? '');
+    }
 
     // ── OAuth Connect ──────────────────────────────────────────────────────────
 

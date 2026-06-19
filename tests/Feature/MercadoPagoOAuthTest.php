@@ -28,9 +28,9 @@ beforeEach(function () {
     $this->actingAs($this->user);
 
     config([
-        'services.mercadopago.client_id'     => 'test_client_id',
+        'services.mercadopago.client_id' => 'test_client_id',
         'services.mercadopago.client_secret' => 'test_secret',
-        'services.mercadopago.redirect_uri'  => 'http://localhost/configuracoes/integracoes/mercadopago/callback',
+        'services.mercadopago.redirect_uri' => 'http://localhost/configuracoes/integracoes/mercadopago/callback',
     ]);
 });
 
@@ -49,7 +49,7 @@ describe('mp_oauth_callback', function () {
         Session::put('mp_oauth_state', 'state-real');
 
         $response = $this->get(route('mp.oauth.callback', [
-            'code'  => 'qualquer',
+            'code' => 'qualquer',
             'state' => 'state-errado',
         ]));
 
@@ -59,7 +59,7 @@ describe('mp_oauth_callback', function () {
 
     it('trata param error do MP com redirecionamento para configurações', function () {
         $response = $this->get(route('mp.oauth.callback', [
-            'error'             => 'access_denied',
+            'error' => 'access_denied',
             'error_description' => 'Usuário negou acesso.',
         ]));
 
@@ -73,20 +73,20 @@ describe('mp_oauth_callback', function () {
 
         Http::fake([
             'api.mercadopago.com/oauth/token' => Http::response([
-                'access_token'  => 'APP_USR-test-access-token',
+                'access_token' => 'APP_USR-test-access-token',
                 'refresh_token' => 'TG-test-refresh-token',
-                'user_id'       => 99999,
+                'user_id' => 99999,
             ], 200),
             'api.mercadopago.com/v1/users/me' => Http::response([
-                'id'         => 99999,
+                'id' => 99999,
                 'first_name' => 'Barbearia',
-                'last_name'  => 'Teste',
-                'email'      => 'barbearia@teste.com',
+                'last_name' => 'Teste',
+                'email' => 'barbearia@teste.com',
             ], 200),
         ]);
 
         $response = $this->get(route('mp.oauth.callback', [
-            'code'  => 'valid-code',
+            'code' => 'valid-code',
             'state' => $state,
         ]));
 
@@ -107,12 +107,12 @@ describe('mp_oauth_callback', function () {
 
 describe('mp_oauth_disconnect', function () {
     it('remove tokens e troca gateway para nenhum', function () {
-        $settings                                  = $this->company->settings ?? [];
-        $settings['integrations']['gateway']       = 'mercadopago';
-        $settings['integrations']['mercadopago']   = [
-            'connected'        => true,
+        $settings = $this->company->settings ?? [];
+        $settings['integrations']['gateway'] = 'mercadopago';
+        $settings['integrations']['mercadopago'] = [
+            'connected' => true,
             'access_token_enc' => encrypt('tok'),
-            'account_nome'     => 'Teste',
+            'account_nome' => 'Teste',
         ];
         $this->company->update(['settings' => $settings]);
 
@@ -133,15 +133,15 @@ describe('mp_oauth_metrics', function () {
     });
 
     it('retorna saldo e receita do mês quando conectado', function () {
-        $settings                                = $this->company->settings ?? [];
+        $settings = $this->company->settings ?? [];
         $settings['integrations']['mercadopago'] = [
-            'connected'        => true,
+            'connected' => true,
             'access_token_enc' => encrypt('APP_USR-tok'),
         ];
         $this->company->update(['settings' => $settings]);
 
         Http::fake([
-            'api.mercadopago.com/v1/account/balance'  => Http::response(['available_balance' => 1500.50], 200),
+            'api.mercadopago.com/v1/account/balance' => Http::response(['available_balance' => 1500.50], 200),
             'api.mercadopago.com/v1/payments/search*' => Http::response(['results' => [
                 ['transaction_amount' => 300.00],
                 ['transaction_amount' => 200.00],
@@ -151,8 +151,8 @@ describe('mp_oauth_metrics', function () {
         $response = $this->getJson(route('mp.oauth.metrics'));
 
         $response->assertOk()->assertJson([
-            'ok'            => true,
-            'balance'       => 1500.50,
+            'ok' => true,
+            'balance' => 1500.50,
             'month_revenue' => 500.00,
         ]);
     });
@@ -165,7 +165,7 @@ describe('gateway_factory', function () {
         ]);
 
         $result = GatewayFactory::testar([
-            'gateway'     => 'mercadopago',
+            'gateway' => 'mercadopago',
             'mercadopago' => ['connected' => true, 'access_token_enc' => encrypt('APP_USR-tok')],
         ]);
 
@@ -178,7 +178,7 @@ describe('gateway_factory', function () {
         ]);
 
         $result = GatewayFactory::testar([
-            'gateway'     => 'mercadopago',
+            'gateway' => 'mercadopago',
             'mercadopago' => ['access_token' => 'APP_USR-legado'],
         ]);
 

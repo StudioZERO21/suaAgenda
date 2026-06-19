@@ -92,6 +92,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('billing/gateway', [AdminBillingController::class, 'configGateway'])->name('billing.gateway');
     Route::post('billing/gateway', [AdminBillingController::class, 'saveConfigGateway'])->name('billing.gateway.save');
     Route::post('billing/gateway/testar', [AdminBillingController::class, 'testGateway'])->name('billing.gateway.testar');
+    Route::post('billing/gateway/mp-ambiente', [AdminBillingController::class, 'toggleMpAmbiente'])->name('billing.gateway.mp-ambiente');
     Route::get('billing/{subscription}', [AdminBillingController::class, 'show'])->name('billing.show');
     Route::post('billing/{subscription}/fatura', [AdminBillingController::class, 'gerarFatura'])->name('billing.fatura');
     Route::patch('billing/{subscription}/suspender', [AdminBillingController::class, 'suspender'])->name('billing.suspender');
