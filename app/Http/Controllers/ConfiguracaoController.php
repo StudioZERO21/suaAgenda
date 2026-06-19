@@ -48,7 +48,14 @@ class ConfiguracaoController extends Controller
         $activePalette = SaPalettes::get($settings['theme_palette'] ?? 'A');
         $iconCategories = SaServiceIcons::categories();
 
-        return view('configuracoes.index', compact('company', 'settings', 'palettes', 'activePalette', 'iconCategories'));
+        $mpData = $settings['integrations']['mercadopago'] ?? [];
+        $mpConnected = ! empty($mpData['connected']);
+        $mpAccountNome = $mpConnected ? ($mpData['account_nome'] ?? 'Conta Mercado Pago') : null;
+
+        return view('configuracoes.index', compact(
+            'company', 'settings', 'palettes', 'activePalette', 'iconCategories',
+            'mpConnected', 'mpAccountNome',
+        ));
     }
 
     /**
@@ -251,12 +258,13 @@ class ConfiguracaoController extends Controller
 
         $gateway = $request->input('gateway', 'nenhum');
 
+        // Preserva dados OAuth do MP — nunca sobrescrever tokens do Connect
+        $currentMp = $current['integrations']['mercadopago'] ?? [];
+
         $integrations = [
             'whatsapp' => $wa,
             'gateway' => $gateway,
-            'mercadopago' => [
-                'access_token' => trim((string) $request->input('mp_access_token', '')),
-            ],
+            'mercadopago' => $currentMp, // gerenciado exclusivamente pelo MercadoPagoOAuthController
             'asaas' => [
                 'api_key' => trim((string) $request->input('asaas_api_key', '')),
                 'ambiente' => $request->input('asaas_ambiente', 'sandbox'),
@@ -305,9 +313,17 @@ class ConfiguracaoController extends Controller
         $company = Company::findOrFail(auth()->user()->empresa_id);
         $this->authorize('update', $company);
 
+        $gateway = $request->input('gateway', 'nenhum');
+
+        // MP usa OAuth — token está no banco, não no form
+        if ($gateway === 'mercadopago') {
+            $result = GatewayFactory::testar($company->resolvedSettings()['integrations'] ?? []);
+
+            return response()->json($result, $result['ok'] ? 200 : 422);
+        }
+
         $integrations = [
-            'gateway' => $request->input('gateway', 'nenhum'),
-            'mercadopago' => ['access_token' => $request->input('mp_access_token', '')],
+            'gateway' => $gateway,
             'asaas' => [
                 'api_key' => $request->input('asaas_api_key', ''),
                 'ambiente' => $request->input('asaas_ambiente', 'sandbox'),

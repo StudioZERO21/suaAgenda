@@ -20,7 +20,7 @@ class GatewayFactory
 
         return match ($gateway) {
             'mercadopago' => MercadoPagoService::testarCredenciais(
-                $integrations['mercadopago']['access_token'] ?? ''
+                self::getMpAccessToken($integrations)
             ),
             'asaas' => AsaasService::testarCredenciais(
                 $integrations['asaas']['api_key'] ?? '',
@@ -32,5 +32,25 @@ class GatewayFactory
             'nenhum' => ['ok' => false, 'erro' => 'Nenhum gateway configurado.'],
             default => throw new InvalidArgumentException("Gateway desconhecido: {$gateway}"),
         };
+    }
+
+    /**
+     * Extrai o access_token do MP a partir das configurações de integração.
+     * Suporta o formato novo (OAuth criptografado) e o legado (plain text).
+     */
+    public static function getMpAccessToken(array $integrations): string
+    {
+        $mp = $integrations['mercadopago'] ?? [];
+
+        if (! empty($mp['access_token_enc'])) {
+            try {
+                return (string) decrypt($mp['access_token_enc']);
+            } catch (\Throwable) {
+                // token corrompido — cai no fallback
+            }
+        }
+
+        // Legado: token plain text gravado pela versão anterior
+        return (string) ($mp['access_token'] ?? '');
     }
 }
