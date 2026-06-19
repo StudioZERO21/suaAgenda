@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Services\NotificationDispatcher;
 use App\Services\Pagamento\GatewayFactory;
 use App\Services\Pagamento\MercadoPagoService;
 use Illuminate\Http\Request;
@@ -219,6 +220,9 @@ class WebhookMercadoPagoController extends Controller
                 'agendamento_id' => $agendamento->id,
                 'payment_id' => $paymentId,
             ]);
+
+            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+            NotificationDispatcher::dispatch('pagamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
         } else {
             // saldo
             $agendamento->update([

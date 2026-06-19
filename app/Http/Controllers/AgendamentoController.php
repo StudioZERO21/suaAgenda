@@ -7,12 +7,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\MoveAgendamentoRequest;
 use App\Http\Requests\StoreAgendamentoRequest;
 use App\Http\Requests\UpdateAgendamentoRequest;
-use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Services\NotificationDispatcher;
 use App\Services\Pagamento\AsaasService;
 use App\Services\Pagamento\GatewayFactory;
 use Carbon\Carbon;
@@ -20,7 +20,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -214,10 +213,7 @@ class AgendamentoController extends Controller
 
         $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
 
-        if ($agendamento->cliente?->email) {
-            Mail::to($agendamento->cliente->email)
-                ->queue(new AgendamentoConfirmado($agendamento));
-        }
+        NotificationDispatcher::dispatch('agendamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
 
         return redirect()->route('agendamentos.show', $agendamento)
             ->with('success', 'Agendamento criado com sucesso.');
@@ -349,10 +345,9 @@ class AgendamentoController extends Controller
 
         if ($request->status === Agendamento::STATUS_CONFIRMADO
             && $previousStatus !== Agendamento::STATUS_CONFIRMADO
-            && $agendamento->cliente?->email
         ) {
             $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
-            Mail::to($agendamento->cliente->email)->queue(new AgendamentoConfirmado($agendamento));
+            NotificationDispatcher::dispatch('agendamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
         }
 
         if ($request->wantsJson()) {
@@ -1322,10 +1317,8 @@ class AgendamentoController extends Controller
             'sinal_status' => Agendamento::SINAL_NENHUM,
         ]);
 
-        if ($agendamento->cliente?->email) {
-            Mail::to($agendamento->cliente->email)
-                ->queue(new AgendamentoConfirmado($agendamento));
-        }
+        $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+        NotificationDispatcher::dispatch('agendamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
 
         return response()->json(['ok' => true, 'status' => 'confirmado']);
     }
