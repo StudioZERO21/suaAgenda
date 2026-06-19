@@ -237,26 +237,44 @@ class MercadoPagoService
 
     /**
      * Cria preferência de pagamento e retorna o link de checkout.
+     * Em sandbox retorna sandbox_init_point; em produção retorna init_point.
      */
     public static function criarLink(
         string $accessToken,
         float $valor,
         string $descricao,
-        string $referencia = ''
+        string $referencia = '',
+        string $backUrl = ''
     ): string {
+        $payload = [
+            'items' => [[
+                'title' => $descricao,
+                'quantity' => 1,
+                'unit_price' => round($valor, 2),
+                'currency_id' => 'BRL',
+            ]],
+            'external_reference' => $referencia,
+        ];
+
+        if ($backUrl !== '') {
+            $payload['back_urls'] = [
+                'success' => $backUrl,
+                'failure' => $backUrl,
+                'pending' => $backUrl,
+            ];
+        }
+
         $resp = Http::timeout(15)
             ->withToken($accessToken)
-            ->post(self::BASE.'/checkout/preferences', [
-                'items' => [[
-                    'title' => $descricao,
-                    'quantity' => 1,
-                    'unit_price' => round($valor, 2),
-                    'currency_id' => 'BRL',
-                ]],
-                'external_reference' => $referencia,
-                'auto_return' => 'approved',
-            ]);
+            ->post(self::BASE.'/checkout/preferences', $payload);
 
-        return $resp->json('init_point') ?? '';
+        if (! $resp->successful()) {
+            return '';
+        }
+
+        // Sandbox usa sandbox_init_point; produção usa init_point
+        $key = self::isSandbox() ? 'sandbox_init_point' : 'init_point';
+
+        return (string) ($resp->json($key) ?? $resp->json('init_point') ?? '');
     }
 }
