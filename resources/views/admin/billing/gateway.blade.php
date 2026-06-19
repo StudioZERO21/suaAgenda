@@ -270,6 +270,21 @@
             @endif
         </div>
     </div>
+
+    {{-- ── MERCADO PAGO — OAuth Connect (empresas) ─────────────── --}}
+    @php $mpOAuthRedirect = \App\Services\Pagamento\MercadoPagoService::getRedirectUri(); @endphp
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-top:16px">
+        <div style="font-size:15px;font-weight:700;color:var(--sa-text1);font-family:var(--sa-font-heading);margin-bottom:6px">OAuth Connect — empresas</div>
+        <p style="font-size:13px;color:var(--sa-text2);margin:0 0 14px;line-height:1.6">
+            Para empresas conectarem suas contas Mercado Pago, cadastre a URL abaixo em
+            <strong>Mercado Pago Developers → sua aplicação → Configurações avançadas → Redirect URL</strong>.
+            A URL deve ser <strong>idêntica</strong> (incluindo https e caminho).
+        </p>
+        <code style="display:block;padding:10px 12px;border-radius:8px;background:var(--sa-surface2);border:1px solid var(--sa-border);font-size:12px;color:var(--sa-text1);word-break:break-all">{{ $mpOAuthRedirect }}</code>
+        <p style="font-size:12px;color:var(--sa-text3);margin:10px 0 0;line-height:1.5">
+            Variável <code>MP_REDIRECT_URI</code> no <code>.env</code> · PKCE habilitado por padrão (<code>MP_PKCE=true</code>)
+        </p>
+    </div>
 </div>
 
 <script>

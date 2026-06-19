@@ -964,6 +964,15 @@
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                                         Conectar com Mercado Pago
                                     </a>
+                                    <div style="margin-top:14px;padding:12px 14px;border-radius:9px;background:var(--sa-surface2);border:1px solid var(--sa-border);text-align:left;max-width:420px;margin-left:auto;margin-right:auto">
+                                        <div style="font-size:12px;font-weight:700;color:var(--sa-text1);margin-bottom:6px">Antes de conectar</div>
+                                        <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--sa-text2);line-height:1.6">
+                                            <li>Acesse o sistema pelo endereço <strong style="color:var(--sa-text1)">{{ parse_url($mpRedirectUri, PHP_URL_SCHEME) }}://{{ parse_url($mpRedirectUri, PHP_URL_HOST) }}</strong> (não use localhost se o callback for outro domínio).</li>
+                                            <li>No painel <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener" style="color:#009ee3;text-decoration:none;font-weight:600">Mercado Pago Developers</a>, cadastre esta URL de redirecionamento exata:<br>
+                                                <code style="display:block;margin-top:6px;padding:8px 10px;border-radius:7px;background:var(--sa-surface);border:1px solid var(--sa-border);font-size:11px;color:var(--sa-text1);word-break:break-all">{{ $mpRedirectUri }}</code>
+                                            </li>
+                                        </ul>
+                                    </div>
                                     <div style="margin-top:12px;font-size:11px;color:var(--sa-text3)">
                                         Redirecionamento seguro · Sem acesso à sua senha
                                     </div>

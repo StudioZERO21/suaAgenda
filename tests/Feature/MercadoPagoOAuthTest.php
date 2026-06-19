@@ -31,16 +31,27 @@ beforeEach(function () {
         'services.mercadopago.client_id' => 'test_client_id',
         'services.mercadopago.client_secret' => 'test_secret',
         'services.mercadopago.redirect_uri' => 'http://localhost/configuracoes/integracoes/mercadopago/callback',
+        'services.mercadopago.pkce' => true,
     ]);
 });
 
 describe('mp_oauth_redirect', function () {
     it('redireciona para MP com state na sessão', function () {
-        $response = $this->get(route('mp.oauth.redirect'));
+        $response = $this->get('http://localhost/configuracoes/integracoes/mercadopago/conectar');
 
-        $response->assertRedirectContains('auth.mercadopago.com.br');
+        $response->assertRedirectContains('auth.mercadopago.com');
         $response->assertRedirectContains('client_id=test_client_id');
+        $response->assertRedirectContains('platform_id=mp');
+        $response->assertRedirectContains('code_challenge=');
         expect(Session::get('mp_oauth_state'))->not->toBeNull();
+        expect(Session::get('mp_oauth_pkce_verifier'))->not->toBeNull();
+    });
+
+    it('bloqueia redirect quando origem difere do callback OAuth', function () {
+        $response = $this->get('http://suaagenda.local/configuracoes/integracoes/mercadopago/conectar');
+
+        $response->assertRedirect(route('configuracoes', ['tab' => 'integracoes']));
+        $response->assertSessionHas('error');
     });
 });
 
@@ -187,11 +198,29 @@ describe('gateway_factory', function () {
 });
 
 describe('mercadopago_service', function () {
-    it('getAuthUrl inclui client_id e state', function () {
-        $url = MercadoPagoService::getAuthUrl('meu-state-123');
+    it('getAuthUrl inclui client_id, platform_id e state', function () {
+        $url = MercadoPagoService::getAuthUrl('meu-state-123', 'challenge-abc');
 
         expect($url)->toContain('client_id=test_client_id');
         expect($url)->toContain('state=meu-state-123');
-        expect($url)->toContain('auth.mercadopago.com.br');
+        expect($url)->toContain('platform_id=mp');
+        expect($url)->toContain('code_challenge=challenge-abc');
+        expect($url)->toContain('auth.mercadopago.com');
+    });
+
+    it('exchangeCode envia test_token em sandbox', function () {
+        config(['services.mercadopago.ambiente' => 'sandbox']);
+
+        Http::fake([
+            'api.mercadopago.com/oauth/token' => Http::response(['access_token' => 'TEST-tok'], 200),
+        ]);
+
+        MercadoPagoService::exchangeCode('code-123', 'verifier-xyz');
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.mercadopago.com/oauth/token'
+                && $request['test_token'] === 'true'
+                && $request['code_verifier'] === 'verifier-xyz';
+        });
     });
 });

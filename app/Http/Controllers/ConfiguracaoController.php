@@ -14,6 +14,7 @@ use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\ImageService;
 use App\Services\Pagamento\GatewayFactory;
+use App\Services\Pagamento\MercadoPagoService;
 use App\Services\WhatsAppService;
 use App\Support\CompanyHours;
 use App\Support\SaPalettes;
@@ -51,10 +52,12 @@ class ConfiguracaoController extends Controller
         $mpData = $settings['integrations']['mercadopago'] ?? [];
         $mpConnected = ! empty($mpData['connected']);
         $mpAccountNome = $mpConnected ? ($mpData['account_nome'] ?? 'Conta Mercado Pago') : null;
+        $mpRedirectUri = MercadoPagoService::getRedirectUri();
+        $mpOAuthReady = MercadoPagoService::isOAuthConfigured();
 
         return view('configuracoes.index', compact(
             'company', 'settings', 'palettes', 'activePalette', 'iconCategories',
-            'mpConnected', 'mpAccountNome',
+            'mpConnected', 'mpAccountNome', 'mpRedirectUri', 'mpOAuthReady',
         ));
     }
 

@@ -13,7 +13,8 @@ class MercadoPagoService
 {
     private const BASE = 'https://api.mercadopago.com';
 
-    private const AUTH = 'https://auth.mercadopago.com.br';
+    /** Endpoint oficial OAuth (BR e demais países). */
+    private const AUTH = 'https://auth.mercadopago.com';
 
     // ── Ambiente (sandbox / produção) ──────────────────────────────────────────
 
@@ -62,17 +63,64 @@ class MercadoPagoService
     // ── OAuth Connect ──────────────────────────────────────────────────────────
 
     /**
+     * Redirect URI estático exigido pelo Mercado Pago (deve coincidir com o painel Developers).
+     */
+    public static function getRedirectUri(): string
+    {
+        $configured = config('services.mercadopago.redirect_uri');
+
+        if (is_string($configured) && $configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        return route('mp.oauth.callback', [], absolute: true);
+    }
+
+    /**
+     * Verifica se credenciais OAuth da plataforma estão configuradas.
+     */
+    public static function isOAuthConfigured(): bool
+    {
+        return filled(config('services.mercadopago.client_id'))
+            && filled(config('services.mercadopago.client_secret'))
+            && filled(self::getRedirectUri());
+    }
+
+    /**
+     * Gera par PKCE (RFC 7636) exigido quando habilitado no app Mercado Pago.
+     *
+     * @return array{verifier: string, challenge: string}
+     */
+    public static function generatePkce(): array
+    {
+        $verifier = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $challenge = rtrim(
+            strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'),
+            '='
+        );
+
+        return ['verifier' => $verifier, 'challenge' => $challenge];
+    }
+
+    /**
      * URL de autorização OAuth (redirecionar o usuário para cá).
      */
-    public static function getAuthUrl(string $state): string
+    public static function getAuthUrl(string $state, ?string $codeChallenge = null): string
     {
-        // platform_id=mp requer aprovação marketplace — OAuth padrão funciona para todas as contas
-        return self::AUTH.'/authorization?'.http_build_query([
+        $params = [
             'client_id' => config('services.mercadopago.client_id'),
             'response_type' => 'code',
-            'redirect_uri' => config('services.mercadopago.redirect_uri'),
+            'redirect_uri' => self::getRedirectUri(),
             'state' => $state,
-        ]);
+            'platform_id' => 'mp',
+        ];
+
+        if ($codeChallenge !== null && $codeChallenge !== '') {
+            $params['code_challenge'] = $codeChallenge;
+            $params['code_challenge_method'] = 'S256';
+        }
+
+        return self::AUTH.'/authorization?'.http_build_query($params);
     }
 
     /**
@@ -82,15 +130,25 @@ class MercadoPagoService
      *
      * @throws RuntimeException
      */
-    public static function exchangeCode(string $code): array
+    public static function exchangeCode(string $code, ?string $codeVerifier = null): array
     {
-        $resp = Http::timeout(15)->post(self::BASE.'/oauth/token', [
+        $payload = [
             'client_id' => config('services.mercadopago.client_id'),
             'client_secret' => config('services.mercadopago.client_secret'),
             'grant_type' => 'authorization_code',
             'code' => $code,
-            'redirect_uri' => config('services.mercadopago.redirect_uri'),
-        ]);
+            'redirect_uri' => self::getRedirectUri(),
+        ];
+
+        if (self::isSandbox()) {
+            $payload['test_token'] = 'true';
+        }
+
+        if ($codeVerifier !== null && $codeVerifier !== '') {
+            $payload['code_verifier'] = $codeVerifier;
+        }
+
+        $resp = Http::timeout(15)->post(self::BASE.'/oauth/token', $payload);
 
         if (! $resp->successful()) {
             throw new RuntimeException('Falha no OAuth MP: '.$resp->body());

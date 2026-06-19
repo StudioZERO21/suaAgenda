@@ -22,11 +22,34 @@ class MercadoPagoOAuthController extends Controller
         $company = Company::findOrFail(auth()->user()->empresa_id);
         $this->authorize('update', $company);
 
+        if (! MercadoPagoService::isOAuthConfigured()) {
+            return $this->redirectWithError(
+                'OAuth Mercado Pago não configurado na plataforma. Contate o suporte.'
+            );
+        }
+
+        $redirectUri = MercadoPagoService::getRedirectUri();
+        $currentOrigin = request()->getSchemeAndHttpHost();
+        $redirectOrigin = parse_url($redirectUri, PHP_URL_SCHEME).'://'.parse_url($redirectUri, PHP_URL_HOST);
+
+        if ($currentOrigin !== $redirectOrigin) {
+            return $this->redirectWithError(
+                'Acesse o sistema pelo mesmo endereço do callback OAuth ('.$redirectOrigin.') antes de conectar.'
+            );
+        }
+
         $state = bin2hex(random_bytes(24));
         Session::put('mp_oauth_state', $state);
         Session::put('mp_oauth_company', $company->id);
 
-        return redirect(MercadoPagoService::getAuthUrl($state));
+        $codeChallenge = null;
+        if (config('services.mercadopago.pkce', true)) {
+            $pkce = MercadoPagoService::generatePkce();
+            Session::put('mp_oauth_pkce_verifier', $pkce['verifier']);
+            $codeChallenge = $pkce['challenge'];
+        }
+
+        return redirect(MercadoPagoService::getAuthUrl($state, $codeChallenge));
     }
 
     /**
@@ -46,6 +69,7 @@ class MercadoPagoOAuthController extends Controller
             return $this->redirectWithError('Estado OAuth inválido. Tente novamente.');
         }
 
+        $pkceVerifier = Session::pull('mp_oauth_pkce_verifier');
         Session::forget('mp_oauth_state');
         Session::forget('mp_oauth_company');
 
@@ -54,7 +78,7 @@ class MercadoPagoOAuthController extends Controller
         }
 
         try {
-            $tokens = MercadoPagoService::exchangeCode($code);
+            $tokens = MercadoPagoService::exchangeCode($code, is_string($pkceVerifier) ? $pkceVerifier : null);
             $info = MercadoPagoService::getAccountInfo($tokens['access_token']);
 
             $nome = trim(
