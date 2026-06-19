@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Plan;
+use App\Services\Billing\StripeCheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -89,6 +90,26 @@ class PlansController extends Controller
             'clienteDesde',
             'emTrial',
         ));
+    }
+
+    public function checkout(string $slug): RedirectResponse
+    {
+        $this->authorize('update', auth()->user()->company);
+
+        $plan = Plan::findOrFail($slug);
+        $company = auth()->user()->company;
+
+        if (! $plan->stripe_price_id) {
+            return back()->with('warning', 'Este plano ainda não tem checkout via Stripe configurado.');
+        }
+
+        try {
+            $session = (new StripeCheckoutService)->criarSessao($company, $plan);
+
+            return redirect()->away($session['url']);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', 'Erro ao iniciar checkout: '.$e->getMessage());
+        }
     }
 
     public function update(Request $request): RedirectResponse

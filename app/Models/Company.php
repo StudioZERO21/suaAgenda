@@ -38,6 +38,8 @@ class Company extends Model
         'lgpd_consent',
         'trial_ends_at',
         'ativo',
+        'stripe_customer_id',
+        'stripe_subscription_id',
     ];
 
     protected function casts(): array

@@ -42,6 +42,7 @@ use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
 use App\Http\Controllers\WebhookAsaasController;
 use App\Http\Controllers\WebhookMercadoPagoController;
+use App\Http\Controllers\WebhookStripeController;
 use App\Http\Middleware\CheckModulePermission;
 use App\Http\Middleware\EnsureClienteDaEmpresa;
 use App\Http\Middleware\SetTenantMiddleware;
@@ -68,6 +69,10 @@ Route::post('/webhooks/asaas', WebhookAsaasController::class)
 
 Route::post('/webhooks/mercadopago', WebhookMercadoPagoController::class)
     ->name('webhooks.mercadopago')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::post('/webhooks/stripe', WebhookStripeController::class)
+    ->name('webhooks.stripe')
     ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
@@ -424,6 +429,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
 
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
+    Route::post('planos/{slug}/checkout', [PlansController::class, 'checkout'])->name('planos.checkout');
 
     Route::get('notificacoes/todas', [NotificacaoController::class, 'listar'])->name('notificacoes.listar');
     Route::get('notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');

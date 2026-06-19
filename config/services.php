@@ -35,6 +35,13 @@ return [
         ],
     ],
 
+    'stripe_platform' => [
+        'secret' => env('STRIPE_PLATFORM_SECRET'),
+        'webhook_secret' => env('STRIPE_PLATFORM_WEBHOOK_SECRET'),
+        'success_url' => env('STRIPE_SUCCESS_URL', '/planos?checkout=sucesso'),
+        'cancel_url' => env('STRIPE_CANCEL_URL', '/planos?checkout=cancelado'),
+    ],
+
     'mercadopago' => [
         'client_id' => env('MP_CLIENT_ID'),
         'client_secret' => env('MP_CLIENT_SECRET'),

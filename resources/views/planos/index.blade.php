@@ -29,16 +29,26 @@
                 <div style="font-size:13px;color:var(--sa-text3)">{{ $statusAssinatura['sub'] }}</div>
             </div>
             <div style="display:flex;gap:8px;flex-direction:column">
+                @if($company->stripe_subscription_id)
+                <a href="https://billing.stripe.com" target="_blank" rel="noopener noreferrer"
+                   style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color 180ms,color 180ms;white-space:nowrap"
+                   onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                   onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Portal de Pagamento
+                </a>
+                @else
                 <button type="button"
-                        onclick="Swal.fire({title:'Em breve',text:'Gerenciamento de pagamento em breve.',icon:'info',confirmButtonColor:'#1a1a1a'})"
+                        onclick="document.getElementById('comparar-planos')?.scrollIntoView({behavior:'smooth'})"
                         style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:12px;font-weight:600;cursor:pointer;transition:border-color 180ms,color 180ms;white-space:nowrap"
                         onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
                         onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    Método de Pagamento
+                    Escolher Plano
                 </button>
+                @endif
                 <button type="button"
-                        onclick="Swal.fire({title:'Cancelar assinatura?',text:'Esta ação requer confirmação. Entre em contato com o suporte.',icon:'warning',confirmButtonColor:'#1a1a1a'})"
+                        onclick="Swal.fire({title:'Cancelar assinatura?',text:'Esta ação requer confirmação. Entre em contato com o suporte em contato@suaagenda.com.br.',icon:'warning',confirmButtonColor:'#1a1a1a'})"
                         style="display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:8px;border:none;background:transparent;color:var(--sa-text3);font-size:12px;font-weight:600;cursor:pointer;transition:color 180ms"
                         onmouseover="this.style.color='var(--sa-text1)'"
                         onmouseout="this.style.color='var(--sa-text3)'">
@@ -219,6 +229,18 @@
                         Plano Atual
                     </button>
                     @elsecan('update', $company)
+                    @if($plan->stripe_price_id)
+                    {{-- Checkout via Stripe --}}
+                    <form method="POST" action="{{ route('planos.checkout', $plan->slug) }}">
+                        @csrf
+                        <button type="submit"
+                                style="width:100%;padding:9px 16px;border-radius:8px;border:none;background:{{ $planColor }};color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter 200ms"
+                                onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                            {{ $currentPlan && $plan->ordem > $currentPlan->ordem ? 'Fazer Upgrade' : 'Fazer Downgrade' }}
+                        </button>
+                    </form>
+                    @else
+                    {{-- Sem stripe_price_id: troca manual (dev/staging) --}}
                     <form method="POST" action="{{ route('planos.update') }}">
                         @csrf
                         @method('PATCH')
@@ -229,6 +251,7 @@
                             {{ $currentPlan && $plan->ordem > $currentPlan->ordem ? 'Fazer Upgrade' : 'Fazer Downgrade' }}
                         </button>
                     </form>
+                    @endif
                     @endcan
                 </div>
                 @endforeach
