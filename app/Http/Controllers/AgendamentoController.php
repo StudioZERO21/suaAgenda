@@ -205,18 +205,106 @@ class AgendamentoController extends Controller
 
             $agendamento = Agendamento::create([
                 'company_id' => auth()->user()->empresa_id,
-                ...$request->validated(),
+                ...$request->safe()->only(['profissional_id', 'cliente_id', 'servico_id', 'data_hora', 'duracao', 'valor', 'observacao']),
             ]);
         } finally {
             $lock->release();
+        }
+
+        [$recorrencias, $conflitos] = [0, 0];
+
+        if ($request->boolean('recorrente') && $request->filled('recorrencia_tipo')) {
+            [$recorrencias, $conflitos] = $this->criarRecorrencias($agendamento, $request);
         }
 
         $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
 
         NotificationDispatcher::dispatch('agendamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
 
-        return redirect()->route('agendamentos.show', $agendamento)
-            ->with('success', 'Agendamento criado com sucesso.');
+        $msg = 'Agendamento criado com sucesso.';
+        if ($recorrencias > 0) {
+            $msg .= " {$recorrencias} ocorrência(s) extra(s) agendada(s).";
+            if ($conflitos > 0) {
+                $msg .= " {$conflitos} conflito(s) de horário ignorado(s).";
+            }
+        }
+
+        return redirect()->route('agendamentos.show', $agendamento)->with('success', $msg);
+    }
+
+    /**
+     * Cria as cópias de um agendamento recorrente.
+     *
+     * @return array{int, int} [$criados, $conflitos]
+     */
+    private function criarRecorrencias(Agendamento $pai, StoreAgendamentoRequest $request): array
+    {
+        $tipo = (string) $request->recorrencia_tipo;
+        $limiteType = (string) ($request->recorrencia_tipo_limite ?? 'ocorrencias');
+        $total = $request->integer('recorrencia_total', 4);
+        $ate = $request->filled('recorrencia_ate') ? Carbon::parse($request->recorrencia_ate) : null;
+
+        $pai->update([
+            'recorrente' => true,
+            'recorrencia_tipo' => $tipo,
+            'recorrencia_total' => $limiteType === 'ocorrencias' ? $total : null,
+            'recorrencia_ate' => $limiteType === 'data' ? $ate : null,
+        ]);
+
+        $dataAtual = $pai->data_hora->copy();
+        $criados = 0;
+        $conflitos = 0;
+        $iter = 0;
+        $maxIter = 60;
+
+        while ($iter < $maxIter) {
+            $dataAtual = match ($tipo) {
+                'semanal' => $dataAtual->copy()->addWeek(),
+                'quinzenal' => $dataAtual->copy()->addWeeks(2),
+                'mensal' => $dataAtual->copy()->addMonthsNoOverflow(1),
+                default => null,
+            };
+
+            if ($dataAtual === null) {
+                break;
+            }
+
+            if ($limiteType === 'ocorrencias' && $criados >= $total - 1) {
+                break;
+            }
+
+            if ($limiteType === 'data' && $ate !== null && $dataAtual->gt($ate)) {
+                break;
+            }
+
+            $iter++;
+
+            if ($this->temConflitoHorario($pai->profissional_id, $dataAtual, $pai->duracao)) {
+                $conflitos++;
+
+                continue;
+            }
+
+            Agendamento::create([
+                'company_id' => $pai->company_id,
+                'profissional_id' => $pai->profissional_id,
+                'cliente_id' => $pai->cliente_id,
+                'servico_id' => $pai->servico_id,
+                'data_hora' => $dataAtual,
+                'duracao' => $pai->duracao,
+                'valor' => $pai->valor,
+                'status' => Agendamento::STATUS_PENDENTE,
+                'observacao' => $pai->observacao,
+                'cancel_token' => Agendamento::generateCancelToken(),
+                'recorrente' => true,
+                'recorrencia_tipo' => $tipo,
+                'recorrencia_pai_id' => $pai->id,
+            ]);
+
+            $criados++;
+        }
+
+        return [$criados, $conflitos];
     }
 
     public function show(Agendamento $agendamento): View

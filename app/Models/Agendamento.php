@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -60,6 +61,11 @@ class Agendamento extends Model
         'sinal_payment_url',
         'sinal_pago_em',
         'aprovacao_manual',
+        'recorrente',
+        'recorrencia_tipo',
+        'recorrencia_total',
+        'recorrencia_ate',
+        'recorrencia_pai_id',
     ];
 
     public static function generateCancelToken(): string
@@ -77,6 +83,9 @@ class Agendamento extends Model
             'sinal_valor' => 'decimal:2',
             'sinal_pago_em' => 'datetime',
             'aprovacao_manual' => 'boolean',
+            'recorrente' => 'boolean',
+            'recorrencia_total' => 'integer',
+            'recorrencia_ate' => 'date',
         ];
     }
 
@@ -129,6 +138,31 @@ class Agendamento extends Model
     public function avaliacao(): HasOne
     {
         return $this->hasOne(Avaliacao::class);
+    }
+
+    public function pai(): BelongsTo
+    {
+        return $this->belongsTo(Agendamento::class, 'recorrencia_pai_id');
+    }
+
+    public function filhos(): HasMany
+    {
+        return $this->hasMany(Agendamento::class, 'recorrencia_pai_id');
+    }
+
+    public function ehFilho(): bool
+    {
+        return $this->recorrencia_pai_id !== null;
+    }
+
+    public function labelRecorrencia(): string
+    {
+        return match ($this->recorrencia_tipo) {
+            'semanal' => 'Semanal',
+            'quinzenal' => 'Quinzenal',
+            'mensal' => 'Mensal',
+            default => 'Recorrente',
+        };
     }
 
     public function scopeAtivo(Builder $query): Builder

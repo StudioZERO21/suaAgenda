@@ -23,6 +23,17 @@
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                     <h1 style="font-family:var(--sa-font-heading);font-size:20px;font-weight:700;color:var(--sa-text1);margin:0">{{ $agendamento->data_hora->format('d/m/Y \�\s H:i') }}</h1>
                     <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;{{ $badgeStyle }}"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0"></span>{{ ucfirst($agendamento->status) }}</span>
+                    @if($agendamento->recorrente)
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(99,102,241,.1);color:#4f46e5">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                        {{ $agendamento->labelRecorrencia() }}
+                        @if($agendamento->ehFilho())
+                        &middot; s�rie
+                        @elseif($agendamento->recorrencia_total)
+                        &middot; 1/{{ $agendamento->recorrencia_total }}
+                        @endif
+                    </span>
+                    @endif
                 </div>
                 <p style="font-size:13px;color:var(--sa-text3);margin:3px 0 0">{{ $agendamento->cliente?->name ?? '�' }} � {{ $agendamento->profissional?->name ?? '�' }}</p>
             </div>
