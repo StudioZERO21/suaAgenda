@@ -221,8 +221,11 @@ final class TwilioService
     {
         $digits = preg_replace('/\D/', '', $numero) ?? '';
 
-        // Adiciona 55 (Brasil) se não tiver código de país
-        if (strlen($digits) <= 11) {
+        // Já tem código de país se tiver 12+ dígitos OU se tiver 11 e começar com 1 (EUA/Canadá)
+        $hasCountryCode = strlen($digits) >= 12
+            || (strlen($digits) === 11 && str_starts_with($digits, '1'));
+
+        if (! $hasCountryCode) {
             $digits = '55'.$digits;
         }
 
