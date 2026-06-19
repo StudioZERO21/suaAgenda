@@ -126,6 +126,12 @@
                                     <span style="font-size:11px;color:var(--sa-text3)" title="Aprovado manualmente — paga integral no dia">Manual</span>
                                     @endif
                                     @endif
+                                    @if($ag->recorrente)
+                                    <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#4f46e5" title="Agendamento recorrente: {{ $ag->labelRecorrencia() }}">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                                        {{ $ag->labelRecorrencia() }}
+                                    </span>
+                                    @endif
                                     @if($ag->avaliacao)
                                     <span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--sa-secondary)" title="Avaliação: {{ $ag->avaliacao->nota }}/5">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--sa-secondary)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
