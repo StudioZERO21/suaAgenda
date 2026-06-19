@@ -725,6 +725,7 @@
                         async testarWa() {
                             this.testWaLoading = true; this.testWa = null;
                             const fd = new FormData(document.getElementById('form-integracoes'));
+                            fd.delete('_method');
                             try {
                                 const r = await fetch('{{ route('configuracoes.integracoes.testar.whatsapp') }}', {
                                     method:'POST', body: fd,
@@ -738,6 +739,10 @@
                         async testarGateway() {
                             this.testGwLoading = true; this.testGw = null;
                             const fd = new FormData(document.getElementById('form-integracoes'));
+                            // _method=PUT do form principal causa 405 na rota POST de teste — removido
+                            fd.delete('_method');
+                            // x-bind:value só seta atributo, não property — forçar valor Alpine
+                            fd.set('gateway', this.gateway);
                             try {
                                 const r = await fetch('{{ route('configuracoes.integracoes.testar.gateway') }}', {
                                     method:'POST', body: fd,
@@ -745,7 +750,7 @@
                                 });
                                 const j = await r.json();
                                 this.testGw = j;
-                            } catch(e) { this.testGw = {ok:false, erro:'Erro de rede'}; }
+                            } catch(e) { this.testGw = {ok:false, erro:'Erro de rede: '+e.message}; }
                             this.testGwLoading = false;
                         },
                     }">
