@@ -1,13 +1,34 @@
 @extends('layouts.public')
-@section('title', 'Agendamento Confirmado')
+@section('title', 'Agendamento Recebido')
 
 @section('content')
+@php
+    $statusConfirmado = $ag->status === 'confirmado';
+    $statusPendente   = $ag->status === 'pendente';
+    $aprovacaoManual  = (bool) $ag->aprovacao_manual;
+    $temSinal         = $ag->sinal_pct > 0;
+@endphp
+
 <div style="text-align:center;padding:32px 0 20px">
+    @if($statusConfirmado)
     <div style="width:72px;height:72px;border-radius:50%;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
+    <h1 style="font-family:var(--sa-font-heading);font-size:24px;font-weight:700;color:var(--sa-text1);margin-bottom:8px">Agendamento Confirmado!</h1>
+    <p style="font-size:15px;color:var(--sa-text3)">Tudo certo — nos vemos em breve.</p>
+    @else
+    <div style="width:72px;height:72px;border-radius:50%;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
     <h1 style="font-family:var(--sa-font-heading);font-size:24px;font-weight:700;color:var(--sa-text1);margin-bottom:8px">Agendamento Recebido!</h1>
-    <p style="font-size:15px;color:var(--sa-text3)">Em breve você receberá uma confirmação.</p>
+    <p style="font-size:15px;color:var(--sa-text3)">
+        @if($aprovacaoManual && $temSinal)
+            A empresa entrará em contato para confirmar. O pagamento será feito no dia.
+        @else
+            Em breve você receberá uma confirmação.
+        @endif
+    </p>
+    @endif
 </div>
 
 <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:20px">
@@ -28,17 +49,31 @@
         </div>
         @if($ag->valor)
         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--sa-border);padding-top:12px">
-            <span style="font-size:13px;color:var(--sa-text3)">Valor</span>
+            <span style="font-size:13px;color:var(--sa-text3)">Valor total</span>
             <span style="font-size:16px;font-weight:700;color:var(--sa-secondary)">R$ {{ number_format((float)$ag->valor, 2, ',', '.') }}</span>
         </div>
+        @if($temSinal && $aprovacaoManual)
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;color:var(--sa-text3)">Pagamento no dia</span>
+            <span style="font-size:14px;font-weight:600;color:var(--sa-text1)">R$ {{ number_format((float)$ag->valor, 2, ',', '.') }} (integral)</span>
+        </div>
+        @endif
         @endif
     </div>
 
+    @if(!$statusConfirmado)
     <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)">
+        @if($aprovacaoManual && $temSinal)
+        <p style="font-size:12px;color:#d97706;margin:0">
+            <strong>Aguardando aprovação</strong> — {{ $company->name }} precisa confirmar seu horário. O pagamento integral será cobrado no dia do procedimento.
+        </p>
+        @else
         <p style="font-size:12px;color:#d97706;margin:0">
             <strong>Aguardando confirmação</strong> — {{ $company->name }} entrará em contato para confirmar seu horário.
         </p>
+        @endif
     </div>
+    @endif
 </div>
 
 <div style="display:flex;flex-direction:column;align-items:center;gap:12px">

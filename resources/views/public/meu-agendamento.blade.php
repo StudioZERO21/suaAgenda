@@ -9,15 +9,17 @@
 
 @php
     $statusConfig = [
-        'pendente'       => ['label' => 'Aguardando confirmação', 'color' => '#d97706', 'bg' => 'rgba(245,158,11,.1)', 'border' => 'rgba(245,158,11,.2)'],
-        'confirmado'     => ['label' => 'Confirmado',             'color' => '#059669', 'bg' => 'rgba(16,185,129,.1)',  'border' => 'rgba(16,185,129,.2)'],
-        'em_atendimento' => ['label' => 'Em atendimento',         'color' => '#6366f1', 'bg' => 'rgba(99,102,241,.1)', 'border' => 'rgba(99,102,241,.2)'],
-        'finalizado'     => ['label' => 'Finalizado',             'color' => '#6b7280', 'bg' => 'rgba(107,114,128,.1)','border' => 'rgba(107,114,128,.2)'],
-        'cancelado'      => ['label' => 'Cancelado',              'color' => '#dc2626', 'bg' => 'rgba(239,68,68,.1)',  'border' => 'rgba(239,68,68,.2)'],
+        'aguardando_sinal' => ['label' => 'Aguardando pagamento do sinal', 'color' => '#d97706', 'bg' => 'rgba(245,158,11,.1)', 'border' => 'rgba(245,158,11,.2)'],
+        'pendente'         => ['label' => $ag->aprovacao_manual ? 'Aguardando aprovação' : 'Aguardando confirmação', 'color' => '#d97706', 'bg' => 'rgba(245,158,11,.1)', 'border' => 'rgba(245,158,11,.2)'],
+        'confirmado'       => ['label' => 'Confirmado',      'color' => '#059669', 'bg' => 'rgba(16,185,129,.1)',  'border' => 'rgba(16,185,129,.2)'],
+        'em_atendimento'   => ['label' => 'Em atendimento',  'color' => '#6366f1', 'bg' => 'rgba(99,102,241,.1)', 'border' => 'rgba(99,102,241,.2)'],
+        'finalizado'       => ['label' => 'Finalizado',      'color' => '#6b7280', 'bg' => 'rgba(107,114,128,.1)','border' => 'rgba(107,114,128,.2)'],
+        'cancelado'        => ['label' => 'Cancelado',       'color' => '#dc2626', 'bg' => 'rgba(239,68,68,.1)',  'border' => 'rgba(239,68,68,.2)'],
     ];
     $sc = $statusConfig[$ag->status] ?? $statusConfig['pendente'];
     $isCanceled = $ag->status === 'cancelado';
     $isFinalizado = $ag->status === 'finalizado';
+    $isAguardandoSinal = $ag->status === 'aguardando_sinal';
     $jaAvaliou = $ag->avaliacao !== null;
 @endphp
 
@@ -96,6 +98,57 @@
         @endif
     </div>
 </div>
+
+{{-- Bloco de sinal (aguardando pagamento) --}}
+@if($isAguardandoSinal && $ag->sinal_payment_url)
+<div style="background:var(--sa-surface);border-radius:12px;border:1.5px solid rgba(245,158,11,.4);padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+        <div>
+            <div style="font-size:14px;font-weight:700;color:var(--sa-text1)">Pagamento do sinal necessário</div>
+            <div style="font-size:12px;color:var(--sa-text3)">Seu horário está reservado por até 10 minutos</div>
+        </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(245,158,11,.06);border-radius:8px;margin-bottom:16px">
+        <div>
+            <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Sinal ({{ number_format((float)$ag->sinal_pct, 0) }}% do valor total)</div>
+            <div style="font-size:22px;font-weight:800;color:var(--sa-secondary)">R$ {{ number_format((float)$ag->sinal_valor, 2, ',', '.') }}</div>
+        </div>
+        <div style="text-align:right">
+            <div style="font-size:11px;color:var(--sa-text3);margin-bottom:2px">Restante no dia</div>
+            <div style="font-size:14px;font-weight:600;color:var(--sa-text2)">R$ {{ number_format($ag->saldoDevido(), 2, ',', '.') }}</div>
+        </div>
+    </div>
+
+    <a href="{{ $ag->sinal_payment_url }}" target="_blank"
+       style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:8px;border:none;background:var(--sa-secondary);color:#fff;font-size:15px;font-weight:700;text-decoration:none;transition:filter 200ms"
+       onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter='none'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Pagar sinal agora via PIX — R$ {{ number_format((float)$ag->sinal_valor, 2, ',', '.') }}
+    </a>
+
+    <p style="font-size:11px;color:var(--sa-text3);text-align:center;margin:10px 0 0">
+        Após o pagamento, seu agendamento será confirmado automaticamente.
+    </p>
+</div>
+@elseif($ag->sinal_pct > 0 && $ag->sinal_status === 'pago')
+<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    <div>
+        <div style="font-size:14px;font-weight:600;color:#059669">Sinal pago — R$ {{ number_format((float)$ag->sinal_valor, 2, ',', '.') }}</div>
+        <div style="font-size:12px;color:var(--sa-text3)">Restante no dia: R$ {{ number_format($ag->saldoDevido(), 2, ',', '.') }}</div>
+    </div>
+</div>
+@elseif($ag->aprovacao_manual && $ag->sinal_pct > 0)
+<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px">
+    <p style="font-size:13px;color:#d97706;margin:0">
+        <strong>Aprovação manual</strong> — o pagamento integral de <strong>R$ {{ number_format((float)$ag->valor, 2, ',', '.') }}</strong> será cobrado no dia do procedimento.
+    </p>
+</div>
+@endif
 
 {{-- Cliente --}}
 @if($ag->cliente)

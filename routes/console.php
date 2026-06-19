@@ -3,6 +3,7 @@
 use App\Jobs\Billing\GenerateAnniversaryInvoicesJob;
 use App\Jobs\Billing\ProcessOverdueSubscriptionsJob;
 use App\Jobs\Billing\SyncGatewayPaymentsJob;
+use App\Jobs\ExpireUnpaidBookingsJob;
 use App\Jobs\Trial\SendTrialRemindersJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -24,6 +25,9 @@ Schedule::command('lgpd:retencao')->dailyAt('03:30');
 
 // ── Trial reminders ──────────────────────────────────────────────────
 Schedule::job(SendTrialRemindersJob::class)->dailyAt('08:00');
+
+// ── Sinal: liberar slots não pagos a cada 2 min ───────────────────────
+Schedule::job(ExpireUnpaidBookingsJob::class)->everyTwoMinutes();
 
 // ── Billing automático ────────────────────────────────────────────────
 Schedule::job(GenerateAnniversaryInvoicesJob::class)->dailyAt('06:00');

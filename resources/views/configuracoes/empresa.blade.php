@@ -454,6 +454,17 @@
                             </div>
                         </x-sa.card>
                         <x-sa.card padding="20px">
+                            <h4 class="sa-empresa-section__title" style="margin-bottom:16px">Sinal (Depósito)</h4>
+                            <p style="font-size:13px;color:var(--sa-text3);margin-bottom:16px">Configure o percentual de sinal exigido no agendamento online. Defina como 0 para desativar. Requer gateway Asaas ativo na aba Integrações.</p>
+                            <div class="sa-field" style="max-width:200px">
+                                <label>Percentual do sinal (%)</label>
+                                <input type="number" name="sinal_pct" min="0" max="100" step="1"
+                                       value="{{ old('sinal_pct', (int)($adv['sinal_pct'] ?? 0)) }}"
+                                       placeholder="0">
+                                <p style="font-size:11px;color:var(--sa-text3);margin-top:4px">Ex: 30 = cliente paga 30% antecipado. 0 = sem sinal (aprovação manual ou imediata).</p>
+                            </div>
+                        </x-sa.card>
+                        <x-sa.card padding="20px">
                             <h4 class="sa-empresa-section__title" style="margin-bottom:16px">Confirmações & Lembretes</h4>
                             <x-sa.setting-row label="Exigir confirmação do cliente" sub="O agendamento só é confirmado após resposta do cliente">
                                 <x-sa.toggle name="confirm_required" :checked="$adv['confirm_required']" />

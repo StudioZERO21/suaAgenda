@@ -13,6 +13,7 @@ use App\Models\Avaliacao;
 use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
+use App\Services\Pagamento\AsaasService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,51 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgendamentoController extends Controller
 {
+    /**
+     * Triagem: agendamentos que precisam de ação (sinal, aprovação, pagamento).
+     */
+    public function triagem(Request $request): View
+    {
+        $this->authorize('viewAny', Agendamento::class);
+
+        $empresa = auth()->user()->empresa_id;
+
+        $filtro = $request->input('filtro', 'todos');
+
+        $base = Agendamento::with(['profissional', 'cliente', 'servico'])
+            ->where('company_id', $empresa);
+
+        $agendamentos = match ($filtro) {
+            'aguardando_sinal' => (clone $base)->where('status', Agendamento::STATUS_AGUARDANDO_SINAL),
+            'aprovacao' => (clone $base)->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true),
+            'sinal_pago' => (clone $base)->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO),
+            default => (clone $base)->where(function ($q): void {
+                $q->where('status', Agendamento::STATUS_AGUARDANDO_SINAL)
+                    ->orWhere(function ($s): void {
+                        $s->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true);
+                    })
+                    ->orWhere(function ($s): void {
+                        $s->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO);
+                    });
+            }),
+        };
+
+        $agendamentos = $agendamentos
+            ->orderByRaw("FIELD(status, 'aguardando_sinal', 'pendente', 'confirmado')")
+            ->orderBy('data_hora')
+            ->paginate(25)
+            ->withQueryString();
+
+        // Contagens para os filtros
+        $contagens = [
+            'aguardando_sinal' => Agendamento::where('company_id', $empresa)->where('status', Agendamento::STATUS_AGUARDANDO_SINAL)->count(),
+            'aprovacao' => Agendamento::where('company_id', $empresa)->where('status', Agendamento::STATUS_PENDENTE)->where('aprovacao_manual', true)->count(),
+            'sinal_pago' => Agendamento::where('company_id', $empresa)->where('sinal_status', Agendamento::SINAL_PAGO)->where('status', Agendamento::STATUS_CONFIRMADO)->count(),
+        ];
+
+        return view('agendamentos.triagem', compact('agendamentos', 'filtro', 'contagens'));
+    }
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Agendamento::class);
@@ -1255,6 +1301,78 @@ class AgendamentoController extends Controller
      * Cada profissional pode ter apenas 1 agendamento por slot; profissionais diferentes
      * podem ser agendados simultaneamente sem conflito.
      */
+    /**
+     * Aprovação manual do agendamento (admin/gestor) — dispensa sinal,
+     * cliente paga integral no dia do procedimento.
+     */
+    public function aprovarManual(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        abort_unless(
+            in_array($agendamento->status, [Agendamento::STATUS_AGUARDANDO_SINAL, Agendamento::STATUS_PENDENTE]),
+            422,
+            'Apenas agendamentos pendentes ou aguardando sinal podem ser aprovados manualmente.'
+        );
+
+        $agendamento->update([
+            'status' => Agendamento::STATUS_CONFIRMADO,
+            'aprovacao_manual' => true,
+            'sinal_status' => Agendamento::SINAL_NENHUM,
+        ]);
+
+        if ($agendamento->cliente?->email) {
+            Mail::to($agendamento->cliente->email)
+                ->queue(new AgendamentoConfirmado($agendamento));
+        }
+
+        return response()->json(['ok' => true, 'status' => 'confirmado']);
+    }
+
+    /**
+     * Gera link de pagamento do saldo restante via Asaas.
+     */
+    public function gerarLinkSaldo(Agendamento $agendamento): JsonResponse
+    {
+        $this->authorize('update', $agendamento);
+
+        $saldo = $agendamento->saldoDevido();
+
+        abort_if($saldo <= 0, 422, 'Não há saldo pendente para este agendamento.');
+
+        $company = auth()->user()->company;
+        $settings = $company->resolvedSettings();
+        $asaasConfig = $settings['integrations']['asaas'] ?? [];
+        $apiKey = trim($asaasConfig['api_key'] ?? '');
+        $ambiente = $asaasConfig['ambiente'] ?? 'sandbox';
+
+        abort_if($apiKey === '', 422, 'Gateway Asaas não configurado.');
+
+        $cliente = $agendamento->cliente;
+        $customerId = $cliente?->asaas_customer_id;
+
+        if (! $customerId && $cliente) {
+            $resultado = AsaasService::criarOuBuscarCliente($apiKey, $ambiente, $cliente->email ?? '', $cliente->name);
+            if ($resultado['ok']) {
+                $customerId = $resultado['customer_id'];
+                $cliente->update(['asaas_customer_id' => $customerId]);
+            }
+        }
+
+        abort_if(! $customerId, 422, 'Não foi possível identificar o cliente no Asaas.');
+
+        $descricao = 'Saldo restante - '.($agendamento->servico?->nome ?? 'Serviço').' em '.$agendamento->data_hora->format('d/m/Y H:i');
+        $cobranca = AsaasService::criarCobrancaSaldo($apiKey, $ambiente, $customerId, $saldo, $descricao, $agendamento->id);
+
+        abort_unless($cobranca['ok'], 422, $cobranca['erro'] ?? 'Erro ao gerar cobrança.');
+
+        return response()->json([
+            'ok' => true,
+            'payment_url' => $cobranca['payment_url'],
+            'saldo' => number_format($saldo, 2, ',', '.'),
+        ]);
+    }
+
     private function temConflitoHorario(
         string $profissionalId,
         Carbon $inicio,

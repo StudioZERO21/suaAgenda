@@ -109,6 +109,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('/dashboard/kanban', [DashboardController::class, 'kanban'])->name('dashboard.kanban');
     Route::get('/dashboard/sumario-financeiro', [DashboardController::class, 'sumarioFinanceiro'])->name('dashboard.sumario-financeiro');
 
+    Route::get('agendamentos/triagem', [AgendamentoController::class, 'triagem'])->name('agendamentos.triagem');
     Route::get('agendamentos/resumo-hoje', [AgendamentoController::class, 'resumoHoje'])->name('agendamentos.resumo-hoje');
     Route::get('agendamentos/por-profissional', [AgendamentoController::class, 'porProfissional'])->name('agendamentos.por-profissional');
     Route::get('agendamentos/por-servico', [AgendamentoController::class, 'porServico'])->name('agendamentos.por-servico');
@@ -137,6 +138,8 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('agendamentos/{agendamento}/historico-cliente', [AgendamentoController::class, 'historicoCliente'])->name('agendamentos.historico-cliente');
     Route::patch('agendamentos/{agendamento}/observacao', [AgendamentoController::class, 'observacao'])->name('agendamentos.observacao');
     Route::patch('agendamentos/{agendamento}/valor', [AgendamentoController::class, 'valor'])->name('agendamentos.valor');
+    Route::post('agendamentos/{agendamento}/aprovar-manual', [AgendamentoController::class, 'aprovarManual'])->name('agendamentos.aprovar-manual');
+    Route::post('agendamentos/{agendamento}/link-saldo', [AgendamentoController::class, 'gerarLinkSaldo'])->name('agendamentos.link-saldo');
     Route::patch('agendamentos/{agendamento}/duracao', [AgendamentoController::class, 'duracao'])->name('agendamentos.duracao');
     Route::patch('agendamentos/{agendamento}/profissional', [AgendamentoController::class, 'reassignarProfissional'])->name('agendamentos.profissional');
     Route::patch('agendamentos/{agendamento}/servico', [AgendamentoController::class, 'reassignarServico'])->name('agendamentos.servico');
@@ -408,6 +411,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');
 
+    Route::get('notificacoes/todas', [NotificacaoController::class, 'listar'])->name('notificacoes.listar');
     Route::get('notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');
     Route::get('notificacoes/unread-count', [NotificacaoController::class, 'unreadCount'])->name('notificacoes.unread-count');
     Route::patch('notificacoes/todas-lidas', [NotificacaoController::class, 'markAllRead'])->name('notificacoes.todas-lidas');
@@ -423,6 +427,7 @@ Route::post('/agendar/{slug}', [AgendamentoPublicoController::class, 'store'])->
 Route::get('/agendar/{slug}/slots', [AgendamentoPublicoController::class, 'slots'])->name('agendar.slots');
 Route::get('/agendar/{slug}/dias', [AgendamentoPublicoController::class, 'dias'])->name('agendar.dias');
 Route::get('/agendar/{slug}/confirmado/{agendamento}', [AgendamentoPublicoController::class, 'confirmado'])->name('agendar.confirmado');
+Route::get('/agendar/{slug}/sinal/{agendamento}/callback', [AgendamentoPublicoController::class, 'pagamentoSinalCallback'])->name('agendar.sinal.callback');
 Route::get('/vitrine/{slug}/minhas-reservas', [AgendamentoPublicoController::class, 'minhasReservas'])->name('vitrine.minhas-reservas');
 Route::get('/meu-agendamento/{token}', [AgendamentoPublicoController::class, 'meuAgendamento'])->name('agendamento.meu');
 Route::post('/meu-agendamento/{token}/cancelar', [AgendamentoPublicoController::class, 'cancelarMeuAgendamento'])->name('agendamento.cancelar');

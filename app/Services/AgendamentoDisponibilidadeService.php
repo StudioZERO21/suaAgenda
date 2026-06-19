@@ -163,7 +163,15 @@ class AgendamentoDisponibilidadeService
     {
         $fim = $inicio->copy()->addMinutes($duracao);
 
-        $query = Agendamento::ativo()->where('profissional_id', $profissionalId);
+        // Inclui aguardando_sinal criados há menos de 10 min (slot bloqueado temporariamente)
+        $query = Agendamento::where('profissional_id', $profissionalId)
+            ->where(function ($q): void {
+                $q->whereNotIn('status', Agendamento::STATUSES_INATIVOS)
+                    ->where(function ($inner): void {
+                        $inner->where('status', '!=', Agendamento::STATUS_AGUARDANDO_SINAL)
+                            ->orWhere('created_at', '>=', now()->subMinutes(10));
+                    });
+            });
 
         if ($excluirId !== null) {
             $query->where('id', '!=', $excluirId);
