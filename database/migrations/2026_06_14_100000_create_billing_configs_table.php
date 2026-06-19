@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('billing_configs', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('gateway')->default('asaas');
-            $table->json('credentials')->nullable(); // encrypted gateway credentials
+            $table->text('credentials')->nullable(); // encrypted:array cast — must be text, not json
             $table->integer('grace_warning_days')->default(3);
             $table->integer('grace_suspend_days')->default(7);
             $table->integer('grace_cancel_days')->default(30);
