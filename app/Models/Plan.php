@@ -20,7 +20,7 @@ class Plan extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'slug', 'nome', 'preco', 'max_profissionais', 'whatsapp_mensal',
+        'slug', 'nome', 'preco', 'stripe_price_id', 'max_profissionais', 'whatsapp_mensal',
         'sms_mensal', 'max_whatsapp_overage', 'features', 'color', 'popular', 'ordem',
     ];
 
