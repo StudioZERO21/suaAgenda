@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AdminBillingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEmpresaController;
 use App\Http\Controllers\Admin\AdminLgpdController;
+use App\Http\Controllers\Admin\AdminNotificacoesController;
 use App\Http\Controllers\Admin\AdminRegraController;
 use App\Http\Controllers\Admin\AdminSaudeController;
 use App\Http\Controllers\AgendamentoController;
@@ -109,6 +110,12 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::patch('billing/{subscription}/reativar', [AdminBillingController::class, 'reativar'])->name('billing.reativar');
     Route::patch('billing/{subscription}/cancelar', [AdminBillingController::class, 'cancelar'])->name('billing.cancelar');
     Route::patch('billing/invoices/{invoice}/paga', [AdminBillingController::class, 'marcarPaga'])->name('billing.invoice.paga');
+
+    // Notificações — Twilio (WhatsApp + SMS)
+    Route::get('notificacoes', [AdminNotificacoesController::class, 'index'])->name('notificacoes.index');
+    Route::post('notificacoes/testar-conexao', [AdminNotificacoesController::class, 'testarConexao'])->name('notificacoes.testar-conexao');
+    Route::post('notificacoes/testar-whatsapp', [AdminNotificacoesController::class, 'testarWhatsApp'])->name('notificacoes.testar-whatsapp');
+    Route::post('notificacoes/testar-sms', [AdminNotificacoesController::class, 'testarSms'])->name('notificacoes.testar-sms');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, 'check.subscription', CheckModulePermission::class])->group(function () {

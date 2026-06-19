@@ -55,7 +55,7 @@ final class NotificationDispatcher
                 match ($channel) {
                     'email' => self::dispatchEmail($event, $company, $context),
                     'whatsapp' => self::dispatchWhatsApp($event, $company, $context, $settings),
-                    'sms' => null, // future: Twilio SMS
+                    'sms' => self::dispatchSms($event, $company, $context),
                     default => null,
                 };
             } catch (\Throwable $e) {
@@ -95,12 +95,6 @@ final class NotificationDispatcher
         array $context,
         array $settings,
     ): void {
-        $waConfig = $settings['integrations']['whatsapp'] ?? [];
-
-        if (empty($waConfig['ativo']) || empty($waConfig['twilio_sid'])) {
-            return;
-        }
-
         /** @var Agendamento|null $agendamento */
         $agendamento = $context['agendamento'] ?? null;
 
@@ -118,7 +112,42 @@ final class NotificationDispatcher
             return;
         }
 
-        WhatsAppService::enviar($waConfig, $to, $message);
+        // Tenta plataforma primeiro; fallback para credenciais da empresa
+        $platform = TwilioService::fromConfig();
+
+        if ($platform->whatsappConfigured()) {
+            $platform->enviarWhatsApp($to, $message);
+
+            return;
+        }
+
+        $waConfig = $settings['integrations']['whatsapp'] ?? [];
+
+        if (! empty($waConfig['ativo']) && ! empty($waConfig['twilio_sid'])) {
+            WhatsAppService::enviar($waConfig, $to, $message);
+        }
+    }
+
+    private static function dispatchSms(string $event, Company $company, array $context): void
+    {
+        /** @var Agendamento|null $agendamento */
+        $agendamento = $context['agendamento'] ?? null;
+
+        $to = in_array($event, self::CLIENT_EVENTS)
+            ? ($agendamento?->cliente?->phone ?? null)
+            : ($company->whatsapp ?? null);
+
+        if (! $to) {
+            return;
+        }
+
+        $message = self::buildWhatsAppMessage($event, $agendamento, $company, $context);
+
+        if (! $message) {
+            return;
+        }
+
+        TwilioService::fromConfig()->enviarSms($to, $message);
     }
 
     private static function buildMailable(
