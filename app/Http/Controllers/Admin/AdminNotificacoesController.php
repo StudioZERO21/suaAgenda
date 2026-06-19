@@ -9,6 +9,7 @@ use App\Models\WhatsappConversa;
 use App\Services\TwilioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 final class AdminNotificacoesController extends Controller
@@ -127,5 +128,29 @@ final class AdminNotificacoesController extends Controller
         $result = TwilioService::fromConfig()->testarSms($request->input('numero'));
 
         return response()->json($result);
+    }
+
+    public function testarEmail(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'max:150'],
+        ]);
+
+        $para = $request->input('email');
+        $mailer = config('mail.default', 'log');
+        $host = config('mail.mailers.smtp.host', '');
+
+        try {
+            Mail::raw(
+                "Este é um e-mail de teste enviado pelo painel suaAgenda.\n\nSMTP: {$host}\nMédia: {$mailer}\nHorário: ".now()->format('d/m/Y H:i:s'),
+                fn ($m) => $m
+                    ->to($para)
+                    ->subject('✅ Teste de e-mail — suaAgenda')
+            );
+
+            return response()->json(['ok' => true, 'mailer' => $mailer]);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'erro' => $e->getMessage()]);
+        }
     }
 }

@@ -102,6 +102,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('empresas', [AdminEmpresaController::class, 'index'])->name('empresas.index');
     Route::get('empresas/{empresa}', [AdminEmpresaController::class, 'show'])->name('empresas.show');
     Route::patch('empresas/{empresa}/toggle', [AdminEmpresaController::class, 'toggle'])->name('empresas.toggle');
+    Route::patch('empresas/{empresa}/limites', [AdminEmpresaController::class, 'updateLimites'])->name('empresas.limites');
     Route::get('auditoria', [AdminAuditoriaController::class, 'index'])->name('auditoria.index');
     Route::get('auditoria/json', [AdminAuditoriaController::class, 'json'])->name('auditoria.json');
     Route::get('saude', [AdminSaudeController::class, 'index'])->name('saude.index');
@@ -139,6 +140,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::post('notificacoes/testar-conexao', [AdminNotificacoesController::class, 'testarConexao'])->name('notificacoes.testar-conexao');
     Route::post('notificacoes/testar-whatsapp', [AdminNotificacoesController::class, 'testarWhatsApp'])->name('notificacoes.testar-whatsapp');
     Route::post('notificacoes/testar-sms', [AdminNotificacoesController::class, 'testarSms'])->name('notificacoes.testar-sms');
+    Route::post('notificacoes/testar-email', [AdminNotificacoesController::class, 'testarEmail'])->name('notificacoes.testar-email');
 
     // Gastos & Uso de notificações
     Route::get('gastos', [AdminGastosController::class, 'index'])->name('gastos.index');
