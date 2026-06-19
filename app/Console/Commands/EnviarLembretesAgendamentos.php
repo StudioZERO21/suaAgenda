@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Mail\AgendamentoLembrete;
 use App\Models\Agendamento;
+use App\Services\NotificationDispatcher;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class EnviarLembretesAgendamentos extends Command
 {
     protected $signature = 'agendamentos:lembretes';
 
-    protected $description = 'Envia e-mail de lembrete antes dos agendamentos confirmados/pendentes';
+    protected $description = 'Envia lembretes (email/WhatsApp) para agendamentos do próximo período configurado';
 
     public function handle(): int
     {
@@ -26,13 +25,11 @@ class EnviarLembretesAgendamentos extends Command
         $enviados = 0;
 
         foreach ($agendamentos as $agendamento) {
-            $email = $agendamento->cliente?->email;
-
-            if (! $email) {
+            if (! $agendamento->company) {
                 continue;
             }
 
-            Mail::to($email)->queue(new AgendamentoLembrete($agendamento));
+            NotificationDispatcher::dispatch('lembrete_24h', $agendamento->company, ['agendamento' => $agendamento]);
             $enviados++;
         }
 

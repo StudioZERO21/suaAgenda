@@ -45,6 +45,7 @@ return [
         'access_token_test' => env('MP_ACCESS_TOKEN_TEST'),
         'ambiente' => env('MP_AMBIENTE', 'sandbox'),
         'pkce' => env('MP_PKCE', true),
+        'webhook_secret' => env('MP_WEBHOOK_SECRET'),
     ],
 
 ];

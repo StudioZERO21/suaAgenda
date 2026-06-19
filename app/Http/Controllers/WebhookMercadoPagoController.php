@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Services\NotificationDispatcher;
 use App\Services\Pagamento\GatewayFactory;
 use App\Services\Pagamento\MercadoPagoService;
 use Illuminate\Http\Request;
@@ -23,9 +24,24 @@ class WebhookMercadoPagoController extends Controller
      * Suporta:
      *  - IPN v2 (JSON body): {"type":"payment","data":{"id":"123"},"user_id":"456"}
      *  - IPN v1 (query): ?topic=payment&id=123
+     *
+     * Segurança: verifica assinatura HMAC-SHA256 via header x-signature quando
+     * MP_WEBHOOK_SECRET está configurado (Painel MP → Developers → Webhooks).
      */
     public function __invoke(Request $request): Response
     {
+        if (! $this->verifySignature($request)) {
+            Log::warning('WebhookMercadoPago: assinatura inválida — requisição ignorada', [
+                'ip' => $request->ip(),
+                'x-signature' => $request->header('x-signature'),
+                'x-request-id' => $request->header('x-request-id'),
+            ]);
+
+            // Retorna 200 mesmo assim: evita que o MP fique em loop de retries
+            // enquanto ainda descarta a notificação forjada
+            return response('', 200);
+        }
+
         $type = $request->input('type') ?? $request->input('topic');
 
         if ($type !== 'payment') {
@@ -53,6 +69,60 @@ class WebhookMercadoPagoController extends Controller
 
         // MP exige sempre 200 — erros internos não devem resultar em retry
         return response('', 200);
+    }
+
+    /**
+     * Verifica a assinatura HMAC-SHA256 enviada pelo Mercado Pago no header x-signature.
+     *
+     * Formato do header: "ts=<timestamp>,v1=<sha256hex>"
+     * Manifesto assinado: "id:<data.id>;request-id:<x-request-id>;ts:<ts>;"
+     *
+     * Se MP_WEBHOOK_SECRET não estiver configurado, loga aviso e permite a requisição
+     * (compatível com ambientes de desenvolvimento sem a chave ainda registrada).
+     */
+    private function verifySignature(Request $request): bool
+    {
+        $secret = (string) config('services.mercadopago.webhook_secret', '');
+
+        if ($secret === '') {
+            Log::warning('WebhookMercadoPago: MP_WEBHOOK_SECRET não configurado — verificação de assinatura desabilitada');
+
+            return true;
+        }
+
+        $xSignature = (string) $request->header('x-signature', '');
+        $xRequestId = (string) $request->header('x-request-id', '');
+
+        if ($xSignature === '') {
+            return false;
+        }
+
+        // Extrai ts e v1 de "ts=<timestamp>,v1=<hash>"
+        $ts = '';
+        $v1 = '';
+        foreach (explode(',', $xSignature) as $part) {
+            [$key, $val] = array_pad(explode('=', $part, 2), 2, '');
+            $key = trim($key);
+            if ($key === 'ts') {
+                $ts = trim($val);
+            } elseif ($key === 'v1') {
+                $v1 = trim($val);
+            }
+        }
+
+        if ($ts === '' || $v1 === '') {
+            return false;
+        }
+
+        // dataId: campo data.id (IPN v2) ou query param id (IPN v1)
+        $dataId = (string) ($request->json('data.id') ?? $request->query('id') ?? '');
+
+        // Manifesto conforme documentação MP
+        $manifest = "id:{$dataId};request-id:{$xRequestId};ts:{$ts};";
+        $expected = hash_hmac('sha256', $manifest, $secret);
+
+        // hash_equals previne timing attacks
+        return hash_equals($expected, $v1);
     }
 
     private function processarPagamento(string $paymentId, string $mpUserId): void
@@ -150,6 +220,9 @@ class WebhookMercadoPagoController extends Controller
                 'agendamento_id' => $agendamento->id,
                 'payment_id' => $paymentId,
             ]);
+
+            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+            NotificationDispatcher::dispatch('pagamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
         } else {
             // saldo
             $agendamento->update([

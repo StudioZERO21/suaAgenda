@@ -9,6 +9,7 @@ use App\Models\Agendamento;
 use App\Models\Company;
 use App\Services\AgendamentoCancelamentoService;
 use App\Services\LgpdService;
+use App\Services\NotificationDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -75,6 +76,9 @@ class PortalDashboardController extends Controller
         }
 
         $agendamento->update(['status' => Agendamento::STATUS_CANCELADO]);
+
+        $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+        NotificationDispatcher::dispatch('agendamento_cancelado', $agendamento->company, ['agendamento' => $agendamento]);
 
         return back()->with('sucesso', 'Agendamento cancelado.');
     }

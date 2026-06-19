@@ -7,6 +7,7 @@ namespace App\Services\Billing;
 use App\Models\Agendamento;
 use App\Models\BillingConfig;
 use App\Models\Invoice;
+use App\Services\NotificationDispatcher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -153,6 +154,9 @@ final class PaymentWebhookService
             ]);
 
             Log::info('PaymentWebhookService: sinal pago, agendamento confirmado', ['id' => $agendamentoId]);
+
+            $agendamento->load(['cliente', 'profissional', 'servico', 'company']);
+            NotificationDispatcher::dispatch('pagamento_confirmado', $agendamento->company, ['agendamento' => $agendamento]);
         } elseif (in_array($event, self::ASAAS_CANCELLED_EVENTS) || in_array($event, self::ASAAS_OVERDUE_EVENTS)) {
             // Sinal cancelado/vencido → liberar slot
             if ($agendamento->status === Agendamento::STATUS_AGUARDANDO_SINAL) {

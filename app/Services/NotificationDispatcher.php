@@ -86,7 +86,7 @@ final class NotificationDispatcher
             return;
         }
 
-        Mail::to($to)->send($mailable);
+        Mail::to($to)->queue($mailable);
     }
 
     private static function dispatchWhatsApp(
