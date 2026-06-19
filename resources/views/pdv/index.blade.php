@@ -281,6 +281,39 @@
             </div>
         </div>
 
+        <div x-show="method === 'link'" style="display:flex;flex-direction:column;gap:16px">
+            <div x-show="paymentLoading" style="padding:40px;text-align:center;color:var(--sa-text3);font-size:13px">Gerando link de pagamento...</div>
+            <template x-if="!paymentLoading && linkData && linkData.url">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                    <div style="text-align:center;padding:4px 0 8px">
+                        <div style="width:52px;height:52px;border-radius:14px;background:#009ee312;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#009ee3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        </div>
+                        <p style="font-size:13px;color:var(--sa-text2);margin:0;line-height:1.5">Compartilhe o link com o cliente para efetuar o pagamento.</p>
+                    </div>
+                    <div style="position:relative">
+                        <input type="text" readonly :value="linkData.url"
+                               style="width:100%;padding:10px 42px 10px 12px;font-size:11px;border:1.5px solid var(--sa-border);border-radius:8px;background:var(--sa-surface2);color:var(--sa-text2);font-family:monospace;outline:none;box-sizing:border-box">
+                        <button type="button" @click="copyLink()"
+                                style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:7px;border:1px solid var(--sa-border);background:var(--sa-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sa-text3)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                    </div>
+                    <a :href="linkData.url" target="_blank" rel="noopener"
+                       style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+                       onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+                       onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Abrir link
+                    </a>
+                </div>
+            </template>
+            <div x-show="!paymentLoading && linkData && !linkData.url" style="text-align:center;padding:12px 0">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin:0 auto 12px;display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p style="font-size:13px;color:var(--sa-text2);margin:0;line-height:1.5" x-text="linkData?.erro || 'Erro ao gerar link.'"></p>
+            </div>
+        </div>
+
         <x-slot:footer>
             <x-sa.btn variant="secondary" size="sm" type="button" @click="closePaymentModal()">Cancelar</x-sa.btn>
             <x-sa.btn size="sm" type="button" @click="confirmPayment()" x-bind:disabled="paymentSubmitting || !canConfirmPayment()">
@@ -314,12 +347,19 @@ function pdvApp() {
         paymentSubmitting: false,
         pixData: null,
         paymentConfig,
-        methods: [
-            { id: 'pix', label: 'Pix', color: '#10b981' },
-            { id: 'credit', label: 'Crédito', color: '#6366f1' },
-            { id: 'debit', label: 'Débito', color: '#f59e0b' },
-            { id: 'cash', label: 'Dinheiro', color: '#1a1a1a' },
-        ],
+        linkData: null,
+        methods: (() => {
+            const base = [
+                { id: 'pix', label: 'Pix', color: '#10b981' },
+                { id: 'credit', label: 'Crédito', color: '#6366f1' },
+                { id: 'debit', label: 'Débito', color: '#f59e0b' },
+                { id: 'cash', label: 'Dinheiro', color: '#1a1a1a' },
+            ];
+            if (paymentConfig.gateway_ready) {
+                base.push({ id: 'link', label: 'Link', color: '#009ee3' });
+            }
+            return base;
+        })(),
         get filteredItems() {
             if (this.tab === 'services') {
                 const q = this.search.trim().toLowerCase();
@@ -345,7 +385,8 @@ function pdvApp() {
             return n + ' ite' + (n === 1 ? 'm' : 'ns');
         },
         get paymentTitle() {
-            return ({ pix: 'Pagamento via Pix', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', cash: 'Pagamento em Dinheiro' })[this.method] || 'Pagamento';
+            const map = { pix: 'Pagamento via Pix', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', cash: 'Pagamento em Dinheiro', link: (paymentConfig.gateway_label || 'Gateway') + ' — Link de Pagamento' };
+            return map[this.method] || 'Pagamento';
         },
         cartQty(key) { const i = this.cart.find(c => c.key === key); return i ? i.qty : 0; },
         formatCurrency(v) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); },
@@ -359,10 +400,11 @@ function pdvApp() {
             this.cart = this.cart.map(c => c.key === key ? { ...c, qty: Math.max(0, c.qty + delta) } : c).filter(c => c.qty > 0);
         },
         removeItem(key) { this.cart = this.cart.filter(c => c.key !== key); },
-        clearCart() { this.cart = []; this.discount = 0; this.clientId = ''; this.cashGiven = ''; this.paid = false; this.change = 0; this.paymentOpen = false; this.pixData = null; },
+        clearCart() { this.cart = []; this.discount = 0; this.clientId = ''; this.cashGiven = ''; this.paid = false; this.change = 0; this.paymentOpen = false; this.pixData = null; this.linkData = null; },
         canConfirmPayment() {
             if (this.method === 'cash') return (parseFloat(this.cashGiven) || 0) >= this.total && this.total > 0;
             if (this.method === 'pix') return this.pixData?.configured === true;
+            if (this.method === 'link') return !!this.linkData?.url;
             return true;
         },
         openPaymentModal() {
@@ -371,7 +413,9 @@ function pdvApp() {
             }
             this.paymentOpen = true;
             this.pixData = null;
+            this.linkData = null;
             if (this.method === 'pix') this.loadPixQr();
+            if (this.method === 'link') this.loadLink();
         },
         closePaymentModal() {
             if (this.paymentSubmitting) return;
@@ -390,6 +434,25 @@ function pdvApp() {
             if (!this.pixData?.copy_paste) return;
             navigator.clipboard.writeText(this.pixData.copy_paste).then(() => {
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Código Pix copiado!', showConfirmButton: false, timer: 2000 });
+            });
+        },
+        loadLink() {
+            this.paymentLoading = true;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(paymentConfig.link_url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
+                body: JSON.stringify({ total: this.total }),
+            })
+            .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d)))
+            .then(data => { this.linkData = { url: data.url, total: data.total }; })
+            .catch(err => { this.linkData = { url: null, erro: err?.erro || 'Não foi possível gerar o link de pagamento.' }; })
+            .finally(() => { this.paymentLoading = false; });
+        },
+        copyLink() {
+            if (!this.linkData?.url) return;
+            navigator.clipboard.writeText(this.linkData.url).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Link copiado!', showConfirmButton: false, timer: 2000 });
             });
         },
         confirmPayment() {

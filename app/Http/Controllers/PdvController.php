@@ -13,6 +13,7 @@ use App\Models\ProdutoImagem;
 use App\Models\Servico;
 use App\Models\Venda;
 use App\Models\VendaItem;
+use App\Services\Pagamento\GatewayFactory;
 use App\Services\PixPaymentService;
 use App\Support\SaServiceIcons;
 use Carbon\Carbon;
@@ -75,10 +76,22 @@ class PdvController extends Controller
             ->get(['id', 'name']);
 
         $company = Company::findOrFail($companyId);
-        $payments = $company->resolvedSettings()['payments'] ?? [];
+        $settings = $company->resolvedSettings();
+        $payments = $settings['payments'] ?? [];
+        $integrations = $settings['integrations'];
+        $gateway = $integrations['gateway'] ?? 'nenhum';
         $paymentConfig = [
             'pix_configured' => trim((string) ($payments['pix_key'] ?? '')) !== '',
             'empresa_config_url' => route('configuracoes.empresa', ['tab' => 'dados']),
+            'gateway' => $gateway,
+            'gateway_ready' => GatewayFactory::isReady($integrations),
+            'gateway_label' => match ($gateway) {
+                'mercadopago' => 'Mercado Pago',
+                'asaas' => 'Asaas',
+                'stripe' => 'Stripe',
+                default => '',
+            },
+            'link_url' => route('pdv.link-pagamento'),
         ];
 
         return view('pdv.index', compact('produtosJs', 'servicosJs', 'clientes', 'paymentConfig'));
@@ -99,6 +112,40 @@ class PdvController extends Controller
         return response()->json(
             $pixService->generateForCompany($company, (float) $request->input('total'), $tid)
         );
+    }
+
+    /**
+     * Gera link de pagamento via gateway ativo da empresa (MP, Asaas, Stripe).
+     */
+    public function gerarLinkPagamento(Request $request): JsonResponse
+    {
+        $request->validate([
+            'total' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        $company = Company::findOrFail(auth()->user()->empresa_id);
+        $integrations = $company->resolvedSettings()['integrations'];
+
+        if (! GatewayFactory::isReady($integrations)) {
+            return response()->json(['ok' => false, 'erro' => 'Gateway de pagamento não configurado.'], 422);
+        }
+
+        $total = (float) $request->input('total');
+        $ref = 'PDV-'.now()->format('ymdHis');
+        $descricao = 'Venda PDV — '.$company->name.' — '.$ref;
+        $backUrl = route('pdv.index');
+
+        $result = GatewayFactory::criarLinkPagamento($integrations, $total, $descricao, $ref, [], $backUrl);
+
+        if (! $result['ok']) {
+            return response()->json(['ok' => false, 'erro' => $result['erro'] ?? 'Erro ao gerar link.'], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'url' => $result['payment_url'],
+            'total' => $total,
+        ]);
     }
 
     public function resumo(Request $request): JsonResponse

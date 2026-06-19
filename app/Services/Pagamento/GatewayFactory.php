@@ -43,9 +43,9 @@ class GatewayFactory
 
         return match ($gateway) {
             'mercadopago' => self::getMpAccessToken($integrations) !== '',
-            'asaas'       => trim($integrations['asaas']['api_key'] ?? '') !== '',
-            'stripe'      => trim($integrations['stripe']['secret_key'] ?? '') !== '',
-            default       => false,
+            'asaas' => trim($integrations['asaas']['api_key'] ?? '') !== '',
+            'stripe' => trim($integrations['stripe']['secret_key'] ?? '') !== '',
+            default => false,
         };
     }
 
@@ -72,9 +72,9 @@ class GatewayFactory
 
         return match ($gateway) {
             'mercadopago' => self::criarLinkMp($integrations, $valor, $descricao, $referencia, $backUrl),
-            'asaas'       => self::criarLinkAsaas($integrations, $valor, $descricao, $referencia, $payer, $tipo),
-            'stripe'      => self::criarLinkStripe($integrations, $valor, $descricao),
-            default       => ['ok' => false, 'payment_url' => '', 'erro' => 'Gateway de pagamento não configurado.'],
+            'asaas' => self::criarLinkAsaas($integrations, $valor, $descricao, $referencia, $payer, $tipo),
+            'stripe' => self::criarLinkStripe($integrations, $valor, $descricao),
+            default => ['ok' => false, 'payment_url' => '', 'erro' => 'Gateway de pagamento não configurado.'],
         };
     }
 

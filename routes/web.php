@@ -41,6 +41,7 @@ use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\SitePublicoController;
 use App\Http\Controllers\WebhookAsaasController;
+use App\Http\Controllers\WebhookMercadoPagoController;
 use App\Http\Middleware\CheckModulePermission;
 use App\Http\Middleware\EnsureClienteDaEmpresa;
 use App\Http\Middleware\SetTenantMiddleware;
@@ -63,6 +64,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 // ── Webhooks (public, token-validated) ──────────────────────────────
 Route::post('/webhooks/asaas', WebhookAsaasController::class)
     ->name('webhooks.asaas')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::post('/webhooks/mercadopago', WebhookMercadoPagoController::class)
+    ->name('webhooks.mercadopago')
     ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // ── Páginas de bloqueio de assinatura (auth, sem check.subscription) ──
@@ -223,6 +228,7 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::get('pdv/vendas/{venda}/json', [PdvController::class, 'vendaDetalhe'])->name('pdv.vendas.detalhe');
     Route::get('pdv/exportar', [PdvController::class, 'exportarCsv'])->name('pdv.exportar');
     Route::get('pdv/pagamento/pix', [PdvController::class, 'pagamentoPix'])->name('pdv.pagamento.pix');
+    Route::post('pdv/pagamento/link', [PdvController::class, 'gerarLinkPagamento'])->name('pdv.link-pagamento');
     Route::post('pdv/venda', [PdvController::class, 'store'])->name('pdv.store');
     Route::patch('pdv/vendas/{venda}/observacao', [PdvController::class, 'observacaoVenda'])->name('pdv.vendas.observacao');
     Route::delete('pdv/vendas/{venda}', [PdvController::class, 'destroyVenda'])->name('pdv.vendas.destroy');
