@@ -17,6 +17,13 @@
             <p style="font-size:14px;color:var(--sa-text3);margin:0">Configuração Twilio — WhatsApp e SMS da plataforma</p>
         </div>
     </div>
+    <a href="{{ route('admin.notificacoes.conversas') }}"
+       style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:14px;font-weight:600;text-decoration:none;transition:border-color 180ms,color 180ms"
+       onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
+       onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Ver Conversas
+    </a>
 </div>
 
 <div style="max-width:760px;display:flex;flex-direction:column;gap:20px">
