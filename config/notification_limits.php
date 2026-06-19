@@ -10,12 +10,12 @@ return [
     |--------------------------------------------------------------------------
     */
     'planos' => [
-        'trial'        => ['whatsapp' =>   50, 'sms' =>   20, 'email' =>   100],
-        'starter'      => ['whatsapp' =>  200, 'sms' =>  100, 'email' =>   500],
-        'crescimento'  => ['whatsapp' => 1000, 'sms' =>  500, 'email' =>  2000],
+        'trial' => ['whatsapp' => 50, 'sms' => 20, 'email' => 100],
+        'starter' => ['whatsapp' => 200, 'sms' => 100, 'email' => 500],
+        'crescimento' => ['whatsapp' => 1000, 'sms' => 500, 'email' => 2000],
         'profissional' => ['whatsapp' => 5000, 'sms' => 2000, 'email' => 10000],
-        'enterprise'   => ['whatsapp' =>   -1, 'sms' =>   -1, 'email' =>    -1],
-        'default'      => ['whatsapp' =>  100, 'sms' =>   50, 'email' =>   200],
+        'enterprise' => ['whatsapp' => -1, 'sms' => -1, 'email' => -1],
+        'default' => ['whatsapp' => 100, 'sms' => 50, 'email' => 200],
     ],
 
     /*
@@ -25,7 +25,7 @@ return [
     */
     'custo_por_mensagem' => [
         'twilio_whatsapp' => 0.005,
-        'twilio_sms'      => 0.0079,
+        'twilio_sms' => 0.0079,
     ],
 
     /*

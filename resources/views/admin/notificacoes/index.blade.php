@@ -223,6 +223,39 @@ TWILIO_SMS_NUMBER=5511999990000</code>
     </div>
     @endif
 
+    {{-- ── Teste de e-mail SMTP ────────────────────────────────── --}}
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <h2 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:var(--sa-text1);margin:0 0 6px;display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sa-secondary)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Testar envio de e-mail (SMTP)
+        </h2>
+        <p style="font-size:13px;color:var(--sa-text3);margin:0 0 18px">
+            Usa as credenciais de e-mail salvas em
+            <a href="{{ route('admin.configuracoes.index') }}" style="color:var(--sa-secondary);text-decoration:none">Configurações → E-mail</a>.
+            Mailer atual: <code style="font-size:12px;background:var(--sa-surface2);padding:1px 5px;border-radius:4px">{{ config('mail.default', 'log') }}</code>
+        </p>
+
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+                <label style="display:block;font-size:13px;font-weight:600;color:var(--sa-text1);letter-spacing:.2px;margin-bottom:5px">
+                    Destinatário <span style="color:var(--sa-secondary)">*</span>
+                </label>
+                <input type="email" id="email-teste" value="{{ auth()->user()->email }}"
+                       style="width:100%;padding:10px 13px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--sa-text1);background:var(--sa-surface);outline:none;transition:border-color 180ms;box-sizing:border-box"
+                       onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+                       onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+            </div>
+            <button type="button" id="btn-testar-email" onclick="testarEmail()"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;background:var(--sa-primary);color:#fff;transition:filter 200ms;white-space:nowrap"
+                    onmouseover="this.style.filter='brightness(1.1)'"
+                    onmouseout="this.style.filter='none'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Enviar e-mail de teste
+            </button>
+        </div>
+        <span id="result-email" style="display:block;margin-top:10px;font-size:13px"></span>
+    </div>
+
     {{-- ── Nota sobre fallback por empresa ─────────────────────── --}}
     <div style="padding:14px 18px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px">
         <div style="display:flex;align-items:flex-start;gap:10px">
@@ -259,6 +292,41 @@ async function testarConexao() {
         } else {
             res.style.color = '#dc2626';
             res.textContent = '✗ ' + (data.erro ?? 'falha');
+        }
+    } catch {
+        res.style.color = '#dc2626';
+        res.textContent = '✗ Erro de rede';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function testarEmail() {
+    const email = document.getElementById('email-teste').value.trim();
+    if (!email) {
+        Swal.fire({ icon: 'warning', title: 'E-mail obrigatório', text: 'Digite o endereço de destino.', confirmButtonColor: 'var(--sa-primary)' });
+        return;
+    }
+
+    const btn = document.getElementById('btn-testar-email');
+    const res = document.getElementById('result-email');
+    btn.disabled = true;
+    res.style.color = 'var(--sa-text3)';
+    res.textContent = 'Enviando…';
+
+    try {
+        const r = await fetch('{{ route('admin.notificacoes.testar-email') }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        const data = await r.json();
+        if (data.ok) {
+            res.style.color = '#059669';
+            res.textContent = '✓ E-mail enviado via ' + (data.mailer ?? '') + '!';
+        } else {
+            res.style.color = '#dc2626';
+            res.textContent = '✗ Erro: ' + (data.erro ?? 'falha');
         }
     } catch {
         res.style.color = '#dc2626';

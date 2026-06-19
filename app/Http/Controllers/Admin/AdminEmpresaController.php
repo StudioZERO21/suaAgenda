@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Company;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -53,5 +54,16 @@ class AdminEmpresaController extends Controller
         $empresa->update(['ativo' => ! $empresa->ativo]);
 
         return response()->json(['success' => true, 'ativo' => $empresa->ativo]);
+    }
+
+    public function updateLimites(Request $request, Company $empresa): RedirectResponse
+    {
+        $empresa->update([
+            'notif_limit_whatsapp' => $request->integer('notif_limit_whatsapp') ?: null,
+            'notif_limit_sms' => $request->integer('notif_limit_sms') ?: null,
+            'notif_limit_email' => $request->integer('notif_limit_email') ?: null,
+        ]);
+
+        return back()->with('success_limites', 'Limites de notificação atualizados.');
     }
 }
