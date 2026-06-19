@@ -258,13 +258,22 @@ class ConfiguracaoController extends Controller
 
         $gateway = $request->input('gateway', 'nenhum');
 
-        // Preserva dados OAuth do MP — nunca sobrescrever tokens do Connect
+        // Mercado Pago — token manual ou preservar existente
         $currentMp = $current['integrations']['mercadopago'] ?? [];
+        $mpToken = trim((string) $request->input('mp_access_token', ''));
+        if ($mpToken !== '') {
+            $currentMp = [
+                'connected' => true,
+                'access_token_enc' => encrypt($mpToken),
+                'account_nome' => 'Conta Mercado Pago',
+                'connected_at' => now()->toIso8601String(),
+            ];
+        }
 
         $integrations = [
             'whatsapp' => $wa,
             'gateway' => $gateway,
-            'mercadopago' => $currentMp, // gerenciado exclusivamente pelo MercadoPagoOAuthController
+            'mercadopago' => $currentMp,
             'asaas' => [
                 'api_key' => trim((string) $request->input('asaas_api_key', '')),
                 'ambiente' => $request->input('asaas_ambiente', 'sandbox'),
