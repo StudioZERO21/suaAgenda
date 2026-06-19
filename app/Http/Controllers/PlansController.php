@@ -13,11 +13,19 @@ use Illuminate\View\View;
 
 class PlansController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $plans = Plan::ordered();
         $company = auth()->user()->company;
         $currentPlan = $company?->plan ?? Plan::find('starter');
+
+        // Feedback de retorno do Stripe Checkout
+        $checkoutStatus = $request->query('checkout');
+        if ($checkoutStatus === 'sucesso' && $company?->plan) {
+            session()->flash('billing_success', 'Plano '.$company->plan->nome.' ativado com sucesso! Bem-vindo(a).');
+        } elseif ($checkoutStatus === 'cancelado') {
+            session()->flash('billing_info', 'O checkout foi cancelado. Seu plano atual permanece inalterado.');
+        }
 
         $companyId = auth()->user()->empresa_id;
         $mesAtual = now()->format('Y-m');

@@ -7,6 +7,20 @@
     <x-sa.app-header title="Planos & Assinatura" subtitle="Gerencie seu plano e uso de mensagens" />
     <x-sa.body padding="24px 32px 0">
 
+    {{-- Feedback do checkout Stripe --}}
+    @if(session('billing_success'))
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:14px 18px;margin-bottom:20px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style="font-size:14px;font-weight:600;color:#059669">{{ session('billing_success') }}</span>
+    </div>
+    @endif
+    @if(session('billing_info'))
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(107,114,128,.08);border:1px solid rgba(107,114,128,.2);border-radius:10px;padding:14px 18px;margin-bottom:20px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:14px;color:var(--sa-text2)">{{ session('billing_info') }}</span>
+    </div>
+    @endif
+
     {{-- Banner plano atual — 4 colunas conforme PlansScreen.jsx --}}
     @if($company && $currentPlan)
     <div style="background:color-mix(in srgb,var(--sa-primary) 6%,transparent);border:1px solid color-mix(in srgb,var(--sa-primary) 15%,transparent);border-radius:12px;padding:24px;margin-bottom:24px">
