@@ -725,6 +725,7 @@
                         async testarWa() {
                             this.testWaLoading = true; this.testWa = null;
                             const fd = new FormData(document.getElementById('form-integracoes'));
+                            fd.delete('_method');
                             try {
                                 const r = await fetch('{{ route('configuracoes.integracoes.testar.whatsapp') }}', {
                                     method:'POST', body: fd,
@@ -738,6 +739,10 @@
                         async testarGateway() {
                             this.testGwLoading = true; this.testGw = null;
                             const fd = new FormData(document.getElementById('form-integracoes'));
+                            // _method=PUT do form principal causa 405 na rota POST de teste — removido
+                            fd.delete('_method');
+                            // x-bind:value só seta atributo, não property — forçar valor Alpine
+                            fd.set('gateway', this.gateway);
                             try {
                                 const r = await fetch('{{ route('configuracoes.integracoes.testar.gateway') }}', {
                                     method:'POST', body: fd,
@@ -745,7 +750,7 @@
                                 });
                                 const j = await r.json();
                                 this.testGw = j;
-                            } catch(e) { this.testGw = {ok:false, erro:'Erro de rede'}; }
+                            } catch(e) { this.testGw = {ok:false, erro:'Erro de rede: '+e.message}; }
                             this.testGwLoading = false;
                         },
                     }">
@@ -898,14 +903,86 @@
                             <input type="hidden" name="gateway" :value="gateway">
 
                             {{-- Mercado Pago --}}
-                            <div x-show="gateway === 'mercadopago'" style="display:flex;flex-direction:column;gap:12px">
-                                <div style="padding:10px 14px;border-radius:9px;background:rgba(0,158,227,.06);border:1px solid rgba(0,158,227,.2);font-size:12px;color:var(--sa-text2);line-height:1.6">
-                                    Obtenha o Access Token em <strong>mercadopago.com.br → Configurações → Credenciais</strong>. Use o token de <em>produção</em> após testar.
+                            <div x-show="gateway === 'mercadopago'" style="display:flex;flex-direction:column;gap:0">
+                                @if($mpConnected)
+                                {{-- ── CONECTADO ────────────────────────────────────── --}}
+                                <div style="border-radius:12px;border:1.5px solid rgba(0,158,227,.35);background:rgba(0,158,227,.05);padding:18px 20px"
+                                     x-data="mpMetrics()" x-init="carregar()">
+                                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px">
+                                        <div>
+                                            <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+                                                <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#059669;flex-shrink:0">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </span>
+                                                <span style="font-size:14px;font-weight:700;color:var(--sa-text1)">Conectado</span>
+                                            </div>
+                                            <div style="font-size:13px;color:var(--sa-text2);padding-left:25px">{{ $mpAccountNome }}</div>
+                                        </div>
+                                        <form method="POST" action="{{ route('mp.oauth.disconnect') }}" style="flex-shrink:0">
+                                            @csrf @method('DELETE')
+                                            <button type="submit"
+                                                style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sa-font-body);transition:all 150ms"
+                                                onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                                                onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text3)'"
+                                                onclick="return confirm('Remover token do Mercado Pago? O gateway será desativado.')">
+                                                Remover token
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                                        <div style="background:var(--sa-surface);border:1px solid var(--sa-border);border-radius:10px;padding:14px 16px">
+                                            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Saldo disponível</div>
+                                            <div style="font-size:20px;font-weight:800;color:var(--sa-text1);font-family:var(--sa-font-heading);letter-spacing:-.5px"
+                                                 x-text="loading ? '…' : (balance !== null ? 'R$ ' + balance.toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—')">…</div>
+                                        </div>
+                                        <div style="background:var(--sa-surface);border:1px solid var(--sa-border);border-radius:10px;padding:14px 16px">
+                                            <div style="font-size:11px;font-weight:700;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Recebido este mês</div>
+                                            <div style="font-size:20px;font-weight:800;color:#059669;font-family:var(--sa-font-heading);letter-spacing:-.5px"
+                                                 x-text="loading ? '…' : 'R$ ' + (monthRevenue||0).toLocaleString('pt-BR',{minimumFractionDigits:2})">…</div>
+                                        </div>
+                                    </div>
+                                    <div x-show="erro" style="margin-top:10px;font-size:12px;color:var(--sa-text3)" x-text="erro"></div>
+                                    {{-- Campo oculto para atualizar token sem desconectar --}}
+                                    <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(0,158,227,.2)">
+                                        <label style="display:block;font-size:12px;font-weight:600;color:var(--sa-text3);margin-bottom:5px">Atualizar token (opcional)</label>
+                                        <input type="password" name="mp_access_token" placeholder="Cole aqui para substituir o token atual"
+                                               autocomplete="off"
+                                               style="width:100%;padding:9px 12px;border:1.5px solid var(--sa-border);border-radius:8px;font-size:12px;font-family:monospace;color:var(--sa-text1);background:var(--sa-surface);outline:none;box-sizing:border-box;transition:border-color 180ms"
+                                               onfocus="this.style.borderColor='var(--sa-primary)';this.style.outline='3px solid rgba(0,0,0,.06)'"
+                                               onblur="this.style.borderColor='var(--sa-border)';this.style.outline='none'">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="sa-field-label">Access Token</label>
-                                    <input type="password" name="mp_access_token" value="{{ old('mp_access_token', $intMp['access_token'] ?? '') }}" class="sa-inp" placeholder="APP_USR-xxxxxxxxxxxx" autocomplete="off">
+                                @else
+                                {{-- ── NÃO CONECTADO — OAuth ───────────────────────── --}}
+                                <div style="border-radius:12px;border:2px dashed rgba(0,158,227,.25);background:rgba(0,158,227,.03);padding:28px 20px;text-align:center">
+                                    <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,158,227,.1);border:1px solid rgba(0,158,227,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+                                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#009ee3" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    </div>
+                                    <div style="font-size:15px;font-weight:700;color:var(--sa-text1);margin-bottom:6px">Conectar Mercado Pago</div>
+                                    <div style="font-size:13px;color:var(--sa-text2);margin-bottom:20px;line-height:1.6;max-width:320px;margin-left:auto;margin-right:auto">
+                                        Autorize em poucos cliques — sem copiar API keys. Sua conta Mercado Pago fica vinculada com segurança via OAuth 2.0.
+                                    </div>
+                                    <a href="{{ route('mp.oauth.redirect') }}"
+                                       style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:9px;background:#009ee3;color:#fff;font-size:14px;font-weight:700;text-decoration:none;font-family:var(--sa-font-body);transition:filter 180ms"
+                                       onmouseover="this.style.filter='brightness(1.1)'"
+                                       onmouseout="this.style.filter='none'">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                        Conectar com Mercado Pago
+                                    </a>
+                                    <div style="margin-top:14px;padding:12px 14px;border-radius:9px;background:var(--sa-surface2);border:1px solid var(--sa-border);text-align:left;max-width:420px;margin-left:auto;margin-right:auto">
+                                        <div style="font-size:12px;font-weight:700;color:var(--sa-text1);margin-bottom:6px">Antes de conectar</div>
+                                        <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--sa-text2);line-height:1.6">
+                                            <li>Acesse o sistema pelo endereço <strong style="color:var(--sa-text1)">{{ parse_url($mpRedirectUri, PHP_URL_SCHEME) }}://{{ parse_url($mpRedirectUri, PHP_URL_HOST) }}</strong> (não use localhost se o callback for outro domínio).</li>
+                                            <li>No painel <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener" style="color:#009ee3;text-decoration:none;font-weight:600">Mercado Pago Developers</a>, cadastre esta URL de redirecionamento exata:<br>
+                                                <code style="display:block;margin-top:6px;padding:8px 10px;border-radius:7px;background:var(--sa-surface);border:1px solid var(--sa-border);font-size:11px;color:var(--sa-text1);word-break:break-all">{{ $mpRedirectUri }}</code>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div style="margin-top:12px;font-size:11px;color:var(--sa-text3)">
+                                        Redirecionamento seguro · Sem acesso à sua senha
+                                    </div>
                                 </div>
+                                @endif
                             </div>
 
                             {{-- Asaas --}}
@@ -1150,6 +1227,33 @@
             icon: icon,
             title: message,
         });
+    }
+
+    function mpMetrics() {
+        return {
+            loading: true,
+            balance: null,
+            monthRevenue: null,
+            erro: null,
+            async carregar() {
+                try {
+                    const r = await fetch('{{ route('mp.oauth.metrics') }}', {
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                    });
+                    const j = await r.json();
+                    if (j.ok) {
+                        this.balance      = j.balance;
+                        this.monthRevenue = j.month_revenue;
+                    } else {
+                        this.erro = 'Métricas indisponíveis agora.';
+                    }
+                } catch(e) {
+                    this.erro = 'Não foi possível carregar as métricas.';
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
     }
 </script>
 @endpush

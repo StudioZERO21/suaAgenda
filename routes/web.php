@@ -26,6 +26,7 @@ use App\Http\Controllers\DashboardFuncionarioController;
 use App\Http\Controllers\Dev\DevLoginController;
 use App\Http\Controllers\FinanceiroController;
 use App\Http\Controllers\HorarioTrabalhoController;
+use App\Http\Controllers\MercadoPagoOAuthController;
 use App\Http\Controllers\NotificacaoController;
 use App\Http\Controllers\PdvController;
 use App\Http\Controllers\PerfilController;
@@ -91,6 +92,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('billing/gateway', [AdminBillingController::class, 'configGateway'])->name('billing.gateway');
     Route::post('billing/gateway', [AdminBillingController::class, 'saveConfigGateway'])->name('billing.gateway.save');
     Route::post('billing/gateway/testar', [AdminBillingController::class, 'testGateway'])->name('billing.gateway.testar');
+    Route::post('billing/gateway/mp-ambiente', [AdminBillingController::class, 'toggleMpAmbiente'])->name('billing.gateway.mp-ambiente');
     Route::get('billing/{subscription}', [AdminBillingController::class, 'show'])->name('billing.show');
     Route::post('billing/{subscription}/fatura', [AdminBillingController::class, 'gerarFatura'])->name('billing.fatura');
     Route::patch('billing/{subscription}/suspender', [AdminBillingController::class, 'suspender'])->name('billing.suspender');
@@ -407,6 +409,12 @@ Route::middleware(['auth', SetTenantMiddleware::class, CheckModulePermission::cl
     Route::put('configuracoes/integracoes', [ConfiguracaoController::class, 'updateIntegracoes'])->name('configuracoes.integracoes');
     Route::post('configuracoes/integracoes/testar-whatsapp', [ConfiguracaoController::class, 'testWhatsApp'])->name('configuracoes.integracoes.testar.whatsapp');
     Route::post('configuracoes/integracoes/testar-gateway', [ConfiguracaoController::class, 'testGateway'])->name('configuracoes.integracoes.testar.gateway');
+
+    // ── MercadoPago OAuth Connect ──────────────────────────────────────────
+    Route::get('configuracoes/integracoes/mercadopago/conectar', [MercadoPagoOAuthController::class, 'redirect'])->name('mp.oauth.redirect');
+    Route::get('configuracoes/integracoes/mercadopago/callback', [MercadoPagoOAuthController::class, 'callback'])->name('mp.oauth.callback');
+    Route::delete('configuracoes/integracoes/mercadopago', [MercadoPagoOAuthController::class, 'disconnect'])->name('mp.oauth.disconnect');
+    Route::get('configuracoes/integracoes/mercadopago/metricas', [MercadoPagoOAuthController::class, 'metrics'])->name('mp.oauth.metrics');
 
     Route::get('planos', [PlansController::class, 'index'])->name('planos.index');
     Route::patch('planos', [PlansController::class, 'update'])->name('planos.update');

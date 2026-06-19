@@ -197,6 +197,94 @@
                onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'">Cancelar</a>
         </div>
     </form>
+
+    {{-- ── MERCADO PAGO — AMBIENTE ──────────────────────────────── --}}
+    @php
+        $mpAmbiente = $billingConfig->credentials['mp_ambiente']
+            ?? config('services.mercadopago.ambiente', 'sandbox');
+        $isSandbox = $mpAmbiente === 'sandbox';
+    @endphp
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009ee3" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    <span style="font-size:15px;font-weight:700;color:var(--sa-text1);font-family:var(--sa-font-heading)">Mercado Pago — Ambiente</span>
+                </div>
+                <p style="font-size:13px;color:var(--sa-text2);margin:0;line-height:1.5">
+                    Em <strong>Sandbox</strong> nenhuma cobrança real é feita — use para testes. Mude para <strong>Produção</strong> ao subir para o ar.
+                </p>
+            </div>
+
+            {{-- Badge ambiente atual --}}
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:13px;font-weight:700;
+                         {{ $isSandbox ? 'background:rgba(245,158,11,.12);color:#d97706' : 'background:rgba(16,185,129,.12);color:#059669' }}">
+                <span style="width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
+                {{ $isSandbox ? 'Sandbox (testes)' : 'Produção' }}
+            </span>
+        </div>
+
+        <div style="border-top:1px solid var(--sa-border);margin:18px 0"></div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            {{-- Botão → Sandbox --}}
+            <form method="POST" action="{{ route('admin.billing.gateway.mp-ambiente') }}" style="display:inline">
+                @csrf
+                <input type="hidden" name="mp_ambiente" value="sandbox">
+                <button type="submit"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sa-font-body);transition:all 150ms;
+                           {{ $isSandbox ? 'background:rgba(245,158,11,.12);color:#d97706;border:1.5px solid rgba(245,158,11,.4)' : 'background:transparent;color:var(--sa-text2);border:1.5px solid var(--sa-border)' }}"
+                    {{ $isSandbox ? 'disabled' : '' }}
+                    @if(!$isSandbox)
+                    onmouseover="this.style.borderColor='#d97706';this.style.color='#d97706'"
+                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'"
+                    @endif>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Sandbox (testes)
+                </button>
+            </form>
+
+            {{-- Botão → Produção --}}
+            <form method="POST" action="{{ route('admin.billing.gateway.mp-ambiente') }}" style="display:inline"
+                  onsubmit="return confirm('Mudar para Produção? Cobranças reais serão realizadas!')">
+                @csrf
+                <input type="hidden" name="mp_ambiente" value="producao">
+                <button type="submit"
+                    style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sa-font-body);transition:all 150ms;
+                           {{ !$isSandbox ? 'background:rgba(16,185,129,.12);color:#059669;border:1.5px solid rgba(16,185,129,.4)' : 'background:transparent;color:var(--sa-text2);border:1.5px solid var(--sa-border)' }}"
+                    {{ !$isSandbox ? 'disabled' : '' }}
+                    @if($isSandbox)
+                    onmouseover="this.style.borderColor='#059669';this.style.color='#059669'"
+                    onmouseout="this.style.borderColor='var(--sa-border)';this.style.color='var(--sa-text2)'"
+                    @endif>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    Produção
+                </button>
+            </form>
+
+            @if(!$isSandbox)
+            <span style="font-size:12px;color:#dc2626;display:flex;align-items:center;gap:5px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Modo produção ativo — pagamentos reais habilitados
+            </span>
+            @endif
+        </div>
+    </div>
+
+    {{-- ── MERCADO PAGO — OAuth Connect (empresas) ─────────────── --}}
+    @php $mpOAuthRedirect = \App\Services\Pagamento\MercadoPagoService::getRedirectUri(); @endphp
+    <div style="background:var(--sa-surface);border-radius:12px;border:1px solid var(--sa-border);padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-top:16px">
+        <div style="font-size:15px;font-weight:700;color:var(--sa-text1);font-family:var(--sa-font-heading);margin-bottom:6px">OAuth Connect — empresas</div>
+        <p style="font-size:13px;color:var(--sa-text2);margin:0 0 14px;line-height:1.6">
+            Para empresas conectarem suas contas Mercado Pago, cadastre a URL abaixo em
+            <strong>Mercado Pago Developers → sua aplicação → Configurações avançadas → Redirect URL</strong>.
+            A URL deve ser <strong>idêntica</strong> (incluindo https e caminho).
+        </p>
+        <code style="display:block;padding:10px 12px;border-radius:8px;background:var(--sa-surface2);border:1px solid var(--sa-border);font-size:12px;color:var(--sa-text1);word-break:break-all">{{ $mpOAuthRedirect }}</code>
+        <p style="font-size:12px;color:var(--sa-text3);margin:10px 0 0;line-height:1.5">
+            Variável <code>MP_REDIRECT_URI</code> no <code>.env</code> · PKCE habilitado por padrão (<code>MP_PKCE=true</code>)
+        </p>
+    </div>
 </div>
 
 <script>

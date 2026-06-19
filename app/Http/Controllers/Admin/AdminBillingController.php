@@ -13,6 +13,7 @@ use App\Services\Billing\InvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class AdminBillingController extends Controller
@@ -129,8 +130,10 @@ class AdminBillingController extends Controller
     public function configGateway(): View
     {
         $billingConfig = BillingConfig::current();
+        $mpAmbiente = $billingConfig->credentials['mp_ambiente'] ?? config('services.mercadopago.ambiente', 'sandbox');
+        $isSandbox = $mpAmbiente === 'sandbox';
 
-        return view('admin.billing.gateway', compact('billingConfig'));
+        return view('admin.billing.gateway', compact('billingConfig', 'isSandbox', 'mpAmbiente'));
     }
 
     public function saveConfigGateway(Request $request): RedirectResponse
@@ -162,5 +165,30 @@ class AdminBillingController extends Controller
         $result = BillingGatewayService::fromConfig()->testar();
 
         return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
+    /**
+     * Alterna o ambiente do Mercado Pago entre sandbox e produção.
+     */
+    public function toggleMpAmbiente(Request $request): RedirectResponse
+    {
+        $novo = $request->input('mp_ambiente', 'sandbox');
+
+        if (! in_array($novo, ['sandbox', 'producao'])) {
+            return back()->with('error', 'Ambiente inválido.');
+        }
+
+        $config = BillingConfig::current();
+        $creds = $config->credentials ?? [];
+        $creds['mp_ambiente'] = $novo;
+        $config->update(['credentials' => $creds]);
+
+        Cache::forget('mp_ambiente');
+
+        $label = $novo === 'sandbox' ? 'Sandbox (testes)' : 'Produção';
+
+        return redirect()
+            ->route('admin.billing.gateway')
+            ->with('success', "Mercado Pago alterado para: {$label}");
     }
 }

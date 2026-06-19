@@ -14,6 +14,7 @@ use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\ImageService;
 use App\Services\Pagamento\GatewayFactory;
+use App\Services\Pagamento\MercadoPagoService;
 use App\Services\WhatsAppService;
 use App\Support\CompanyHours;
 use App\Support\SaPalettes;
@@ -48,7 +49,16 @@ class ConfiguracaoController extends Controller
         $activePalette = SaPalettes::get($settings['theme_palette'] ?? 'A');
         $iconCategories = SaServiceIcons::categories();
 
-        return view('configuracoes.index', compact('company', 'settings', 'palettes', 'activePalette', 'iconCategories'));
+        $mpData = $settings['integrations']['mercadopago'] ?? [];
+        $mpConnected = ! empty($mpData['connected']);
+        $mpAccountNome = $mpConnected ? ($mpData['account_nome'] ?? 'Conta Mercado Pago') : null;
+        $mpRedirectUri = MercadoPagoService::getRedirectUri();
+        $mpOAuthReady = MercadoPagoService::isOAuthConfigured();
+
+        return view('configuracoes.index', compact(
+            'company', 'settings', 'palettes', 'activePalette', 'iconCategories',
+            'mpConnected', 'mpAccountNome', 'mpRedirectUri', 'mpOAuthReady',
+        ));
     }
 
     /**
@@ -251,12 +261,22 @@ class ConfiguracaoController extends Controller
 
         $gateway = $request->input('gateway', 'nenhum');
 
+        // Mercado Pago — token manual ou preservar existente
+        $currentMp = $current['integrations']['mercadopago'] ?? [];
+        $mpToken = trim((string) $request->input('mp_access_token', ''));
+        if ($mpToken !== '') {
+            $currentMp = [
+                'connected' => true,
+                'access_token_enc' => encrypt($mpToken),
+                'account_nome' => 'Conta Mercado Pago',
+                'connected_at' => now()->toIso8601String(),
+            ];
+        }
+
         $integrations = [
             'whatsapp' => $wa,
             'gateway' => $gateway,
-            'mercadopago' => [
-                'access_token' => trim((string) $request->input('mp_access_token', '')),
-            ],
+            'mercadopago' => $currentMp,
             'asaas' => [
                 'api_key' => trim((string) $request->input('asaas_api_key', '')),
                 'ambiente' => $request->input('asaas_ambiente', 'sandbox'),
@@ -305,9 +325,17 @@ class ConfiguracaoController extends Controller
         $company = Company::findOrFail(auth()->user()->empresa_id);
         $this->authorize('update', $company);
 
+        $gateway = $request->input('gateway', 'nenhum');
+
+        // MP usa OAuth — token está no banco, não no form
+        if ($gateway === 'mercadopago') {
+            $result = GatewayFactory::testar($company->resolvedSettings()['integrations'] ?? []);
+
+            return response()->json($result, $result['ok'] ? 200 : 422);
+        }
+
         $integrations = [
-            'gateway' => $request->input('gateway', 'nenhum'),
-            'mercadopago' => ['access_token' => $request->input('mp_access_token', '')],
+            'gateway' => $gateway,
             'asaas' => [
                 'api_key' => $request->input('asaas_api_key', ''),
                 'ambiente' => $request->input('asaas_ambiente', 'sandbox'),

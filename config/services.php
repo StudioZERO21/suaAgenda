@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'mercadopago' => [
+        'client_id' => env('MP_CLIENT_ID'),
+        'client_secret' => env('MP_CLIENT_SECRET'),
+        'redirect_uri' => env('MP_REDIRECT_URI'),
+        'public_key' => env('MP_PUBLIC_KEY'),
+        'access_token' => env('MP_ACCESS_TOKEN'),
+        'public_key_test' => env('MP_PUBLIC_KEY_TEST'),
+        'access_token_test' => env('MP_ACCESS_TOKEN_TEST'),
+        'ambiente' => env('MP_AMBIENTE', 'sandbox'),
+        'pkce' => env('MP_PKCE', true),
+    ],
+
 ];

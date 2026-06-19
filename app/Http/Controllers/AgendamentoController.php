@@ -14,6 +14,7 @@ use App\Models\Cliente;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\Pagamento\AsaasService;
+use App\Services\Pagamento\GatewayFactory;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -1337,32 +1338,38 @@ class AgendamentoController extends Controller
         $this->authorize('update', $agendamento);
 
         $saldo = $agendamento->saldoDevido();
-
         abort_if($saldo <= 0, 422, 'Não há saldo pendente para este agendamento.');
 
         $company = auth()->user()->company;
         $settings = $company->resolvedSettings();
-        $asaasConfig = $settings['integrations']['asaas'] ?? [];
-        $apiKey = trim($asaasConfig['api_key'] ?? '');
-        $ambiente = $asaasConfig['ambiente'] ?? 'sandbox';
+        $integrations = $settings['integrations'];
+        $gateway = $integrations['gateway'] ?? 'nenhum';
 
-        abort_if($apiKey === '', 422, 'Gateway Asaas não configurado.');
+        abort_if(! GatewayFactory::isReady($integrations), 422, 'Gateway de pagamento não configurado.');
 
-        $cliente = $agendamento->cliente;
-        $customerId = $cliente?->asaas_customer_id;
+        // Asaas exige customer_id — criamos/buscamos antes de chamar a factory
+        $payer = [];
+        if ($gateway === 'asaas') {
+            $apiKey = trim($integrations['asaas']['api_key'] ?? '');
+            $ambiente = $integrations['asaas']['ambiente'] ?? 'sandbox';
+            $cliente = $agendamento->cliente;
+            $customerId = $cliente?->asaas_customer_id;
 
-        if (! $customerId && $cliente) {
-            $resultado = AsaasService::criarOuBuscarCliente($apiKey, $ambiente, $cliente->email ?? '', $cliente->name);
-            if ($resultado['ok']) {
-                $customerId = $resultado['customer_id'];
-                $cliente->update(['asaas_customer_id' => $customerId]);
+            if (! $customerId && $cliente) {
+                $resultado = AsaasService::criarOuBuscarCliente($apiKey, $ambiente, $cliente->email ?? '', $cliente->name);
+                if ($resultado['ok']) {
+                    $customerId = $resultado['customer_id'];
+                    $cliente->update(['asaas_customer_id' => $customerId]);
+                }
             }
+
+            abort_if(! $customerId, 422, 'Não foi possível identificar o cliente no gateway de pagamento.');
+            $payer['customer_id'] = $customerId;
         }
 
-        abort_if(! $customerId, 422, 'Não foi possível identificar o cliente no Asaas.');
-
         $descricao = 'Saldo restante - '.($agendamento->servico?->nome ?? 'Serviço').' em '.$agendamento->data_hora->format('d/m/Y H:i');
-        $cobranca = AsaasService::criarCobrancaSaldo($apiKey, $ambiente, $customerId, $saldo, $descricao, $agendamento->id);
+        $backUrl = route('agendar.sinal.callback', ['slug' => $company->slug, 'agendamento' => $agendamento->id]);
+        $cobranca = GatewayFactory::criarLinkPagamento($integrations, $saldo, $descricao, $agendamento->id, $payer, $backUrl, 'saldo');
 
         abort_unless($cobranca['ok'], 422, $cobranca['erro'] ?? 'Erro ao gerar cobrança.');
 

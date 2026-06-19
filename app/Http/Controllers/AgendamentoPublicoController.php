@@ -17,6 +17,7 @@ use App\Models\Servico;
 use App\Services\AgendamentoCancelamentoService;
 use App\Services\AgendamentoDisponibilidadeService;
 use App\Services\Pagamento\AsaasService;
+use App\Services\Pagamento\GatewayFactory;
 use App\Services\RegraService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -271,10 +272,9 @@ class AgendamentoPublicoController extends Controller
 
             $settings = $company->resolvedSettings();
             $sinalPct = (float) ($settings['advanced']['sinal_pct'] ?? 0);
-            $asaasConfig = $settings['integrations']['asaas'] ?? [];
-            $apiKey = trim($asaasConfig['api_key'] ?? '');
-            $ambiente = $asaasConfig['ambiente'] ?? 'sandbox';
-            $gatewayAtivo = ($settings['integrations']['gateway'] ?? 'nenhum') === 'asaas' && $apiKey !== '';
+            $integrations = $settings['integrations'];
+            $gateway = $integrations['gateway'] ?? 'nenhum';
+            $gatewayAtivo = GatewayFactory::isReady($integrations);
 
             // Status inicial: aguardando_sinal (com gateway) ou pendente (sem gateway)
             $statusInicial = ($sinalPct > 0 && $gatewayAtivo)
@@ -304,28 +304,34 @@ class AgendamentoPublicoController extends Controller
 
         LinkVisit::track($company->id, LinkVisit::TYPE_BOOKING);
 
-        // Fluxo com sinal via Asaas: criar cliente + cobrança e redirecionar
+        // Fluxo com sinal via gateway ativo da empresa
         if ($agendamento->status === Agendamento::STATUS_AGUARDANDO_SINAL) {
-            $customerId = $this->garantirClienteAsaas($cliente, $apiKey, $ambiente);
-
-            if ($customerId !== null) {
-                $cliente->update(['asaas_customer_id' => $customerId]);
-
-                $descricao = 'Sinal - '.$servico->nome.' em '.$agendamento->data_hora->format('d/m/Y H:i');
-                $cobranca = AsaasService::criarCobrancaSinal($apiKey, $ambiente, $customerId, $agendamento->sinal_valor, $descricao, $agendamento->id);
-
-                if ($cobranca['ok'] && ! empty($cobranca['payment_url'])) {
-                    $agendamento->update([
-                        'sinal_payment_id' => $cobranca['payment_id'],
-                        'sinal_payment_url' => $cobranca['payment_url'],
-                    ]);
-
-                    return redirect()->away($cobranca['payment_url']);
+            $payer = [];
+            if ($gateway === 'asaas') {
+                $apiKey = trim($integrations['asaas']['api_key'] ?? '');
+                $ambiente = $integrations['asaas']['ambiente'] ?? 'sandbox';
+                $customerId = $this->garantirClienteAsaas($cliente, $apiKey, $ambiente);
+                if ($customerId !== null) {
+                    $cliente->update(['asaas_customer_id' => $customerId]);
+                    $payer['customer_id'] = $customerId;
                 }
             }
 
-            // Fallback se Asaas falhou: reverter para pendente com aprovação manual
-            Log::warning('sinal: falha ao criar cobrança Asaas, revertendo para pendente', ['ag' => $agendamento->id]);
+            $descricao = 'Sinal - '.$servico->nome.' em '.$agendamento->data_hora->format('d/m/Y H:i');
+            $backUrl = route('agendar.sinal.callback', ['slug' => $slug, 'agendamento' => $agendamento->id]);
+            $cobranca = GatewayFactory::criarLinkPagamento($integrations, $agendamento->sinal_valor, $descricao, $agendamento->id, $payer, $backUrl);
+
+            if ($cobranca['ok'] && ! empty($cobranca['payment_url'])) {
+                $agendamento->update([
+                    'sinal_payment_id' => $cobranca['payment_id'] ?? '',
+                    'sinal_payment_url' => $cobranca['payment_url'],
+                ]);
+
+                return redirect()->away($cobranca['payment_url']);
+            }
+
+            // Fallback: reverter para pendente com aprovação manual
+            Log::warning('sinal: falha ao criar cobrança '.$gateway.', revertendo para pendente', ['ag' => $agendamento->id]);
             $agendamento->update([
                 'status' => Agendamento::STATUS_PENDENTE,
                 'sinal_status' => Agendamento::SINAL_NENHUM,
@@ -333,8 +339,7 @@ class AgendamentoPublicoController extends Controller
             ]);
         } else {
             if ($sinalPct > 0) {
-                // Sinal configurado mas sem gateway Asaas → aprovação manual obrigatória.
-                // Não auto-confirma: empresa precisa aprovar manualmente.
+                // Sinal configurado mas sem gateway → aprovação manual obrigatória.
                 $agendamento->update(['aprovacao_manual' => true]);
             } elseif (! ($settings['advanced']['confirm_required'] ?? false)) {
                 // Sem sinal E sem exigência de confirmação → confirma automaticamente.
