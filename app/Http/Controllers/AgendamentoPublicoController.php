@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAgendamentoPublicoRequest;
+use App\Mail\AgendamentoConfirmado;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Cliente;
@@ -24,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -354,29 +356,117 @@ class AgendamentoPublicoController extends Controller
     }
 
     /**
-     * Callback após retorno do Asaas — exibe status do sinal.
+     * Callback após retorno do gateway de pagamento — verifica sinal e redireciona.
      * GET /agendar/{slug}/sinal/{agendamento}/callback
      */
-    public function pagamentoSinalCallback(string $slug, string $agendamento): View|RedirectResponse
+    public function pagamentoSinalCallback(string $slug, string $agendamento, Request $request): View|RedirectResponse
     {
         $company = Company::where('slug', $slug)->firstOrFail();
         $ag = Agendamento::with(['servico', 'profissional', 'cliente'])
             ->where('company_id', $company->id)
             ->findOrFail($agendamento);
 
-        // Se o webhook já confirmou → redirecionar para a tela de confirmado
+        // Já confirmado (webhook chegou antes do redirect)
         if ($ag->sinalPago() || $ag->status === Agendamento::STATUS_CONFIRMADO) {
-            $ag->load('company');
+            return $this->redirecionarParaConfirmado($slug, $ag);
+        }
 
-            if ($ag->cliente?->email) {
-                Mail::to($ag->cliente->email)
-                    ->queue(new AgendamentoConfirmado($ag));
+        // Tentar confirmar ativamente (sem depender do webhook)
+        if ($ag->status === Agendamento::STATUS_AGUARDANDO_SINAL) {
+            $confirmado = $this->tentarConfirmarSinal($ag, $company, $request);
+
+            if ($confirmado) {
+                return $this->redirecionarParaConfirmado($slug, $ag);
             }
-
-            return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $ag->id]);
         }
 
         return view('public.aguardando-pagamento', compact('company', 'ag'));
+    }
+
+    /**
+     * Consulta o gateway e, se pago, atualiza o agendamento.
+     */
+    private function tentarConfirmarSinal(Agendamento $ag, Company $company, Request $request): bool
+    {
+        $integrations = $company->settings['integrations'] ?? [];
+        $gateway = $integrations['gateway'] ?? 'nenhum';
+
+        // MercadoPago: status chega como query param na URL de retorno
+        if ($gateway === 'mercadopago') {
+            $status = $request->query('status') ?? $request->query('collection_status');
+            if (in_array($status, ['approved', 'approved_merchant_order'], true)) {
+                $mpPaymentId = (string) ($request->query('payment_id') ?? '');
+                $this->confirmarSinalPago($ag, $mpPaymentId);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // Asaas (e futuros gateways): consulta API via payment_id armazenado
+        $paymentId = (string) ($ag->sinal_payment_id ?? '');
+
+        if ($paymentId === '') {
+            return false;
+        }
+
+        $resultado = GatewayFactory::consultarStatusSinal($integrations, $paymentId);
+
+        if ($resultado['ok'] && $resultado['pago']) {
+            $this->confirmarSinalPago($ag, $paymentId);
+
+            return true;
+        }
+
+        Log::info('pagamentoSinalCallback: aguardando confirmação', [
+            'agendamento_id' => $ag->id,
+            'gateway' => $gateway,
+            'status_api' => $resultado['status'] ?? $resultado['erro'] ?? '—',
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Marca o sinal como pago, confirma o agendamento e envia notificações.
+     * Idempotente — safe chamar múltiplas vezes.
+     */
+    private function confirmarSinalPago(Agendamento $ag, string $paymentId = ''): void
+    {
+        if ($ag->sinalPago()) {
+            return;
+        }
+
+        $ag->update([
+            'status' => Agendamento::STATUS_CONFIRMADO,
+            'sinal_status' => Agendamento::SINAL_PAGO,
+            'sinal_pago_em' => now(),
+            'sinal_payment_id' => $paymentId ?: $ag->sinal_payment_id,
+        ]);
+
+        $ag->load(['cliente', 'profissional', 'servico', 'company']);
+
+        NotificationDispatcher::dispatch('pagamento_confirmado', $ag->company, ['agendamento' => $ag]);
+
+        Log::info('pagamentoSinalCallback: sinal confirmado via callback ativo', [
+            'agendamento_id' => $ag->id,
+            'payment_id' => $paymentId,
+        ]);
+    }
+
+    private function redirecionarParaConfirmado(string $slug, Agendamento $ag): RedirectResponse
+    {
+        if (! $ag->relationLoaded('company')) {
+            $ag->load('company');
+        }
+
+        if ($ag->cliente?->email) {
+            Mail::to($ag->cliente->email)
+                ->queue(new AgendamentoConfirmado($ag));
+        }
+
+        return redirect()->route('agendar.confirmado', ['slug' => $slug, 'agendamento' => $ag->id]);
     }
 
     private function garantirClienteAsaas(Cliente $cliente, string $apiKey, string $ambiente): ?string

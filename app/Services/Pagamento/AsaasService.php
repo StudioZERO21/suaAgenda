@@ -161,6 +161,35 @@ class AsaasService
      *
      * @return array{ok: bool, payment_id?: string, payment_url?: string, erro?: string}
      */
+    /**
+     * Consulta o status de um pagamento pelo ID.
+     *
+     * @return array{ok: bool, pago: bool, status?: string, erro?: string}
+     */
+    public static function consultarPagamento(string $apiKey, string $ambiente, string $paymentId): array
+    {
+        if ($apiKey === '' || $paymentId === '') {
+            return ['ok' => false, 'pago' => false, 'erro' => 'Credenciais ou ID ausentes'];
+        }
+
+        try {
+            $resp = Http::withHeaders(self::headers($apiKey))
+                ->timeout(10)
+                ->get(self::base($ambiente).'/payments/'.$paymentId);
+
+            if (! $resp->successful()) {
+                return ['ok' => false, 'pago' => false, 'erro' => 'HTTP '.$resp->status()];
+            }
+
+            $status = (string) ($resp->json('status') ?? '');
+            $pago = in_array($status, ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'], true);
+
+            return ['ok' => true, 'pago' => $pago, 'status' => $status];
+        } catch (\Exception $e) {
+            return ['ok' => false, 'pago' => false, 'erro' => $e->getMessage()];
+        }
+    }
+
     public static function criarCobrancaSaldo(
         string $apiKey,
         string $ambiente,

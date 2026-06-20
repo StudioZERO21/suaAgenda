@@ -78,6 +78,29 @@ class GatewayFactory
         };
     }
 
+    /**
+     * Consulta o status de um pagamento de sinal no gateway ativo.
+     *
+     * @return array{ok: bool, pago: bool, status?: string, erro?: string}
+     */
+    public static function consultarStatusSinal(array $integrations, string $paymentId): array
+    {
+        if ($paymentId === '') {
+            return ['ok' => false, 'pago' => false, 'erro' => 'payment_id não disponível'];
+        }
+
+        $gateway = $integrations['gateway'] ?? 'nenhum';
+
+        return match ($gateway) {
+            'asaas' => AsaasService::consultarPagamento(
+                trim($integrations['asaas']['api_key'] ?? ''),
+                $integrations['asaas']['ambiente'] ?? 'sandbox',
+                $paymentId
+            ),
+            default => ['ok' => false, 'pago' => false, 'erro' => 'Gateway não suporta consulta direta'],
+        };
+    }
+
     // ── Helpers privados ───────────────────────────────────────────────────────
 
     private static function criarLinkMp(
