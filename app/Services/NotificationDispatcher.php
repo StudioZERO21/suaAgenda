@@ -219,6 +219,10 @@ final class NotificationDispatcher
             'pagamento_confirmado' => (function () use ($cliente, $data, $servico, $profissional, $empresa, $agendamento): string {
                 $sinalValor = $agendamento ? 'R$ '.number_format((float) $agendamento->sinal_valor, 2, ',', '.') : '';
                 $saldo = $agendamento ? 'R$ '.number_format($agendamento->saldoDevido(), 2, ',', '.') : '';
+                $portalUrl = $agendamento?->cancel_token
+                    ? route('agendamento.meu', $agendamento->cancel_token)
+                    : null;
+
                 $linhas = ['✅ *Sinal recebido!*', '', "Olá {$cliente}, seu sinal foi confirmado.", ''];
                 if ($servico) {
                     $linhas[] = "💈 *{$servico}*";
@@ -234,6 +238,11 @@ final class NotificationDispatcher
                 }
                 if ($saldo && $saldo !== 'R$ 0,00') {
                     $linhas[] = "💰 Restante no dia: {$saldo}";
+                }
+                if ($portalUrl) {
+                    $linhas[] = '';
+                    $linhas[] = '🔗 Acompanhe seu agendamento:';
+                    $linhas[] = $portalUrl;
                 }
                 $linhas[] = '';
                 $linhas[] = "_{$empresa}_";
