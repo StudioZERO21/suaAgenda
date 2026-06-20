@@ -7,6 +7,11 @@
     <div>
         <h1 style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:var(--sa-text1);margin:0 0 4px">Empresas</h1>
         <p style="font-size:14px;color:var(--sa-text3);margin:0">{{ $empresas->total() }} empresas cadastradas no sistema</p>
+        <p style="font-size:12px;color:var(--sa-text3);margin:6px 0 0">
+            WhatsApp: <strong style="color:#059669">{{ $whatsappResumo['conectadas'] }}</strong> conectadas
+            / {{ $whatsappResumo['total_com_instancia'] }} com instância
+            · Plataforma: <strong>{{ $whatsappResumo['plataforma'] }}</strong>
+        </p>
     </div>
     <form method="GET" action="{{ route('admin.empresas.index') }}" style="display:flex;gap:8px">
         <input type="text" name="q" value="{{ $busca }}" placeholder="Buscar por nome, slug ou e-mail"
@@ -28,6 +33,7 @@
                     <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Plano</th>
                     <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Usuários</th>
                     <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Agendamentos</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">WhatsApp</th>
                     <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Trial até</th>
                     <th style="padding:11px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Status</th>
                     <th style="padding:11px 16px;text-align:right;font-size:12px;font-weight:600;color:var(--sa-text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Ações</th>
@@ -50,6 +56,21 @@
                     <td style="padding:14px 16px;font-size:14px;color:var(--sa-text2);text-transform:capitalize">{{ $empresa->plan_slug ?? '—' }}</td>
                     <td style="padding:14px 16px;font-size:14px;color:var(--sa-text2)">{{ $empresa->users_count }}</td>
                     <td style="padding:14px 16px;font-size:14px;color:var(--sa-text2)">{{ $empresa->agendamentos_count }}</td>
+                    <td style="padding:14px 16px">
+                        @if($empresa->evolution_connected)
+                        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(37,211,102,.12);color:#059669">
+                            <span style="width:5px;height:5px;border-radius:50%;background:currentColor"></span>
+                            Conectado
+                        </span>
+                        @elseif($empresa->evolution_instance)
+                        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(245,158,11,.12);color:#d97706">
+                            <span style="width:5px;height:5px;border-radius:50%;background:currentColor"></span>
+                            Desconectado
+                        </span>
+                        @else
+                        <span style="font-size:12px;color:var(--sa-text3)">Não configurado</span>
+                        @endif
+                    </td>
                     <td style="padding:14px 16px;font-size:14px;color:var(--sa-text2)">{{ $empresa->trial_ends_at?->format('d/m/Y') ?? '—' }}</td>
                     <td style="padding:14px 16px">
                         @if($empresa->ativo)
@@ -84,7 +105,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="padding:32px 16px;text-align:center;font-size:14px;color:var(--sa-text3)">Nenhuma empresa encontrada.</td>
+                    <td colspan="8" style="padding:32px 16px;text-align:center;font-size:14px;color:var(--sa-text3)">Nenhuma empresa encontrada.</td>
                 </tr>
                 @endforelse
             </tbody>

@@ -9,9 +9,13 @@ use App\Mail\ClienteMagicLink;
 use App\Models\Cliente;
 use App\Models\ClienteLoginToken;
 use App\Models\Company;
+use App\Services\EvolutionService;
+use App\Services\TwilioService;
+use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -54,8 +58,12 @@ class PortalAuthController extends Controller
             if ($canal === 'email' && $cliente->email) {
                 Mail::to($cliente->email)->queue(new ClienteMagicLink($cliente, $company, $url));
             } elseif ($canal === 'whatsapp' && $cliente->phone) {
-                // Link wa.me para o estabelecimento disparar (ou integração futura)
-                $request->session()->flash('whatsapp_url', $this->linkWhatsapp($cliente->phone, $company, $url));
+                $enviado = $this->enviarWhatsAppMagicLink($company, $cliente->phone, $url);
+
+                if (! $enviado) {
+                    // fallback: link wa.me para o cliente abrir manualmente
+                    $request->session()->flash('whatsapp_url', $this->linkWhatsapp($cliente->phone, $company, $url));
+                }
             }
         }
 
@@ -106,6 +114,42 @@ class PortalAuthController extends Controller
                 }
             })
             ->first();
+    }
+
+    private function enviarWhatsAppMagicLink(Company $company, string $phone, string $url): bool
+    {
+        $msg = "🔐 *Acesso à sua área — {$company->name}*\n\nClique no link abaixo para entrar:\n{$url}\n\n_Link válido por 15 minutos._";
+
+        try {
+            // 1. Evolution API da empresa (WhatsApp próprio)
+            if ($company->evolution_connected && $company->evolution_instance) {
+                $evolution = EvolutionService::fromConfig();
+                if ($evolution->configurado()) {
+                    return $evolution->enviarTexto($company->evolution_instance, $phone, $msg);
+                }
+            }
+
+            // 2. Twilio plataforma (fallback da plataforma)
+            $platform = TwilioService::fromConfig();
+            if ($platform->whatsappConfigured()) {
+                return $platform->enviarWhatsApp($phone, $msg);
+            }
+
+            // 3. Twilio por empresa (legado)
+            $waConfig = $company->settings['integrations']['whatsapp'] ?? [];
+            if (! empty($waConfig['ativo']) && ! empty($waConfig['twilio_sid'])) {
+                WhatsAppService::enviar($waConfig, $phone, $msg);
+
+                return true;
+            }
+        } catch (\Throwable $e) {
+            Log::error('PortalAuth: falha ao enviar WhatsApp magic link', [
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return false;
     }
 
     private function linkWhatsapp(string $phone, Company $company, string $url): string

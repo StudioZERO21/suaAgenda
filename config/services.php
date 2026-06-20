@@ -49,6 +49,11 @@ return [
         'sms_number' => env('TWILIO_SMS_NUMBER', ''),
     ],
 
+    'evolution' => [
+        'url' => env('EVOLUTION_API_URL', 'http://localhost:8080'),
+        'key' => env('EVOLUTION_API_KEY', ''),
+    ],
+
     'mercadopago' => [
         'client_id' => env('MP_CLIENT_ID'),
         'client_secret' => env('MP_CLIENT_SECRET'),

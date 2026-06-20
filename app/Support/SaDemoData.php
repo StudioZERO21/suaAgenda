@@ -247,6 +247,7 @@ final class SaDemoData
                 ['id' => 'cal_own', 'label' => 'Ver própria agenda'],
                 ['id' => 'cal_create', 'label' => 'Criar agendamentos'],
                 ['id' => 'cal_edit', 'label' => 'Editar agendamentos'],
+                ['id' => 'cal_confirm', 'label' => 'Confirmar / triar agendamentos'],
                 ['id' => 'cal_delete', 'label' => 'Cancelar agendamentos'],
                 ['id' => 'cal_move', 'label' => 'Mover agendamentos (drag)'],
             ],
@@ -332,7 +333,7 @@ final class SaDemoData
                 'cor' => '#f59e0b',
                 'descricao' => 'Relatórios, equipe e agenda completa',
                 'perms' => [
-                    'cal_view', 'cal_create', 'cal_edit', 'cal_delete', 'cal_move',
+                    'cal_view', 'cal_create', 'cal_edit', 'cal_confirm', 'cal_delete', 'cal_move',
                     'cli_view', 'cli_create', 'cli_edit', 'cli_history',
                     'fin_view', 'fin_export', 'stf_view', 'stf_create', 'stf_edit',
                     'srv_view', 'srv_edit',

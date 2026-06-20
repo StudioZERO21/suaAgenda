@@ -128,7 +128,7 @@ final class NotificationDispatcher
             return false;
         }
 
-        // 1. Evolution API da empresa (WhatsApp próprio)
+        // 1. WhatsApp da própria empresa (Evolution)
         if ($company->evolution_connected && $company->evolution_instance) {
             $evolution = EvolutionService::fromConfig();
             if ($evolution->configurado()) {
@@ -136,13 +136,21 @@ final class NotificationDispatcher
             }
         }
 
-        // 2. Twilio plataforma (fallback)
+        // 2. Instância Evolution da plataforma (seu número — fallback)
+        $evolution = EvolutionService::fromConfig();
+        if ($evolution->configurado() && $evolution->plataformaConectada()) {
+            if ($evolution->enviarTexto($evolution->instanciaPlataforma(), $to, $message)) {
+                return true;
+            }
+        }
+
+        // 3. Twilio plataforma (fallback legado)
         $platform = TwilioService::fromConfig();
         if ($platform->whatsappConfigured()) {
             return $platform->enviarWhatsApp($to, $message);
         }
 
-        // 3. Twilio por empresa (legado)
+        // 4. Twilio por empresa (legado)
         $waConfig = $settings['integrations']['whatsapp'] ?? [];
         if (! empty($waConfig['ativo']) && ! empty($waConfig['twilio_sid'])) {
             WhatsAppService::enviar($waConfig, $to, $message);

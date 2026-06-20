@@ -140,4 +140,11 @@ final class AdminPlatformSettingsController extends Controller
 
         return response()->json($result);
     }
+
+    public function provisionarEvolutionPlataforma(): JsonResponse
+    {
+        $result = (new EvolutionService)->provisionarInstanciaPlataforma();
+
+        return response()->json($result);
+    }
 }

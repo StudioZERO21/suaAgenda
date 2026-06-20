@@ -52,8 +52,7 @@ final class CompanyEvolutionController extends Controller
             return response()->json(['ok' => false, 'erro' => 'Evolution API não configurada na plataforma.']);
         }
 
-        // Nome da instância: sa_ + 8 primeiros chars do UUID
-        $instance = 'sa_'.substr(str_replace('-', '', $company->id), 0, 12);
+        $instance = EvolutionService::nomeInstanciaEmpresa($company->id);
         $webhookUrl = route('webhooks.evolution.inbound', ['instanceName' => $instance]);
 
         $criou = $svc->criarInstancia($instance, $webhookUrl);

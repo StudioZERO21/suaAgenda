@@ -8,8 +8,13 @@ use App\Models\PlatformSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Cliente HTTP para a Evolution API (WhatsApp Baileys multi-empresa).
+ */
 final class EvolutionService
 {
+    public const INSTANCIA_PLATAFORMA_PADRAO = 'plataforma';
+
     private string $baseUrl;
 
     private string $apiKey;
@@ -34,8 +39,24 @@ final class EvolutionService
     }
 
     /**
-     * Cria ou garante existência da instância para a empresa.
-     * Retorna nome da instância criada.
+     * Nome da instância Evolution usada pela plataforma (notificações fallback).
+     */
+    public function instanciaPlataforma(): string
+    {
+        return PlatformSetting::get('evolution', 'platform_instance')
+            ?? self::INSTANCIA_PLATAFORMA_PADRAO;
+    }
+
+    /**
+     * Gera o nome de instância único por empresa.
+     */
+    public static function nomeInstanciaEmpresa(string $companyId): string
+    {
+        return 'sa_'.substr(str_replace('-', '', $companyId), 0, 12);
+    }
+
+    /**
+     * Cria instância Baileys e configura webhook (formato Evolution API v2).
      */
     public function criarInstancia(string $instanceName, string $webhookUrl): bool
     {
@@ -43,22 +64,100 @@ final class EvolutionService
             return false;
         }
 
-        $resp = Http::timeout(10)
-            ->withHeaders(['apikey' => $this->apiKey])
-            ->post("{$this->baseUrl}/instance/create", [
-                'instanceName' => $instanceName,
-                'integration' => 'WHATSAPP-BAILEYS',
-                'webhook' => $webhookUrl,
-                'webhook_by_events' => false,
+        $payload = [
+            'instanceName' => $instanceName,
+            'integration' => 'WHATSAPP-BAILEYS',
+            'qrcode' => false,
+            'webhook' => [
+                'enabled' => true,
+                'url' => $webhookUrl,
+                'byEvents' => false,
+                'base64' => false,
                 'events' => ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
-            ]);
+            ],
+        ];
 
-        return $resp->successful() || $resp->status() === 409; // 409 = já existe
+        $resp = Http::timeout(15)
+            ->withHeaders(['apikey' => $this->apiKey])
+            ->post("{$this->baseUrl}/instance/create", $payload);
+
+        if ($resp->successful() || $resp->status() === 409) {
+            return $this->configurarWebhook($instanceName, $webhookUrl);
+        }
+
+        Log::warning('EvolutionService: falha ao criar instância', [
+            'instance' => $instanceName,
+            'status' => $resp->status(),
+            'body' => $resp->body(),
+        ]);
+
+        return false;
     }
 
     /**
-     * Obtém o QR code base64 para escanear.
-     * Retorna null se não disponível (já conectado ou erro).
+     * Atualiza webhook de uma instância existente.
+     */
+    public function configurarWebhook(string $instanceName, string $webhookUrl): bool
+    {
+        if (! $this->configurado()) {
+            return false;
+        }
+
+        $resp = Http::timeout(10)
+            ->withHeaders(['apikey' => $this->apiKey])
+            ->post("{$this->baseUrl}/webhook/set/{$instanceName}", [
+                'webhook' => [
+                    'enabled' => true,
+                    'url' => $webhookUrl,
+                    'byEvents' => false,
+                    'base64' => false,
+                    'events' => ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
+                ],
+            ]);
+
+        return $resp->successful();
+    }
+
+    /**
+     * Provisiona instância da plataforma para notificações globais (sem empresa).
+     */
+    public function provisionarInstanciaPlataforma(): array
+    {
+        if (! $this->configurado()) {
+            return ['ok' => false, 'erro' => 'Evolution API não configurada.'];
+        }
+
+        $instance = $this->instanciaPlataforma();
+        $webhookUrl = route('webhooks.evolution.inbound', ['instanceName' => $instance]);
+
+        if (! $this->criarInstancia($instance, $webhookUrl)) {
+            return ['ok' => false, 'erro' => 'Não foi possível criar a instância plataforma.'];
+        }
+
+        PlatformSetting::set('evolution', 'platform_instance', $instance);
+        PlatformSetting::clearCache();
+
+        $qr = $this->obterQrCode($instance);
+        $status = $this->status($instance);
+
+        return [
+            'ok' => true,
+            'instance' => $instance,
+            'status' => $status,
+            'qr' => $qr,
+        ];
+    }
+
+    /**
+     * Verifica se a instância da plataforma está conectada.
+     */
+    public function plataformaConectada(): bool
+    {
+        return $this->status($this->instanciaPlataforma()) === 'open';
+    }
+
+    /**
+     * Obtém QR code base64 para escanear.
      */
     public function obterQrCode(string $instanceName): ?string
     {
@@ -78,7 +177,7 @@ final class EvolutionService
     }
 
     /**
-     * Retorna status da conexão: open | close | connecting.
+     * Status da conexão: open | close | connecting | not_configured.
      */
     public function status(string $instanceName): string
     {
@@ -102,7 +201,7 @@ final class EvolutionService
     }
 
     /**
-     * Desconecta e deleta a instância.
+     * Desconecta e remove instância no Evolution.
      */
     public function desconectar(string $instanceName): bool
     {
@@ -120,7 +219,7 @@ final class EvolutionService
     }
 
     /**
-     * Envia mensagem de texto via WhatsApp da empresa.
+     * Envia mensagem de texto via instância Evolution.
      */
     public function enviarTexto(string $instanceName, string $numero, string $mensagem): bool
     {
@@ -128,20 +227,17 @@ final class EvolutionService
             return false;
         }
 
-        // Normaliza: apenas dígitos, garante DDI 55
         $digits = preg_replace('/\D/', '', $numero) ?? '';
         if (strlen($digits) <= 11) {
             $digits = '55'.$digits;
         }
-        $jid = $digits.'@s.whatsapp.net';
 
         try {
             $resp = Http::timeout(15)
                 ->withHeaders(['apikey' => $this->apiKey])
                 ->post("{$this->baseUrl}/message/sendText/{$instanceName}", [
-                    'number' => $jid,
-                    'options' => ['delay' => 1000],
-                    'textMessage' => ['text' => $mensagem],
+                    'number' => $digits,
+                    'text' => $mensagem,
                 ]);
 
             if (! $resp->successful()) {
@@ -160,6 +256,11 @@ final class EvolutionService
         }
     }
 
+    /**
+     * Testa conectividade com o servidor Evolution.
+     *
+     * @return array{ok: bool, nome?: string, erro?: string}
+     */
     public function testarConexao(): array
     {
         if (! $this->configurado()) {
@@ -172,9 +273,10 @@ final class EvolutionService
                 ->get("{$this->baseUrl}/instance/fetchInstances");
 
             if ($resp->successful()) {
-                $count = count($resp->json() ?? []);
+                $json = $resp->json();
+                $count = is_array($json) ? (isset($json[0]) ? count($json) : 1) : 0;
 
-                return ['ok' => true, 'nome' => "{$count} instâncias encontradas"];
+                return ['ok' => true, 'nome' => "{$count} instância(s) encontrada(s)"];
             }
 
             return ['ok' => false, 'erro' => 'HTTP '.$resp->status().' — verifique URL e API key'];

@@ -148,6 +148,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
 
     // Configurações de plataforma — Evolution
     Route::post('configuracoes/testar/evolution', [AdminPlatformSettingsController::class, 'testarEvolution'])->name('configuracoes.testar.evolution');
+    Route::post('configuracoes/evolution/provisionar-plataforma', [AdminPlatformSettingsController::class, 'provisionarEvolutionPlataforma'])->name('configuracoes.evolution.provisionar-plataforma');
 });
 
 Route::middleware(['auth', SetTenantMiddleware::class, 'check.subscription', CheckModulePermission::class])->group(function () {

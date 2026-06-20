@@ -84,7 +84,11 @@ final class UserPermissions
             return in_array($permission, self::effectiveNames($user), true);
         }
 
-        return $user->hasPermissionTo($permission);
+        try {
+            return $user->hasPermissionTo($permission);
+        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
+            return false;
+        }
     }
 
     /**

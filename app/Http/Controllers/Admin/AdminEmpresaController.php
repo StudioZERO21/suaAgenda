@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Company;
+use App\Services\EvolutionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,16 @@ class AdminEmpresaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.empresas', compact('empresas', 'busca'));
+        $evolution = EvolutionService::fromConfig();
+        $whatsappResumo = [
+            'conectadas' => Company::where('evolution_connected', true)->count(),
+            'total_com_instancia' => Company::whereNotNull('evolution_instance')->count(),
+            'plataforma' => $evolution->configurado()
+                ? $evolution->status($evolution->instanciaPlataforma())
+                : 'not_configured',
+        ];
+
+        return view('admin.empresas', compact('empresas', 'busca', 'whatsappResumo'));
     }
 
     public function show(Company $empresa): View

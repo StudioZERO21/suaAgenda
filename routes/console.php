@@ -33,3 +33,6 @@ Schedule::job(ExpireUnpaidBookingsJob::class)->everyTwoMinutes();
 Schedule::job(GenerateAnniversaryInvoicesJob::class)->dailyAt('06:00');
 Schedule::job(ProcessOverdueSubscriptionsJob::class)->dailyAt('07:00');
 Schedule::job(SyncGatewayPaymentsJob::class)->everySixHours();
+
+// ── Evolution API: sincroniza status WhatsApp das empresas ───────────
+Schedule::command('evolution:sincronizar-status')->everyFifteenMinutes();

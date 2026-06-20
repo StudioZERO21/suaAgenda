@@ -268,15 +268,19 @@
                         <p style="font-size:12px;color:var(--sa-text3);margin:0">O custo mensal do servidor é exibido no dashboard de Gastos & Uso.</p>
 
                         <div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:8px;padding:12px 16px">
-                            <p style="font-size:12px;color:var(--sa-text2);margin:0;line-height:1.6">
+                            <p style="font-size:12px;color:var(--sa-text2);margin:0 0 10px;line-height:1.6">
                                 <strong>Webhook URL das empresas:</strong><br>
                                 <code style="font-size:11px;background:var(--sa-surface2);padding:2px 6px;border-radius:4px">{{ url('/webhooks/evolution/{instanceName}') }}</code><br>
                                 O sistema configura automaticamente ao conectar cada empresa.
                             </p>
+                            <p style="font-size:12px;color:var(--sa-text2);margin:0;line-height:1.6">
+                                <strong>Instância plataforma (seu número — fallback de notificações):</strong>
+                                <code style="font-size:11px;background:var(--sa-surface2);padding:2px 6px;border-radius:4px">{{ $settings['evolution']['platform_instance'] ?? 'plataforma' }}</code>
+                            </p>
                         </div>
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap">
                         <button type="button" onclick="testar('evolution')"
                                 style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1.5px solid var(--sa-border);background:transparent;color:var(--sa-text2);font-size:13px;font-weight:600;cursor:pointer;transition:all 150ms"
                                 onmouseover="this.style.borderColor='var(--sa-primary)';this.style.color='var(--sa-text1)'"
@@ -285,6 +289,11 @@
                             Testar conexão
                         </button>
                         <span id="result-evolution" style="font-size:13px"></span>
+                        <button type="button" onclick="provisionarPlataforma()"
+                                style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1.5px solid rgba(37,211,102,.4);background:rgba(37,211,102,.08);color:#059669;font-size:13px;font-weight:600;cursor:pointer">
+                            Criar instância plataforma
+                        </button>
+                        <span id="result-plataforma" style="font-size:13px"></span>
                     </div>
                 </div>
                 <x-admin.save-bar />
@@ -373,6 +382,7 @@ const ROUTES = {
     mercadopago: '{{ route('admin.configuracoes.testar.mercadopago') }}',
     email:       '{{ route('admin.configuracoes.testar.email') }}',
     evolution:   '{{ route('admin.configuracoes.testar.evolution') }}',
+    plataforma:  '{{ route('admin.configuracoes.evolution.provisionar-plataforma') }}',
 };
 
 async function testar(canal) {
@@ -388,6 +398,33 @@ async function testar(canal) {
         const data = await r.json();
         res.style.color = data.ok ? '#059669' : '#dc2626';
         res.textContent = data.ok ? '✓ ' + (data.nome ?? 'OK') : '✗ ' + (data.erro ?? 'Erro');
+    } catch {
+        res.style.color = '#dc2626';
+        res.textContent = '✗ Erro de rede';
+    }
+}
+
+async function provisionarPlataforma() {
+    const res = document.getElementById('result-plataforma');
+    res.style.color = 'var(--sa-text3)';
+    res.textContent = 'Criando instância…';
+
+    try {
+        const r = await fetch(ROUTES.plataforma, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        });
+        const data = await r.json();
+        if (data.ok) {
+            res.style.color = '#059669';
+            res.textContent = '✓ Instância ' + data.instance + ' — status: ' + data.status + '. Escaneie o QR no Manager.';
+            if (data.qr) {
+                window.open('http://localhost:8080/manager/', '_blank');
+            }
+        } else {
+            res.style.color = '#dc2626';
+            res.textContent = '✗ ' + (data.erro ?? 'Erro');
+        }
     } catch {
         res.style.color = '#dc2626';
         res.textContent = '✗ Erro de rede';

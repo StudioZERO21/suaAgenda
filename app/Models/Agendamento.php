@@ -70,7 +70,7 @@ class Agendamento extends Model
 
     public static function generateCancelToken(): string
     {
-        return bin2hex(random_bytes(32));
+        return bin2hex(random_bytes(8));
     }
 
     protected function casts(): array
