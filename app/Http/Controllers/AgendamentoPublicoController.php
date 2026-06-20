@@ -318,7 +318,7 @@ class AgendamentoPublicoController extends Controller
 
             $descricao = 'Sinal - '.$servico->nome.' em '.$agendamento->data_hora->format('d/m/Y H:i');
             $backUrl = route('agendar.sinal.callback', ['slug' => $slug, 'agendamento' => $agendamento->id]);
-            $cobranca = GatewayFactory::criarLinkPagamento($integrations, $agendamento->sinal_valor, $descricao, $agendamento->id, $payer, $backUrl);
+            $cobranca = GatewayFactory::criarLinkPagamento($integrations, (float) $agendamento->sinal_valor, $descricao, $agendamento->id, $payer, $backUrl);
 
             if ($cobranca['ok'] && ! empty($cobranca['payment_url'])) {
                 $agendamento->update([
