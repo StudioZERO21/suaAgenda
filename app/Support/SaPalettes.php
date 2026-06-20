@@ -271,7 +271,7 @@ final class SaPalettes
                 'lembrete_24h' => ['email' => true,  'whatsapp' => false, 'sms' => false],
                 'lembrete_1h' => ['email' => false, 'whatsapp' => false, 'sms' => false],
                 'no_show' => ['email' => true,  'whatsapp' => false, 'sms' => false],
-                'pagamento_confirmado' => ['email' => true,  'whatsapp' => false, 'sms' => false],
+                'pagamento_confirmado' => ['email' => true,  'whatsapp' => true,  'sms' => false],
                 'novo_cliente' => ['email' => false, 'whatsapp' => false, 'sms' => false],
                 'resumo_diario' => ['email' => true,  'whatsapp' => false, 'sms' => false],
                 'relatorio_semanal' => ['email' => false, 'whatsapp' => false, 'sms' => false],

@@ -216,7 +216,30 @@ final class NotificationDispatcher
             'agendamento_cancelado' => "❌ *Agendamento cancelado*\n\nOlá {$cliente},\n\nSeu agendamento de {$data} foi cancelado. Entre em contato para reagendar.\n\n_{$empresa}_",
             'lembrete_24h' => "⏰ *Lembrete — amanhã!*\n\nOlá {$cliente}!\n\nAmanhã você tem:\n📅 {$data}\n💈 {$servico}\n👤 {$profissional}\n\n_{$empresa}_",
             'lembrete_1h' => "⏰ *Em 1 hora!*\n\nOlá {$cliente}, seu serviço começa em 1 hora:\n📅 {$data}\n💈 {$servico}\n\n_{$empresa}_",
-            'pagamento_confirmado' => "✅ *Pagamento confirmado!*\n\nOlá {$cliente}, seu pagamento foi recebido com sucesso.\n\n_{$empresa}_",
+            'pagamento_confirmado' => (function () use ($cliente, $data, $servico, $profissional, $empresa, $agendamento): string {
+                $sinalValor = $agendamento ? 'R$ '.number_format((float) $agendamento->sinal_valor, 2, ',', '.') : '';
+                $saldo = $agendamento ? 'R$ '.number_format($agendamento->saldoDevido(), 2, ',', '.') : '';
+                $linhas = ['✅ *Sinal recebido!*', '', "Olá {$cliente}, seu sinal foi confirmado.", ''];
+                if ($servico) {
+                    $linhas[] = "💈 *{$servico}*";
+                }
+                if ($profissional) {
+                    $linhas[] = "👤 {$profissional}";
+                }
+                if ($data) {
+                    $linhas[] = "📅 {$data}";
+                }
+                if ($sinalValor) {
+                    $linhas[] = "💳 Sinal pago: *{$sinalValor}*";
+                }
+                if ($saldo && $saldo !== 'R$ 0,00') {
+                    $linhas[] = "💰 Restante no dia: {$saldo}";
+                }
+                $linhas[] = '';
+                $linhas[] = "_{$empresa}_";
+
+                return implode("\n", $linhas);
+            })(),
             default => null,
         };
     }
