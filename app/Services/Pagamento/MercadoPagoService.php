@@ -262,6 +262,7 @@ class MercadoPagoService
                 'failure' => $backUrl,
                 'pending' => $backUrl,
             ];
+            $payload['auto_return'] = 'approved';
         }
 
         $resp = Http::timeout(15)
@@ -276,5 +277,50 @@ class MercadoPagoService
         $key = self::isSandbox() ? 'sandbox_init_point' : 'init_point';
 
         return (string) ($resp->json($key) ?? $resp->json('init_point') ?? '');
+    }
+
+    /**
+     * Busca pagamentos pelo external_reference (UUID do agendamento).
+     * Retorna o primeiro pagamento aprovado, se existir.
+     *
+     * @return array{ok: bool, pago: bool, payment_id?: string, status?: string, erro?: string}
+     */
+    public static function buscarPagamentoPorReferencia(string $accessToken, string $externalReference): array
+    {
+        if ($accessToken === '' || $externalReference === '') {
+            return ['ok' => false, 'pago' => false, 'erro' => 'Credenciais ou referência ausentes'];
+        }
+
+        try {
+            $resp = Http::timeout(10)
+                ->withToken($accessToken)
+                ->get(self::BASE.'/v1/payments/search', [
+                    'external_reference' => $externalReference,
+                    'sort' => 'date_created',
+                    'criteria' => 'desc',
+                ]);
+
+            if (! $resp->successful()) {
+                return ['ok' => false, 'pago' => false, 'erro' => 'HTTP '.$resp->status()];
+            }
+
+            $results = $resp->json('results') ?? [];
+
+            foreach ($results as $payment) {
+                $status = (string) ($payment['status'] ?? '');
+                if ($status === 'approved') {
+                    return [
+                        'ok' => true,
+                        'pago' => true,
+                        'payment_id' => (string) ($payment['id'] ?? ''),
+                        'status' => $status,
+                    ];
+                }
+            }
+
+            return ['ok' => true, 'pago' => false, 'status' => 'não encontrado ou pendente'];
+        } catch (\Exception $e) {
+            return ['ok' => false, 'pago' => false, 'erro' => $e->getMessage()];
+        }
     }
 }

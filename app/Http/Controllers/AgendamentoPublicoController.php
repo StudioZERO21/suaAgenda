@@ -390,31 +390,26 @@ class AgendamentoPublicoController extends Controller
     {
         $integrations = $company->settings['integrations'] ?? [];
         $gateway = $integrations['gateway'] ?? 'nenhum';
+        $paymentId = (string) ($ag->sinal_payment_id ?? '');
 
-        // MercadoPago: status chega como query param na URL de retorno
+        // MercadoPago: primeiro tenta ler query params do redirect automático
         if ($gateway === 'mercadopago') {
-            $status = $request->query('status') ?? $request->query('collection_status');
-            if (in_array($status, ['approved', 'approved_merchant_order'], true)) {
+            $mpStatus = $request->query('status') ?? $request->query('collection_status');
+            if (in_array($mpStatus, ['approved', 'approved_merchant_order'], true)) {
                 $mpPaymentId = (string) ($request->query('payment_id') ?? '');
                 $this->confirmarSinalPago($ag, $mpPaymentId);
 
                 return true;
             }
-
-            return false;
         }
 
-        // Asaas (e futuros gateways): consulta API via payment_id armazenado
-        $paymentId = (string) ($ag->sinal_payment_id ?? '');
-
-        if ($paymentId === '') {
-            return false;
-        }
-
-        $resultado = GatewayFactory::consultarStatusSinal($integrations, $paymentId);
+        // Para todos os gateways: consulta API ativamente
+        $resultado = GatewayFactory::consultarStatusSinal($integrations, $paymentId, $ag->id);
 
         if ($resultado['ok'] && $resultado['pago']) {
-            $this->confirmarSinalPago($ag, $paymentId);
+            // MP retorna o payment_id na busca; usar se não estava armazenado
+            $confirmedId = $resultado['payment_id'] ?? $paymentId;
+            $this->confirmarSinalPago($ag, $confirmedId);
 
             return true;
         }
